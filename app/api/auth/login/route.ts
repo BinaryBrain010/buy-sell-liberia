@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
       {
         message: "Login successful",
         user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       },
       { status: 200 },
     )

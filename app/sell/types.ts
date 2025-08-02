@@ -34,6 +34,12 @@ export interface Location {
   country: string;
 }
 
+export interface ContactInfo {
+  phone: string;
+  email?: string;
+  whatsapp?: string;
+}
+
 export interface SubCategory {
   _id: string;
   name: string;
@@ -56,7 +62,9 @@ export interface ProductFormData {
   condition: Condition;
   negotiable: boolean;
   images: File[];
+  titleImageIndex: number; // Index of the selected title image
   location: Location;
+  contactInfo: ContactInfo;
   tags: string[];
   specifications: Record<string, string>;
   showPhoneNumber: boolean;

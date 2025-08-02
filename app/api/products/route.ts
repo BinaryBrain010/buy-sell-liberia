@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { ProductService } from "../modules/products/services/product.service"
 import { verifyToken } from "../modules/auth/middlewares/next-auth-middleware"
-import { uploadProductImages, compressImages } from "@/lib/file-upload"
 import { parseFiles, validateFiles } from "@/lib/multer"
+import { uploadProductImagesToLocal, validateImageFilesForLocal } from "@/lib/local-file-upload"
 import mongoose from "mongoose"
-// Initialize Firebase app
-import "@/lib/firebase"
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -25,23 +23,31 @@ export async function POST(request: NextRequest) {
     // Parse files and fields using multer
     const { files: imageFiles, fields } = await parseFiles(request)
     
+    // Parse form data from JSON string
+    let formData
+    try {
+      formData = JSON.parse(fields.formData || '{}')
+    } catch (error) {
+      return NextResponse.json({ error: "Invalid form data format" }, { status: 400 })
+    }
+    
     // Extract form fields
-    const title = fields.title
-    const description = fields.description
-    const price = parseFloat(fields.price)
-    const category = fields.category
-    const subCategory = fields.subCategory || ''
-    const condition = fields.condition
-    const negotiable = fields.negotiable === 'true'
-    const showPhoneNumber = fields.showPhoneNumber === 'true'
+    const title = formData.title
+    const description = formData.description
+    const price = parseFloat(formData.price)
+    const category = formData.category
+    const subCategory = formData.subCategory || ''
+    const condition = formData.condition
+    const negotiable = formData.negotiable === true
+    const showPhoneNumber = formData.showPhoneNumber === true
+    const titleImageIndex = parseInt(formData.titleImageIndex) || 0
+    const location = formData.location || {}
+    const contactInfo = formData.contactInfo || {}
+    const tags = formData.tags || []
+    const specifications = formData.specifications || {}
     
-    // Parse JSON fields
-    const location = JSON.parse(fields.location || '{}')
-    const tags = JSON.parse(fields.tags || '[]')
-    const specifications = JSON.parse(fields.specifications || '{}')
-    
-    // Validate image files using multer validator
-    const validation = validateFiles(imageFiles)
+    // Validate image files
+    const validation = validateImageFilesForLocal(imageFiles)
     if (!validation.valid) {
       return NextResponse.json({ 
         error: "Image validation failed", 
@@ -51,32 +57,44 @@ export async function POST(request: NextRequest) {
     
     console.log(`[PRODUCTS API] Processing ${imageFiles.length} images`)
     
-    // Generate temporary product ID for file naming
-    const tempProductId = new mongoose.Types.ObjectId().toString()
-    
-    // Compress images before upload
-    const compressedImages = await compressImages(imageFiles)
-    
-    // Upload images to Firebase Storage
-    const images = await uploadProductImages(compressedImages, authResult.userId!, tempProductId)
-
-    // Validation
-    if (!title || !description || !price || !category || !images || !location) {
+    // Validate required fields before processing
+    if (!title || !description || !price || !category || !location) {
       return NextResponse.json(
-        { error: "Missing required fields: title, description, price, category, images, location" },
+        { error: "Missing required fields: title, description, price, category, location" },
         { status: 400 }
       )
-    }
-
-    if (!Array.isArray(images) || images.length === 0) {
-      return NextResponse.json({ error: "At least one image is required" }, { status: 400 })
     }
 
     if (price < 0) {
       return NextResponse.json({ error: "Price must be positive" }, { status: 400 })
     }
 
-    // Create product
+    if (!category || typeof category !== 'string') {
+      return NextResponse.json({ error: "Valid category is required" }, { status: 400 })
+    }
+    
+    // Generate product ID for file naming
+    const productId = new mongoose.Types.ObjectId().toString()
+    
+    // Upload images to local storage
+    const imagePaths = await uploadProductImagesToLocal(
+      imageFiles,
+      category,
+      productId,
+      title
+    )
+
+    // Validation for images
+    if (!Array.isArray(imagePaths) || imagePaths.length === 0) {
+      return NextResponse.json({ error: "At least one image is required" }, { status: 400 })
+    }
+
+    // Validate title image index
+    if (titleImageIndex < 0 || titleImageIndex >= imagePaths.length) {
+      return NextResponse.json({ error: "Invalid title image index" }, { status: 400 })
+    }
+
+    // Create product with image paths
     const product = await productService.createProduct(authResult.userId, {
       title,
       description,
@@ -84,8 +102,10 @@ export async function POST(request: NextRequest) {
       category,
       subCategory,
       condition,
-      images,
+      images: imagePaths,
+      titleImageIndex,
       location,
+      contactInfo,
       tags,
       specifications,
       negotiable,
@@ -105,6 +125,7 @@ export async function POST(request: NextRequest) {
           category: product.category,
           condition: product.condition,
           images: product.images,
+          titleImageIndex: product.titleImageIndex,
           status: product.status,
           createdAt: product.createdAt,
         },

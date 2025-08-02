@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
       {
         message: "Google login successful",
         user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
       },
       { status: 200 },
     )

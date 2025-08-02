@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken"
 import { type NextRequest, NextResponse } from "next/server"
-import { secretKey } from "../enviroment/enviroment"
 
 // Mark routes using this middleware as dynamic
 export const dynamic = 'force-dynamic'
@@ -20,7 +19,7 @@ export function getUserFromRequest(req: NextRequest) {
     
     if (!token) return null
 
-    const decoded = jwt.verify(token, secretKey) as { userId: string; email?: string; [key: string]: any }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production") as { userId: string; email?: string; [key: string]: any }
     return decoded
   } catch (error) {
     console.error("Token verification error:", error)

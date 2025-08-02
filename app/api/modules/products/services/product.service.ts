@@ -11,6 +11,7 @@ export interface CreateProductData {
   subCategory?: string
   condition: "new" | "like-new" | "good" | "fair" | "poor"
   images: string[]
+  titleImageIndex: number
   location: {
     city: string
     state: string
@@ -19,6 +20,11 @@ export interface CreateProductData {
       latitude: number
       longitude: number
     }
+  }
+  contactInfo: {
+    phone: string
+    email?: string
+    whatsapp?: string
   }
   tags?: string[]
   specifications?: {
@@ -35,6 +41,7 @@ export interface CreateProductData {
     }
   }
   negotiable?: boolean
+  showPhoneNumber?: boolean
   delivery?: {
     available: boolean
     cost?: number

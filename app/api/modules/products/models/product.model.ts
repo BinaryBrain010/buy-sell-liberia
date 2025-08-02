@@ -9,6 +9,7 @@ export interface IProduct extends Document {
   subCategory?: string
   condition: "new" | "like-new" | "good" | "fair" | "poor"
   images: string[]
+  titleImageIndex: number
   location: {
     city: string
     state: string
@@ -17,6 +18,11 @@ export interface IProduct extends Document {
       latitude: number
       longitude: number
     }
+  }
+  contactInfo: {
+    phone: string
+    email?: string
+    whatsapp?: string
   }
   seller: mongoose.Types.ObjectId
   status: "active" | "sold" | "inactive" | "pending"
@@ -95,6 +101,12 @@ const ProductSchema = new Schema<IProduct>(
       type: String,
       required: true,
     }],
+    titleImageIndex: {
+      type: Number,
+      required: [true, "Title image index is required"],
+      min: [0, "Title image index must be non-negative"],
+      default: 0,
+    },
     location: {
       city: {
         type: String,
@@ -114,6 +126,22 @@ const ProductSchema = new Schema<IProduct>(
       coordinates: {
         latitude: Number,
         longitude: Number,
+      },
+    },
+    contactInfo: {
+      phone: {
+        type: String,
+        required: [true, "Phone number is required"],
+        trim: true,
+      },
+      email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+      whatsapp: {
+        type: String,
+        trim: true,
       },
     },
     seller: {

@@ -1,32 +1,34 @@
 import React from 'react'
+import { Check } from 'lucide-react'
 
 interface StepIndicatorProps {
   currentStep: number
 }
 
 const steps = [
-  { id: 1, label: 'Basic Info' },
-  { id: 2, label: 'Images & Location' },
-  { id: 3, label: 'Details & Delivery' },
+  { id: 1, label: 'Basic Info', icon: '📝' },
+  { id: 2, label: 'Images & Location', icon: '📸' },
+  { id: 3, label: 'Details & Delivery', icon: '✅' },
 ]
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
   return (
-    <div className="mb-10 w-full max-w-3xl mx-auto px-4">
+    <div className="mb-8 w-full max-w-4xl mx-auto">
       <div className="flex items-center justify-between relative">
         {steps.map((step, index) => (
           <div key={step.id} className="relative flex-1 flex flex-col items-center text-center">
-            {/* Connector to previous step (skip for first) */}
+            {/* Connector line */}
             {index > 0 && (
-              <div className="absolute top-1/2 left-0 w-full -z-10">
+              <div className="absolute top-4 left-0 w-full -z-10">
                 <div
-                  className={`h-1 ${
-                    currentStep > step.id - 1 ? 'bg-primary' : 'bg-muted'
+                  className={`h-0.5 transition-all duration-300 ${
+                    currentStep > step.id - 1 
+                      ? 'bg-blue-500' 
+                      : 'bg-muted'
                   }`}
                   style={{
                     width: '100%',
                     marginLeft: '-50%',
-                    zIndex: -1,
                   }}
                 ></div>
               </div>
@@ -34,17 +36,23 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
 
             {/* Step circle */}
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                currentStep >= step.id
-                  ? 'bg-primary text-white'
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
+                currentStep > step.id
+                  ? 'bg-green-500 text-white'
+                  : currentStep === step.id
+                  ? 'bg-blue-500 text-white'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
-              {step.id}
+              {currentStep > step.id ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                step.id
+              )}
             </div>
 
             {/* Step label */}
-            <div className="mt-2 text-xs sm:text-sm font-medium text-muted-foreground">
+            <div className="mt-2 text-xs font-medium text-muted-foreground">
               {step.label}
             </div>
           </div>

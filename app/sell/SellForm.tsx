@@ -3,19 +3,21 @@
 import React, { useState, useEffect } from 'react'
 import StepIndicator from './stepIndicator'
 import Step1BasicInfo from './step1BasicInfo'
-import Step2ImagesLocation from './step2ImageLocation'
+import Step2ImagesLocation from './step2ImagesLocation'
 import Step3AdditionalDetails from './step3AdditionalDetails'
 import ReviewCard from './reviewCard'
 
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react'
 import {
   ProductFormData,
   Category,
   FormErrors
 } from './types'
 
-export default function SellForm() {
+export default function         SellForm() {
   const [categories, setCategories] = useState<Category[]>([])
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -28,7 +30,9 @@ export default function SellForm() {
     subCategory: '',
     condition: 'good',
     images: [],
+    titleImageIndex: 0,
     location: { city: '', state: '', country: 'Nigeria' },
+    contactInfo: { phone: '', email: '', whatsapp: '' },
     tags: [],
     specifications: {},
     negotiable: true,
@@ -69,6 +73,7 @@ export default function SellForm() {
       if (!city.trim()) newErrors.city = 'City is required'
       if (!state.trim()) newErrors.state = 'State is required'
       if (!country.trim()) newErrors.country = 'Country is required'
+      if (!formData.contactInfo.phone.trim()) newErrors.phone = 'Phone number is required'
     }
 
     setErrors(newErrors)
@@ -94,15 +99,33 @@ export default function SellForm() {
 
     try {
       const payload = new FormData()
-      formData.images.forEach((file) => payload.append('images', file))
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'images') return
-        if (typeof value === 'object') {
-          payload.append(key, JSON.stringify(value))
-        } else {
-          payload.append(key, String(value))
-        }
+      
+      // Append images as FormData
+      formData.images.forEach((file, index) => {
+        payload.append('images', file)
       })
+      
+      // Append title image index
+      payload.append('titleImageIndex', formData.titleImageIndex.toString())
+      
+      // Append other form data
+      const formDataToSend = {
+        title: formData.title,
+        description: formData.description,
+        price: formData.price,
+        category: formData.category,
+        subCategory: formData.subCategory,
+        condition: formData.condition,
+        negotiable: formData.negotiable,
+        location: formData.location,
+        contactInfo: formData.contactInfo,
+        tags: formData.tags,
+        specifications: formData.specifications,
+        showPhoneNumber: formData.showPhoneNumber,
+      }
+      
+      // Append JSON data
+      payload.append('formData', JSON.stringify(formDataToSend))
 
       const res = await fetch('/api/products', {
         method: 'POST',
@@ -110,7 +133,9 @@ export default function SellForm() {
       })
 
       if (!res.ok) throw new Error('Failed to create listing')
+      
       toast.success('Product listed successfully!')
+      // Reset form or redirect
     } catch (err) {
       toast.error('Failed to create product')
     } finally {
@@ -119,56 +144,97 @@ export default function SellForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto">
       <StepIndicator currentStep={currentStep} />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {currentStep === 1 && (
-          <Step1BasicInfo
-            formData={formData}
-            setFormData={setFormData}
-            categories={categories}
-            errors={errors}
-            setErrors={setErrors}
-          />
-        )}
-        {currentStep === 2 && (
-          <Step2ImagesLocation
-            formData={formData}
-            setFormData={setFormData}
-            imagePreview={imagePreview}
-            setImagePreview={setImagePreview}
-            errors={errors}
-            setErrors={setErrors}
-          />
-        )}
-        {currentStep === 3 && (
-          <Step3AdditionalDetails
-            formData={formData}
-            setFormData={setFormData}
-            tagInput={tagInput}
-            setTagInput={setTagInput}
-            setErrors={setErrors}
-          />
-        )}
+      <Card className="shadow-lg">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {currentStep === 1 && (
+              <Step1BasicInfo
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+                errors={errors}
+                setErrors={setErrors}
+              />
+            )}
+            {currentStep === 2 && (
+              <Step2ImagesLocation
+                formData={formData}
+                setFormData={setFormData}
+                imagePreview={imagePreview}
+                setImagePreview={setImagePreview}
+                errors={errors}
+                setErrors={setErrors}
+              />
+            )}
+            {currentStep === 3 && (
+              <Step3AdditionalDetails
+                formData={formData}
+                setFormData={setFormData}
+                tagInput={tagInput}
+                setTagInput={setTagInput}
+                setErrors={setErrors}
+              />
+            )}
 
-        <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={prevStep} disabled={currentStep === 1}>
-            Previous
-          </Button>
-          {currentStep < 3 ? (
-            <Button type="button" onClick={nextStep}>
-              Next
-            </Button>
-          ) : (
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Listing'}
-            </Button>
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between pt-6 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={prevStep} 
+                disabled={currentStep === 1}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Step {currentStep} of 3</span>
+              </div>
+              
+              {currentStep < 3 ? (
+                <Button 
+                  type="button" 
+                  onClick={nextStep}
+                  className="flex items-center gap-2"
+                >
+                  Next
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Create Listing
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
+
+          {/* Review Card */}
+          {currentStep === 3 && (
+            <div className="mt-8 pt-6 border-t">
+              <ReviewCard formData={formData} />
+            </div>
           )}
-        </div>
-      </form>
-
-      {currentStep === 3 && <ReviewCard formData={formData} />}
+        </CardContent>
+      </Card>
     </div>
   )
 }

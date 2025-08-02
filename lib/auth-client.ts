@@ -11,6 +11,8 @@ interface User {
 interface LoginResponse {
   message: string
   user: User
+  accessToken?: string
+  refreshToken?: string
 }
 
 interface SignupData {
@@ -37,6 +39,18 @@ class AuthClient {
       })
 
       console.log("[AUTH CLIENT] Login response:", response.data)
+      
+      // Store tokens if they exist in the response
+      if (response.data.accessToken) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', response.data.accessToken)
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken)
+          }
+          console.log("[AUTH CLIENT] Stored tokens")
+        }
+      }
+      
       return response.data.user
     } catch (error: any) {
       console.error("[AUTH CLIENT] Login error:", error.response?.data || error.message)
@@ -73,6 +87,18 @@ class AuthClient {
       console.log("[AUTH CLIENT] Sending Google login request for:", email)
       const response = await axios.post<LoginResponse>("/auth/google-login", { email })
       console.log("[AUTH CLIENT] Google login response:", response.data)
+      
+      // Store tokens if they exist in the response
+      if (response.data.accessToken) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', response.data.accessToken)
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken)
+          }
+          console.log("[AUTH CLIENT] Stored tokens from Google login")
+        }
+      }
+      
       return response.data.user
     } catch (error: any) {
       console.error("[AUTH CLIENT] Google login error:", error.response?.data || error.message)
@@ -127,8 +153,21 @@ class AuthClient {
       console.log("[AUTH CLIENT] Sending logout request")
       const response = await axios.post("/auth/logout")
       console.log("[AUTH CLIENT] Logout response:", response.data)
+      
+      // Clear tokens on logout
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        console.log("[AUTH CLIENT] Cleared tokens")
+      }
     } catch (error: any) {
       console.error("[AUTH CLIENT] Logout error:", error.response?.data || error.message)
+      // Clear tokens even if logout request fails
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        console.log("[AUTH CLIENT] Cleared tokens despite error")
+      }
       throw new Error(error.response?.data?.error || "Logout failed")
     }
   }
