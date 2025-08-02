@@ -1,51 +1,51 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/components/auth-provider"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
-import { AuthModal } from "@/components/auth-modal"
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+import { AuthModal } from "@/components/auth-modal";
 
-import Logo from "./navbar/logo"
-import DesktopLinks from "./navbar/desktopLinks"
-import SearchBar from "./navbar/searchBar"
-import MobileMenu from "./navbar/mobileMenu"
-import UserActions from "./navbar/userAction"
-import AuthButtons from "./navbar/authButton"
+import Logo from "./navbar/logo";
+import DesktopLinks from "./navbar/desktopLinks";
+import SearchBar from "./navbar/searchBar";
+import MobileMenu from "./navbar/mobileMenu";
+import UserActions from "./navbar/userAction";
+import AuthButtons from "./navbar/authButton";
 
 export default function Navbar() {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login")
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [redirectToSell, setRedirectToSell] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [redirectToSell, setRedirectToSell] = useState(false);
 
-  const { user } = useAuth()
-  const router = useRouter()
+  const { user } = useAuth();
+  const router = useRouter();
 
   const handleAuthClick = (mode: "login" | "signup") => {
-    setAuthMode(mode)
-    setIsAuthModalOpen(true)
-  }
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
 
   const handleSellClick = () => {
     if (user) {
-      router.push("/sell")
+      router.push("/sell");
     } else {
-      setAuthMode("signup")
-      setRedirectToSell(true)
-      setIsAuthModalOpen(true)
+      setAuthMode("signup");
+      setRedirectToSell(true);
+      setIsAuthModalOpen(true);
     }
-  }
+  };
 
   const handleModalClose = (open: boolean) => {
-    setIsAuthModalOpen(open)
+    setIsAuthModalOpen(open);
     if (!open && redirectToSell && user) {
-      router.push("/sell")
+      router.push("/sell");
     }
-  }
+  };
 
   return (
     <>
@@ -60,7 +60,11 @@ export default function Navbar() {
 
             <div className="flex items-center gap-2 lg:hidden">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
                 <Menu className="w-5 h-5" />
               </Button>
             </div>
@@ -74,7 +78,7 @@ export default function Navbar() {
             </div>
 
             <div className="hidden lg:flex items-center space-x-4 px-3">
-              <Button 
+              <Button
                 onClick={handleSellClick}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white btn-shadow px-4 py-2 rounded-md flex items-center gap-2"
               >
@@ -82,7 +86,11 @@ export default function Navbar() {
               </Button>
 
               <ThemeToggle />
-              {user ? <UserActions /> : <AuthButtons onAuthClick={handleAuthClick} />}
+              {user ? (
+                <UserActions />
+              ) : (
+                <AuthButtons onAuthClick={handleAuthClick} />
+              )}
             </div>
           </div>
         </div>
@@ -104,5 +112,5 @@ export default function Navbar() {
         initialMode={authMode}
       />
     </>
-  )
+  );
 }
