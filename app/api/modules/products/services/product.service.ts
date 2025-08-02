@@ -1,6 +1,6 @@
 import { Product, type IProduct } from "../models/product.model"
 import { User } from "../../auth/models/user.model"
-import { connectDB } from "@/lib/mongoose"
+import { BaseService, type PaginationOptions, type SortOptions } from "../../shared/services/base.service"
 import mongoose from "mongoose"
 
 export interface CreateProductData {
@@ -66,18 +66,26 @@ export interface ProductFilters {
   search?: string
   seller?: string
   status?: string
+  negotiable?: boolean
+  featured?: boolean
 }
 
-export interface ProductSortOptions {
-  sortBy?: "createdAt" | "price" | "views" | "title"
-  sortOrder?: "asc" | "desc"
+export interface ProductSortOptions extends SortOptions {
+  sortBy?: "createdAt" | "price" | "views" | "title" | "updatedAt"
 }
 
-export class ProductService {
+export class ProductService extends BaseService<IProduct> {
+  constructor() {
+    super(Product, "PRODUCT")
+  }
+
+  /**
+   * Create a new product
+   */
   async createProduct(sellerId: string, productData: CreateProductData): Promise<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Creating product for seller:", sellerId)
-      await connectDB()
+      await this.ensureConnection()
 
       // Verify seller exists
       const seller = await User.findById(sellerId)
@@ -85,16 +93,14 @@ export class ProductService {
         throw new Error("Seller not found")
       }
 
-      // Create product
-      const product = new Product({
+      // Create product using base service
+      const product = await this.create({
         ...productData,
-        seller: sellerId,
+        seller: this.createObjectId(sellerId),
         status: "active",
         views: 0,
         favorites: [],
       })
-
-      await product.save()
 
       // Update seller statistics
       await User.findByIdAndUpdate(sellerId, {
@@ -107,19 +113,18 @@ export class ProductService {
       console.log("[PRODUCT SERVICE] Product created successfully:", product._id)
       return product
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Create product error:", error.message)
-      throw new Error(error.message || "Failed to create product")
+      this.handleError(error, "create")
     }
   }
 
+  /**
+   * Get product by ID with optional view increment
+   */
   async getProductById(productId: string, incrementViews = false): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Getting product by ID:", productId)
-      await connectDB()
-
-      const product = await Product.findById(productId)
-        .populate("seller", "fullName username email profile.avatar profile.location")
-        .exec()
+      
+      const product = await this.findById(productId, "seller")
 
       if (!product) {
         return null
@@ -127,7 +132,7 @@ export class ProductService {
 
       // Increment views if requested
       if (incrementViews) {
-        await Product.findByIdAndUpdate(productId, { $inc: { views: 1 } })
+        await this.updateById(productId, { $inc: { views: 1 } })
         await User.findByIdAndUpdate(product.seller._id, {
           $inc: { "statistics.totalViews": 1 },
         })
@@ -135,101 +140,101 @@ export class ProductService {
 
       return product
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Get product by ID error:", error.message)
-      throw new Error("Failed to get product")
+      this.handleError(error, "get by ID")
     }
   }
 
+  /**
+   * Get products with advanced filtering and pagination
+   */
   async getProducts(
     filters: ProductFilters = {},
     sortOptions: ProductSortOptions = {},
-    page = 1,
-    limit = 20
+    pagination: PaginationOptions = {}
   ): Promise<{
     products: IProduct[]
     total: number
     pages: number
     currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
   }> {
     try {
       console.log("[PRODUCT SERVICE] Getting products with filters:", filters)
-      await connectDB()
-
-      // Build query
-      const query: any = { status: "active" }
+      
+      // Build query filters
+      const queryFilters: any = { status: "active" }
 
       if (filters.category) {
-        query.category = filters.category
+        queryFilters.category = filters.category
       }
 
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-        query.price = {}
-        if (filters.minPrice !== undefined) query.price.$gte = filters.minPrice
-        if (filters.maxPrice !== undefined) query.price.$lte = filters.maxPrice
+        queryFilters.price = {}
+        if (filters.minPrice !== undefined) queryFilters.price.$gte = filters.minPrice
+        if (filters.maxPrice !== undefined) queryFilters.price.$lte = filters.maxPrice
       }
 
       if (filters.condition && filters.condition.length > 0) {
-        query.condition = { $in: filters.condition }
+        queryFilters.condition = { $in: filters.condition }
       }
 
       if (filters.location) {
-        if (filters.location.city) query["location.city"] = new RegExp(filters.location.city, "i")
-        if (filters.location.state) query["location.state"] = new RegExp(filters.location.state, "i")
-        if (filters.location.country) query["location.country"] = filters.location.country
+        if (filters.location.city) queryFilters["location.city"] = new RegExp(filters.location.city, "i")
+        if (filters.location.state) queryFilters["location.state"] = new RegExp(filters.location.state, "i")
+        if (filters.location.country) queryFilters["location.country"] = filters.location.country
       }
 
       if (filters.seller) {
-        query.seller = filters.seller
+        queryFilters.seller = this.createObjectId(filters.seller)
       }
 
       if (filters.status) {
-        query.status = filters.status
+        queryFilters.status = filters.status
+      }
+
+      if (filters.negotiable !== undefined) {
+        queryFilters.negotiable = filters.negotiable
+      }
+
+      if (filters.featured !== undefined) {
+        queryFilters.featured = filters.featured
       }
 
       if (filters.search) {
-        query.$text = { $search: filters.search }
+        queryFilters.$text = { $search: filters.search }
       }
 
-      // Build sort
-      const sort: any = {}
-      const { sortBy = "createdAt", sortOrder = "desc" } = sortOptions
-      sort[sortBy] = sortOrder === "desc" ? -1 : 1
-
-      // Execute query
-      const skip = (page - 1) * limit
-      const [products, total] = await Promise.all([
-        Product.find(query)
-          .populate("seller", "fullName username profile.avatar profile.location")
-          .sort(sort)
-          .skip(skip)
-          .limit(limit)
-          .exec(),
-        Product.countDocuments(query),
-      ])
-
-      const pages = Math.ceil(total / limit)
-
-      console.log(`[PRODUCT SERVICE] Found ${total} products, page ${page}/${pages}`)
+      // Use base service find method
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      )
 
       return {
-        products,
-        total,
-        pages,
-        currentPage: page,
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
       }
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Get products error:", error.message)
-      throw new Error("Failed to get products")
+      this.handleError(error, "get products")
     }
   }
 
+  /**
+   * Update product with ownership verification
+   */
   async updateProduct(productId: string, sellerId: string, updateData: UpdateProductData): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Updating product:", productId)
-      await connectDB()
-
+      
       // Find product and verify ownership
-      const product = await Product.findOne({ _id: productId, seller: sellerId })
+      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) })
       if (!product) {
         throw new Error("Product not found or you don't have permission to update it")
       }
@@ -253,34 +258,36 @@ export class ProductService {
         }
       }
 
-      // Update product
-      const updatedProduct = await Product.findByIdAndUpdate(
-        productId,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      ).populate("seller", "fullName username email profile.avatar profile.location")
+      // Update product using base service
+      const updatedProduct = await this.updateById(productId, { $set: updateData })
+      
+      // Populate seller information
+      if (updatedProduct) {
+        await updatedProduct.populate("seller", "fullName username email profile.avatar profile.location")
+      }
 
       console.log("[PRODUCT SERVICE] Product updated successfully")
       return updatedProduct
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Update product error:", error.message)
-      throw new Error(error.message || "Failed to update product")
+      this.handleError(error, "update")
     }
   }
 
+  /**
+   * Delete product with ownership verification
+   */
   async deleteProduct(productId: string, sellerId: string): Promise<void> {
     try {
       console.log("[PRODUCT SERVICE] Deleting product:", productId)
-      await connectDB()
-
+      
       // Find product and verify ownership
-      const product = await Product.findOne({ _id: productId, seller: sellerId })
+      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) })
       if (!product) {
         throw new Error("Product not found or you don't have permission to delete it")
       }
 
-      // Delete product
-      await Product.findByIdAndDelete(productId)
+      // Delete product using base service
+      await this.deleteById(productId)
 
       // Update seller statistics
       const statisticsUpdate: any = { "statistics.totalListings": -1 }
@@ -295,32 +302,33 @@ export class ProductService {
 
       console.log("[PRODUCT SERVICE] Product deleted successfully")
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Delete product error:", error.message)
-      throw new Error(error.message || "Failed to delete product")
+      this.handleError(error, "delete")
     }
   }
 
+  /**
+   * Toggle favorite status for a product
+   */
   async toggleFavorite(productId: string, userId: string): Promise<{ isFavorite: boolean }> {
     try {
       console.log("[PRODUCT SERVICE] Toggling favorite for product:", productId, "user:", userId)
-      await connectDB()
-
-      const product = await Product.findById(productId)
+      
+      const product = await this.findById(productId)
       if (!product) {
         throw new Error("Product not found")
       }
 
-      const userObjectId = new mongoose.Types.ObjectId(userId)
+      const userObjectId = this.createObjectId(userId)
       const isFavorite = product.favorites.includes(userObjectId)
 
       if (isFavorite) {
         // Remove from favorites
-        await Product.findByIdAndUpdate(productId, {
+        await this.updateById(productId, {
           $pull: { favorites: userObjectId },
         })
       } else {
         // Add to favorites
-        await Product.findByIdAndUpdate(productId, {
+        await this.updateById(productId, {
           $addToSet: { favorites: userObjectId },
         })
       }
@@ -328,109 +336,548 @@ export class ProductService {
       console.log(`[PRODUCT SERVICE] Product ${isFavorite ? "removed from" : "added to"} favorites`)
       return { isFavorite: !isFavorite }
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Toggle favorite error:", error.message)
-      throw new Error("Failed to toggle favorite")
+      this.handleError(error, "toggle favorite")
     }
   }
 
-  async getUserFavorites(userId: string, page = 1, limit = 20): Promise<{
+  /**
+   * Get user's favorite products
+   */
+  async getUserFavorites(userId: string, pagination: PaginationOptions = {}): Promise<{
     products: IProduct[]
     total: number
     pages: number
     currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
   }> {
     try {
       console.log("[PRODUCT SERVICE] Getting user favorites:", userId)
-      await connectDB()
-
-      const skip = (page - 1) * limit
-      const userObjectId = new mongoose.Types.ObjectId(userId)
-
-      const [products, total] = await Promise.all([
-        Product.find({ favorites: userObjectId, status: "active" })
-          .populate("seller", "fullName username profile.avatar profile.location")
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .exec(),
-        Product.countDocuments({ favorites: userObjectId, status: "active" }),
-      ])
-
-      const pages = Math.ceil(total / limit)
+      
+      const userObjectId = this.createObjectId(userId)
+      const result = await this.find(
+        { favorites: userObjectId, status: "active" },
+        pagination,
+        { sortBy: "createdAt", sortOrder: "desc" },
+        "seller"
+      )
 
       return {
-        products,
-        total,
-        pages,
-        currentPage: page,
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
       }
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Get user favorites error:", error.message)
-      throw new Error("Failed to get user favorites")
+      this.handleError(error, "get user favorites")
     }
   }
 
+  /**
+   * Get seller's products
+   */
   async getSellerProducts(
     sellerId: string,
     status?: string,
-    page = 1,
-    limit = 20
+    pagination: PaginationOptions = {}
   ): Promise<{
     products: IProduct[]
     total: number
     pages: number
     currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
   }> {
     try {
       console.log("[PRODUCT SERVICE] Getting seller products:", sellerId)
-      await connectDB()
-
-      const query: any = { seller: sellerId }
+      
+      const queryFilters: any = { seller: this.createObjectId(sellerId) }
       if (status) {
-        query.status = status
+        queryFilters.status = status
       }
 
-      const skip = (page - 1) * limit
-
-      const [products, total] = await Promise.all([
-        Product.find(query)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .exec(),
-        Product.countDocuments(query),
-      ])
-
-      const pages = Math.ceil(total / limit)
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        { sortBy: "createdAt", sortOrder: "desc" }
+      )
 
       return {
-        products,
-        total,
-        pages,
-        currentPage: page,
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
       }
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Get seller products error:", error.message)
-      throw new Error("Failed to get seller products")
+      this.handleError(error, "get seller products")
     }
   }
 
+  /**
+   * Get product categories with counts
+   */
   async getProductCategories(): Promise<Array<{ category: string; count: number }>> {
     try {
       console.log("[PRODUCT SERVICE] Getting product categories")
-      await connectDB()
-
-      const categories = await Product.aggregate([
+      
+      const pipeline = [
         { $match: { status: "active" } },
         { $group: { _id: "$category", count: { $sum: 1 } } },
         { $project: { category: "$_id", count: 1, _id: 0 } },
         { $sort: { count: -1 } },
-      ])
+      ]
 
-      return categories
+      return await this.aggregate(pipeline)
     } catch (error: any) {
-      console.error("[PRODUCT SERVICE] Get product categories error:", error.message)
-      throw new Error("Failed to get product categories")
+      this.handleError(error, "get product categories")
+    }
+  }
+
+  /**
+   * Search products with text search
+   */
+  async searchProducts(
+    searchTerm: string,
+    filters: ProductFilters = {},
+    pagination: PaginationOptions = {},
+    sortOptions: ProductSortOptions = {}
+  ): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Searching products:", searchTerm)
+      
+      const queryFilters = {
+        ...filters,
+        $text: { $search: searchTerm },
+        status: "active"
+      }
+
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        { ...sortOptions, sortBy: sortOptions.sortBy || "score" },
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "search products")
+    }
+  }
+
+  /**
+   * Get featured products
+   */
+  async getFeaturedProducts(pagination: PaginationOptions = {}): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting featured products")
+      
+      const result = await this.find(
+        { featured: true, status: "active" },
+        pagination,
+        { sortBy: "createdAt", sortOrder: "desc" },
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "get featured products")
+    }
+  }
+
+  /**
+   * Get products by category
+   */
+  async getProductsByCategory(
+    category: string,
+    subCategory?: string,
+    pagination: PaginationOptions = {},
+    sortOptions: ProductSortOptions = {}
+  ): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting products by category:", category, subCategory)
+      
+      const queryFilters: any = { category, status: "active" }
+      if (subCategory) {
+        queryFilters.subCategory = subCategory
+      }
+
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "get products by category")
+    }
+  }
+
+  /**
+   * Get products by location
+   */
+  async getProductsByLocation(
+    city?: string,
+    state?: string,
+    country?: string,
+    pagination: PaginationOptions = {},
+    sortOptions: ProductSortOptions = {}
+  ): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting products by location:", { city, state, country })
+      
+      const queryFilters: any = { status: "active" }
+      
+      if (city) queryFilters["location.city"] = new RegExp(city, "i")
+      if (state) queryFilters["location.state"] = new RegExp(state, "i")
+      if (country) queryFilters["location.country"] = country
+
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "get products by location")
+    }
+  }
+
+  /**
+   * Mark product as sold
+   */
+  async markAsSold(productId: string, sellerId: string): Promise<IProduct | null> {
+    try {
+      console.log("[PRODUCT SERVICE] Marking product as sold:", productId)
+      
+      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) })
+      if (!product) {
+        throw new Error("Product not found or you don't have permission to update it")
+      }
+
+      const updatedProduct = await this.updateById(productId, { status: "sold" })
+      
+      // Update seller statistics
+      await User.findByIdAndUpdate(sellerId, {
+        $inc: {
+          "statistics.activeListings": -1,
+          "statistics.soldItems": 1,
+        },
+      })
+
+      return updatedProduct
+    } catch (error: any) {
+      this.handleError(error, "mark as sold")
+    }
+  }
+
+  /**
+   * Renew product (extend expiration)
+   */
+  async renewProduct(productId: string, sellerId: string): Promise<IProduct | null> {
+    try {
+      console.log("[PRODUCT SERVICE] Renewing product:", productId)
+      
+      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) })
+      if (!product) {
+        throw new Error("Product not found or you don't have permission to update it")
+      }
+
+      const newExpiryDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
+      
+      const updatedProduct = await this.updateById(productId, {
+        status: "active",
+        expiresAt: newExpiryDate,
+      })
+
+      return updatedProduct
+    } catch (error: any) {
+      this.handleError(error, "renew product")
+    }
+  }
+
+  /**
+   * Get product statistics
+   */
+  async getProductStatistics(): Promise<{
+    totalProducts: number
+    activeProducts: number
+    soldProducts: number
+    expiredProducts: number
+    totalViews: number
+    averagePrice: number
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting product statistics")
+      
+      const pipeline = [
+        {
+          $group: {
+            _id: null,
+            totalProducts: { $sum: 1 },
+            activeProducts: { $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] } },
+            soldProducts: { $sum: { $cond: [{ $eq: ["$status", "sold"] }, 1, 0] } },
+            expiredProducts: { $sum: { $cond: [{ $lt: ["$expiresAt", new Date()] }, 1, 0] } },
+            totalViews: { $sum: "$views" },
+            averagePrice: { $avg: "$price" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            totalProducts: 1,
+            activeProducts: 1,
+            soldProducts: 1,
+            expiredProducts: 1,
+            totalViews: 1,
+            averagePrice: { $round: ["$averagePrice", 2] }
+          }
+        }
+      ]
+
+      const result = await this.aggregate(pipeline)
+      return result[0] || {
+        totalProducts: 0,
+        activeProducts: 0,
+        soldProducts: 0,
+        expiredProducts: 0,
+        totalViews: 0,
+        averagePrice: 0
+      }
+    } catch (error: any) {
+      this.handleError(error, "get product statistics")
+    }
+  }
+
+  /**
+   * Get recent products
+   */
+  async getRecentProducts(limit: number = 10): Promise<IProduct[]> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting recent products")
+      
+      const result = await this.find(
+        { status: "active" },
+        { page: 1, limit },
+        { sortBy: "createdAt", sortOrder: "desc" },
+        "seller"
+      )
+
+      return result.data
+    } catch (error: any) {
+      this.handleError(error, "get recent products")
+    }
+  }
+
+  /**
+   * Get trending products (most viewed)
+   */
+  async getTrendingProducts(limit: number = 10): Promise<IProduct[]> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting trending products")
+      
+      const result = await this.find(
+        { status: "active" },
+        { page: 1, limit },
+        { sortBy: "views", sortOrder: "desc" },
+        "seller"
+      )
+
+      return result.data
+    } catch (error: any) {
+      this.handleError(error, "get trending products")
+    }
+  }
+
+  /**
+   * Get similar products
+   */
+  async getSimilarProducts(
+    productId: string,
+    limit: number = 6
+  ): Promise<IProduct[]> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting similar products for:", productId)
+      
+      const product = await this.findById(productId)
+      if (!product) {
+        throw new Error("Product not found")
+      }
+
+      const result = await this.find(
+        {
+          _id: { $ne: productId },
+          category: product.category,
+          status: "active"
+        },
+        { page: 1, limit },
+        { sortBy: "createdAt", sortOrder: "desc" },
+        "seller"
+      )
+
+      return result.data
+    } catch (error: any) {
+      this.handleError(error, "get similar products")
+    }
+  }
+
+  /**
+   * Bulk update products (admin function)
+   */
+  async bulkUpdateProducts(
+    filters: ProductFilters,
+    updateData: UpdateProductData
+  ): Promise<{ modifiedCount: number }> {
+    try {
+      console.log("[PRODUCT SERVICE] Bulk updating products")
+      
+      const result = await this.updateMany(filters, { $set: updateData })
+      return result
+    } catch (error: any) {
+      this.handleError(error, "bulk update products")
+    }
+  }
+
+  /**
+   * Get products by price range
+   */
+  async getProductsByPriceRange(
+    minPrice: number,
+    maxPrice: number,
+    pagination: PaginationOptions = {},
+    sortOptions: ProductSortOptions = {}
+  ): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting products by price range:", { minPrice, maxPrice })
+      
+      const result = await this.find(
+        {
+          status: "active",
+          price: { $gte: minPrice, $lte: maxPrice }
+        },
+        pagination,
+        sortOptions,
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "get products by price range")
+    }
+  }
+
+  /**
+   * Get products by condition
+   */
+  async getProductsByCondition(
+    condition: string,
+    pagination: PaginationOptions = {},
+    sortOptions: ProductSortOptions = {}
+  ): Promise<{
+    products: IProduct[]
+    total: number
+    pages: number
+    currentPage: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      console.log("[PRODUCT SERVICE] Getting products by condition:", condition)
+      
+      const result = await this.find(
+        { condition, status: "active" },
+        pagination,
+        sortOptions,
+        "seller"
+      )
+
+      return {
+        products: result.data,
+        total: result.total,
+        pages: result.pages,
+        currentPage: result.currentPage,
+        hasNext: result.hasNext,
+        hasPrev: result.hasPrev
+      }
+    } catch (error: any) {
+      this.handleError(error, "get products by condition")
     }
   }
 }

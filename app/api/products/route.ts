@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
     const page = Number(searchParams.get("page")) || 1
     const limit = Number(searchParams.get("limit")) || 20
 
-    const result = await productService.getProducts(filters, sortOptions, page, limit)
+    const result = await productService.getProducts(filters, sortOptions, { page, limit })
 
     console.log(`[PRODUCTS API] Returning ${result.products.length} products`)
 
