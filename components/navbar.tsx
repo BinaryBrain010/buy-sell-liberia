@@ -15,7 +15,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/components/auth-provider";
-import { Plus, User, Settings, LogOut, Heart, Search, Menu, X, MoreVertical } from "lucide-react";
+import {
+  Plus,
+  User,
+  Settings,
+  LogOut,
+  Heart,
+  Search,
+  Menu,
+  X,
+  MoreVertical,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 
@@ -133,9 +143,7 @@ export function Navbar() {
               </div>
             </div>
 
-            <div
-              className={`hidden lg:flex items-center space-x-6 px-4`}
-            >
+            <div className={`hidden lg:flex items-center space-x-6 px-4`}>
               <Link
                 href="/categories"
                 className={`text-sm font-medium transition-colors ${
@@ -201,19 +209,24 @@ export function Navbar() {
 
               <ThemeToggle />
 
-              <Link href="/sell">
-                <Button
-                  size="sm"
-                  className={`font-medium h-10 px-4 transition-colors flex items-center space-x-2 rounded-full ${
-                    theme === "dark"
-                      ? "bg-white text-black hover:bg-gray-100"
-                      : "bg-black text-white hover:bg-gray-800"
-                  }`}
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Sell</span>
-                </Button>
-              </Link>
+              <Button
+                size="sm"
+                className={`font-medium h-10 px-4 transition-colors flex items-center space-x-2 rounded-full ${
+                  theme === "dark"
+                    ? "bg-white text-black hover:bg-gray-100"
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+                onClick={() => {
+                  if (!user) {
+                    handleAuthClick("login");
+                  } else {
+                    window.location.href = "/sell";
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Sell</span>
+              </Button>
 
               {user ? (
                 <div className="flex items-center space-x-3">
@@ -226,7 +239,10 @@ export function Navbar() {
                       {user.name || "User"}
                     </span>
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar || ""} alt={user.name || ""} />
+                      <AvatarImage
+                        src={user.avatar || ""}
+                        alt={user.name || ""}
+                      />
                       <AvatarFallback
                         className={`transition-colors ${
                           theme === "dark"
@@ -245,7 +261,9 @@ export function Navbar() {
                         variant="ghost"
                         size="sm"
                         className={`relative h-8 w-8 rounded-full p-0 transition-colors ${
-                          theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-100"
+                          theme === "dark"
+                            ? "hover:bg-white/10"
+                            : "hover:bg-gray-100"
                         }`}
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -264,7 +282,9 @@ export function Navbar() {
                           <p className="font-medium">{user.name || "User"}</p>
                           <p
                             className={`w-[200px] truncate text-sm ${
-                              theme === "dark" ? "text-gray-400" : "text-gray-600"
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-600"
                             }`}
                           >
                             {user.email || "No email"}
@@ -272,11 +292,15 @@ export function Navbar() {
                         </div>
                       </div>
                       <DropdownMenuSeparator
-                        className={theme === "dark" ? "bg-white/10" : "bg-gray-200"}
+                        className={
+                          theme === "dark" ? "bg-white/10" : "bg-gray-200"
+                        }
                       />
                       <DropdownMenuItem
                         className={`transition-colors ${
-                          theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-100"
+                          theme === "dark"
+                            ? "hover:bg-white/10"
+                            : "hover:bg-gray-100"
                         }`}
                       >
                         <User className="mr-2 h-4 w-4" />
@@ -284,10 +308,15 @@ export function Navbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className={`transition-colors ${
-                          theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-100"
+                          theme === "dark"
+                            ? "hover:bg-white/10"
+                            : "hover:bg-gray-100"
                         }`}
                       >
-                        <Link href="/dashboard" className="flex items-center w-full">
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center w-full"
+                        >
                           <Settings className="mr-2 h-4 w-4" />
                           Dashboard
                         </Link>
@@ -295,7 +324,9 @@ export function Navbar() {
                       <DropdownMenuItem
                         onClick={handleLogout}
                         className={`transition-colors ${
-                          theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-100"
+                          theme === "dark"
+                            ? "hover:bg-white/10"
+                            : "hover:bg-gray-100"
                         }`}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
@@ -425,7 +456,9 @@ export function Navbar() {
                     variant="ghost"
                     size="sm"
                     className={`w-10 h-10 rounded-full p-0 transition-colors ${
-                      theme === "dark" ? "hover:bg-white/10" : "hover:bg-gray-100"
+                      theme === "dark"
+                        ? "hover:bg-white/10"
+                        : "hover:bg-gray-100"
                     }`}
                   >
                     <Heart className="text-red-500 h-4 w-4" />
@@ -490,7 +523,10 @@ export function Navbar() {
                 >
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.avatar || ""} alt={user.name || ""} />
+                      <AvatarImage
+                        src={user.avatar || ""}
+                        alt={user.name || ""}
+                      />
                       <AvatarFallback
                         className={`transition-colors ${
                           theme === "dark"
@@ -524,7 +560,7 @@ export function Navbar() {
                         theme === "dark"
                           ? "text-white hover:bg-white/10"
                           : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                      }`}
                     >
                       <LogOut className="h-4 w-4" />
                     </Button>
