@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import StepIndicator from './stepIndicator'
 import Step1BasicInfo from './step1BasicInfo'
 import Step2ImagesLocation from './step2ImagesLocation'
@@ -17,7 +18,8 @@ import {
   FormErrors
 } from './types'
 
-export default function         SellForm() {
+export default function SellForm() {
+  const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -60,20 +62,33 @@ export default function         SellForm() {
     const newErrors: FormErrors = {}
 
     if (step === 1) {
-      if (!formData.title.trim()) newErrors.title = 'Title is required'
-      if (!formData.description.trim()) newErrors.description = 'Description is required'
-      if (!formData.price || formData.price <= 0) newErrors.price = 'Enter a valid price'
-      if (!formData.category) newErrors.category = 'Category is required'
-      if (!formData.subCategory) newErrors.subCategory = 'Subcategory is required'
+      if (!formData.title.trim() || formData.title.trim().length < 5)
+        newErrors.title = 'Title must be at least 5 characters'
+
+      if (!formData.description.trim() || formData.description.trim().length < 20)
+        newErrors.description = 'Description must be at least 20 characters'
+
+      if (!formData.price || formData.price <= 0)
+        newErrors.price = 'Enter a valid price'
+
+      if (!formData.category)
+        newErrors.category = 'Category is required'
+
+      if (!formData.subCategory)
+        newErrors.subCategory = 'Subcategory is required'
     }
 
     if (step === 2) {
-      if (!formData.images.length) newErrors.images = 'At least one image is required'
+      if (!formData.images.length)
+        newErrors.images = 'At least one image is required'
+
       const { city, state, country } = formData.location
       if (!city.trim()) newErrors.city = 'City is required'
       if (!state.trim()) newErrors.state = 'State is required'
       if (!country.trim()) newErrors.country = 'Country is required'
-      if (!formData.contactInfo.phone.trim()) newErrors.phone = 'Phone number is required'
+
+      if (!formData.contactInfo.phone.trim())
+        newErrors.phone = 'Phone number is required'
     }
 
     setErrors(newErrors)
@@ -99,16 +114,13 @@ export default function         SellForm() {
 
     try {
       const payload = new FormData()
-      
-      // Append images as FormData
-      formData.images.forEach((file, index) => {
+
+      formData.images.forEach((file) => {
         payload.append('images', file)
       })
-      
-      // Append title image index
+
       payload.append('titleImageIndex', formData.titleImageIndex.toString())
-      
-      // Append other form data
+
       const formDataToSend = {
         title: formData.title,
         description: formData.description,
@@ -123,21 +135,24 @@ export default function         SellForm() {
         specifications: formData.specifications,
         showPhoneNumber: formData.showPhoneNumber,
       }
-      
-      // Append JSON data
+
       payload.append('formData', JSON.stringify(formDataToSend))
 
       const res = await fetch('/api/products', {
         method: 'POST',
-        body: payload
+        body: payload,
       })
 
-      if (!res.ok) throw new Error('Failed to create listing')
-      
-      toast.success('Product listed successfully!')
-      // Reset form or redirect
-    } catch (err) {
-      toast.error('Failed to create product')
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Failed to create listing')
+      }
+
+      toast.success('Product listed successfully! Redirecting in 3 seconds...')
+      await new Promise((res) => setTimeout(res, 3000))
+      router.push('/dashboard')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create product')
     } finally {
       setLoading(false)
     }
@@ -179,26 +194,25 @@ export default function         SellForm() {
               />
             )}
 
-            {/* Navigation Buttons */}
             <div className="flex items-center justify-between pt-6 border-t">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={prevStep} 
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
                 disabled={currentStep === 1}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Previous
               </Button>
-              
+
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Step {currentStep} of 3</span>
               </div>
-              
+
               {currentStep < 3 ? (
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   onClick={nextStep}
                   className="flex items-center gap-2"
                 >
@@ -206,8 +220,8 @@ export default function         SellForm() {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={loading}
                   className="flex items-center gap-2"
                 >
@@ -227,7 +241,6 @@ export default function         SellForm() {
             </div>
           </form>
 
-          {/* Review Card */}
           {currentStep === 3 && (
             <div className="mt-8 pt-6 border-t">
               <ReviewCard formData={formData} />

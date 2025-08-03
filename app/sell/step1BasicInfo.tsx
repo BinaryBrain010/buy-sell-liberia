@@ -16,7 +16,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Package, Tag, DollarSign, Info } from 'lucide-react';
+import { Package, DollarSign } from 'lucide-react';
 import { Step1BasicInfoProps, CONDITIONS, Condition } from './types';
 
 const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
@@ -30,7 +30,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Basic Info Card */}
+      {/* Basic Info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -41,9 +41,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
         <CardContent className="space-y-4">
           {/* Title */}
           <div>
-            <Label htmlFor="title" className="text-sm font-medium">
-              Title *
-            </Label>
+            <Label htmlFor="title">Title *</Label>
             <Input
               id="title"
               placeholder="Enter product title"
@@ -60,9 +58,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           {/* Category & Subcategory */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="category" className="text-sm font-medium">
-                Category *
-              </Label>
+              <Label htmlFor="category">Category *</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => {
@@ -89,9 +85,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 
             {!!selectedCategory?.subcategories?.length && (
               <div>
-                <Label htmlFor="subCategory" className="text-sm font-medium">
-                  Subcategory *
-                </Label>
+                <Label htmlFor="subCategory">Subcategory *</Label>
                 <Select
                   value={formData.subCategory}
                   onValueChange={(value) => {
@@ -117,9 +111,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 
           {/* Description */}
           <div>
-            <Label htmlFor="description" className="text-sm font-medium">
-              Description *
-            </Label>
+            <Label htmlFor="description">Description *</Label>
             <Textarea
               id="description"
               placeholder="Describe your product in detail..."
@@ -135,7 +127,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
         </CardContent>
       </Card>
 
-      {/* Price & Condition Card */}
+      {/* Price & Condition */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -146,9 +138,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
         <CardContent className="space-y-4">
           {/* Price */}
           <div>
-            <Label htmlFor="price" className="text-sm font-medium">
-              Price *
-            </Label>
+            <Label htmlFor="price">Price *</Label>
             <Input
               id="price"
               type="number"
@@ -165,7 +155,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 
           {/* Condition */}
           <div>
-            <Label className="text-sm font-medium">Condition *</Label>
+            <Label>Condition *</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
               {CONDITIONS.map((condition) => (
                 <div
@@ -175,7 +165,10 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                       ? 'border-blue-500 bg-blue-50 text-blue-900'
                       : 'border-border hover:border-muted-foreground/50 bg-background'
                   }`}
-                  onClick={() => setFormData(prev => ({ ...prev, condition: condition.value }))}
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, condition: condition.value }));
+                    setErrors(prev => ({ ...prev, condition: '' }));
+                  }}
                 >
                   <div className="font-medium text-sm">{condition.label}</div>
                   <div className={`text-xs mt-1 ${
@@ -188,6 +181,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 </div>
               ))}
             </div>
+            {errors.condition && <p className="text-sm text-red-500 mt-1">{errors.condition}</p>}
           </div>
 
           {/* Negotiable */}
@@ -210,3 +204,34 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 };
 
 export default Step1BasicInfo;
+
+// ✅ Validation function
+export const validateStep1 = (formData: Step1BasicInfoProps['formData']) => {
+  const newErrors: Partial<Record<keyof typeof formData, string>> = {};
+
+  if (!formData.title || formData.title.trim().length < 5) {
+    newErrors.title = "Title must be at least 5 characters";
+  }
+
+  if (!formData.description || formData.description.trim().length < 20) {
+    newErrors.description = "Description must be at least 20 characters";
+  }
+
+  if (!formData.category) {
+    newErrors.category = "Category is required";
+  }
+
+  if (!formData.subCategory) {
+    newErrors.subCategory = "Subcategory is required";
+  }
+
+  if (!formData.price || formData.price <= 0) {
+    newErrors.price = "Price must be greater than 0";
+  }
+
+  if (!formData.condition) {
+    newErrors.condition = "Condition is required";
+  }
+
+  return newErrors;
+};
