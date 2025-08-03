@@ -8,7 +8,7 @@ import { ThreeBackground } from '@/components/three-background'
 
 export function HeroSection() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [location, setLocation] = useState("")
+  const [location, setLocation] = useState<string>("")
   const router = useRouter()
 
   const categories = [
