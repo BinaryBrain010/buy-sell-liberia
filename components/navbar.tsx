@@ -3,35 +3,43 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthModal } from "@/components/auth-modal"
 import { useAuth } from "@/components/auth-provider"
-import { Search, Plus, User, Settings, LogOut, Heart, MessageCircle, Bell } from "lucide-react"
-import { motion } from "framer-motion"
+import { Plus, Heart, MessageCircle, Bell, Menu, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import MobileMenu from "./navbar/mobileMenu"
+
+import DropDownMenu from "@/components/navbar/dropDownMenu"
+import SearchBar from "@/components/navbar/searchBar"
+import NavigationLinks from "@/components/navbar/navigationLinks"
 
 export function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<"login" | "signup">("login")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { user, logout } = useAuth()
 
   const handleAuthClick = (mode: "login" | "signup") => {
     setAuthMode(mode)
     setIsAuthModalOpen(true)
+    setMobileMenuOpen(false) // Close mobile menu when auth modal opens
   }
 
   const handleModalClose = (open: boolean) => {
     setIsAuthModalOpen(open)
     // Don't reset authMode here - let it stay as user intended
+  }
+
+  const handleSellClick = () => {
+    // Handle sell button click for logged in users
+    // Add your logic here
+    setMobileMenuOpen(false) // Close mobile menu
+  }
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen)
   }
 
   return (
@@ -47,40 +55,19 @@ export function Navbar() {
               <span className="font-bold text-xl">BuySell</span>
             </Link>
 
-            {/* Search Bar */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input placeholder="Search for anything..." className="pl-10 glass border-0 input-shadow" />
-              </div>
-            </div>
+            {/* Search Bar - Hidden on mobile */}
+            <SearchBar />
 
-            {/* Navigation Links */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <Link href="/categories" className="text-muted-foreground hover:text-primary transition-colors">
-                Categories
-              </Link>
-              <Link href="/products" className="text-muted-foreground hover:text-primary transition-colors">
-                Products
-              </Link>
-              <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
-                About
-              </Link>
-              <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors">
-                Contact
-              </Link>
-              <Link href="/help" className="text-muted-foreground hover:text-primary transition-colors">
-                Help
-              </Link>
-            </div>
+            {/* Navigation Links - Hidden on mobile */}
+            <NavigationLinks />
 
-            {/* Right Side */}
-            <div className="flex items-center space-x-2 lg:space-x-4">
+            {/* Right Side - Desktop */}
+            <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
               {/* Prominent Sell Button for all users */}
               <Button 
                 variant="default" 
                 size="sm" 
-                onClick={() => user ? undefined : handleAuthClick("signup")}
+                onClick={() => user ? handleSellClick() : handleAuthClick("signup")}
                 className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white btn-shadow"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -91,7 +78,6 @@ export function Navbar() {
 
               {user ? (
                 <>
-
                   {/* User Action Icons - Responsive */}
                   <div className="flex items-center space-x-1 lg:space-x-2">
                     <Button variant="ghost" size="sm" className="relative p-2 btn-shadow">
@@ -116,38 +102,7 @@ export function Navbar() {
                     </Button>
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-8 w-8 rounded-full btn-shadow">
-                        <Avatar className="h-8 w-8 card-shadow">
-                          <AvatarImage src="" alt={user.name || ""} />
-                          <AvatarFallback>{user.name?.charAt(0) || user.email?.charAt(0) || "U"}</AvatarFallback>
-                        </Avatar>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 glass border-0 modal-shadow" align="end">
-                      <div className="flex items-center justify-start gap-2 p-2">
-                        <div className="flex flex-col space-y-1 leading-none">
-                          <p className="font-medium">{user.name || "User"}</p>
-                          <p className="w-[200px] truncate text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                      </div>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Settings className="mr-2 h-4 w-4" />
-                        Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={logout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Log out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <DropDownMenu />
                 </>
               ) : (
                 <div className="flex items-center space-x-2">
@@ -160,9 +115,37 @@ export function Navbar() {
                 </div>
               )}
             </div>
+
+            {/* Mobile Menu Toggle Button - Only visible on mobile */}
+            <div className="md:hidden flex items-center space-x-2">
+              <ThemeToggle />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleMobileMenu} 
+                className="p-2 btn-shadow"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </motion.nav>
+
+      {/* Mobile Menu - Animated */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <MobileMenu 
+            isOpen={mobileMenuOpen} 
+            onAuthClick={handleAuthClick} 
+            onSellClick={handleSellClick}
+          />
+        )}
+      </AnimatePresence>
 
       <AuthModal
         isOpen={isAuthModalOpen}
