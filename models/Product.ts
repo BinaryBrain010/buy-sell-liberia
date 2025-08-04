@@ -96,6 +96,51 @@ export interface IContact {
   preferredMethod?: "phone" | "whatsapp" | "email";
 }
 
+// Product details schema
+export interface IProductDetails {
+  condition?: "new" | "used" | "refurbished";
+  brand?: string;
+  model?: string;
+  year?: number;
+  warranty?: boolean;
+  warrantyPeriod?: string;
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: string;
+  };
+  weight?: {
+    value?: number;
+    unit?: string;
+  };
+}
+
+const productDetailsSchema = new Schema<IProductDetails>(
+  {
+    condition: {
+      type: String,
+      enum: ["new", "used", "refurbished"],
+    },
+    brand: String,
+    model: String,
+    year: Number,
+    warranty: Boolean,
+    warrantyPeriod: String,
+    dimensions: {
+      length: Number,
+      width: Number,
+      height: Number,
+      unit: String,
+    },
+    weight: {
+      value: Number,
+      unit: String,
+    },
+  },
+  { _id: false }
+);
+
 export interface IProduct extends Document {
   user_id: mongoose.Types.ObjectId;
   title: string;
@@ -105,12 +150,14 @@ export interface IProduct extends Document {
   price: IPrice;
   location: ILocation;
   contact: IContact;
+  details: IProductDetails;
   images: IImage[];
   customFields: ICustomFieldValue[];
   status: "active" | "sold" | "expired" | "removed" | "pending";
   listingType: "sale" | "rent" | "service" | "job";
   featured: boolean;
   views: number;
+  added_at: Date;
   expires_at: Date;
   renewed_at?: Date;
   tags: string[];
@@ -201,6 +248,10 @@ const productSchema = new Schema<IProduct>(
         default: "phone",
       },
     },
+    details: {
+      type: productDetailsSchema,
+      default: () => ({}),
+    },
     images: {
       type: [imageSchema],
       validate: {
@@ -228,6 +279,10 @@ const productSchema = new Schema<IProduct>(
     views: {
       type: Number,
       default: 0,
+    },
+    added_at: {
+      type: Date,
+      default: Date.now,
     },
     expires_at: {
       type: Date,
@@ -264,9 +319,9 @@ productSchema.index({ category_id: 1, subcategory_id: 1 });
 productSchema.index({ "location.city": 1, "location.state": 1 });
 productSchema.index({ "price.amount": 1 });
 productSchema.index({ status: 1, expires_at: 1 });
-productSchema.index({ created_at: -1 });
+productSchema.index({ added_at: -1 });
 productSchema.index({ searchText: "text", title: "text", description: "text" });
-productSchema.index({ featured: -1, created_at: -1 });
+productSchema.index({ featured: -1, added_at: -1 });
 
 // Pre-save middleware to generate slug and search text
 productSchema.pre<IProduct>("save", function (next) {
@@ -291,6 +346,8 @@ productSchema.pre<IProduct>("save", function (next) {
     customFieldsText,
     this.location.city,
     this.location.state,
+    this.details.brand || "",
+    this.details.model || "",
   ]
     .join(" ")
     .toLowerCase();
@@ -359,7 +416,7 @@ productSchema.statics.findActiveProducts = function (
     ...filters,
     status: "active",
     expires_at: { $gt: new Date() },
-  }).sort({ featured: -1, created_at: -1 });
+  }).sort({ featured: -1, added_at: -1 });
 };
 
 productSchema.statics.findByCategory = function (
@@ -374,7 +431,7 @@ productSchema.statics.findByCategory = function (
   if (subcategoryId) {
     query.subcategory_id = subcategoryId;
   }
-  return this.find(query).sort({ featured: -1, created_at: -1 });
+  return this.find(query).sort({ featured: -1, added_at: -1 });
 };
 
 productSchema.statics.findByUser = function (
@@ -385,7 +442,7 @@ productSchema.statics.findByUser = function (
   if (!includeExpired) {
     query.status = { $ne: "removed" };
   }
-  return this.find(query).sort({ created_at: -1 });
+  return this.find(query).sort({ added_at: -1 });
 };
 
 productSchema.statics.searchProducts = function (
@@ -401,7 +458,7 @@ productSchema.statics.searchProducts = function (
   return this.find(query, { score: { $meta: "textScore" } }).sort({
     score: { $meta: "textScore" },
     featured: -1,
-    created_at: -1,
+    added_at: -1,
   });
 };
 
@@ -434,13 +491,37 @@ productSchema.virtual("formattedPrice").get(function (this: IProduct) {
 productSchema.virtual("timeAgo").get(function (this: IProduct) {
   const now = new Date();
   const diffTime = Math.abs(
-    now.getTime() - (this.created_at?.getTime() ?? now.getTime())
+    now.getTime() - (this.added_at?.getTime() ?? now.getTime())
   );
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays === 1) return "1 day ago";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-  return `${Math.ceil(diffDays / 30)} months ago`;
+  const diffSeconds = Math.floor(diffTime / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) {
+    return `${diffSeconds} second${diffSeconds === 1 ? "" : "s"} ago`;
+  }
+  if (diffMinutes < 60) {
+    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  }
+  if (diffDays === 1) {
+    return "1 day ago";
+  }
+  if (diffDays < 7) {
+    return `${diffDays} days ago`;
+  }
+  if (diffDays < 30) {
+    return `${Math.floor(diffDays / 7)} weeks ago`;
+  }
+  return `${Math.floor(diffDays / 30)} months ago`;
+});
+
+// Ensure virtual fields are serialized
+productSchema.set("toJSON", {
+  virtuals: true,
 });
 
 const Product: Model<IProduct> = mongoose.model<IProduct>(

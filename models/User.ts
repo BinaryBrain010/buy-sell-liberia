@@ -2,6 +2,33 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
+// Product listing schema
+type ProductListing = {
+  product_id: mongoose.Types.ObjectId;
+  listed_at: Date;
+  status: "active" | "sold" | "draft" | "archived";
+};
+
+const productListingSchema = new Schema<ProductListing>(
+  {
+    product_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+    listed_at: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ["active", "sold", "draft", "archived"],
+      default: "active",
+    },
+  },
+  { _id: false }
+);
+
 // Liked product schema
 type LikedProduct = {
   product_id: mongoose.Types.ObjectId;
@@ -170,6 +197,7 @@ export interface IUser extends Document {
   profile: Profile;
   preferences: Preferences;
   activity: Activity;
+  listedProducts: ProductListing[];
   likedProducts: LikedProduct[];
   following: mongoose.Types.ObjectId[];
   followers: mongoose.Types.ObjectId[];
@@ -187,6 +215,8 @@ export interface IUser extends Document {
   displayName?: string;
   stats?: any;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  addProductListing(productId: mongoose.Types.ObjectId, status?: ProductListing["status"]): Promise<IUser>;
+  updateProductListingStatus(productId: mongoose.Types.ObjectId, status: ProductListing["status"]): Promise<IUser>;
   likeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   unlikeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   hasLikedProduct(productId: mongoose.Types.ObjectId): boolean;
@@ -247,6 +277,11 @@ const userSchema = new Schema<IUser>(
       type: activitySchema,
       default: () => ({}),
     },
+    // Listed products
+    listedProducts: {
+      type: [productListingSchema],
+      default: [],
+    },
     // Liked products
     likedProducts: {
       type: [likedProductSchema],
@@ -303,6 +338,7 @@ const userSchema = new Schema<IUser>(
 // Create indexes
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ phone: 1 }, { sparse: true, unique: true });
+userSchema.index({ "listedProducts.product_id": 1 });
 userSchema.index({ "likedProducts.product_id": 1 });
 userSchema.index({ "activity.lastActive": -1 });
 
@@ -354,11 +390,53 @@ userSchema.pre<IUser>("save", function (next) {
   next();
 });
 
+// Pre-save middleware to update activity counts
+userSchema.pre<IUser>("save", function (next) {
+  this.activity.totalListings = this.listedProducts.length;
+  this.activity.activeListings = this.listedProducts.filter(
+    (listing: ProductListing) => listing.status === "active"
+  ).length;
+  this.activity.soldItems = this.listedProducts.filter(
+    (listing: ProductListing) => listing.status === "sold"
+  ).length;
+  next();
+});
+
 // Instance methods
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.methods.addProductListing = function (
+  productId: mongoose.Types.ObjectId,
+  status: ProductListing["status"] = "active"
+): Promise<IUser> {
+  const alreadyListed = this.listedProducts.some(
+    (listing: ProductListing) => listing.product_id.toString() === productId.toString()
+  );
+  if (!alreadyListed) {
+    this.listedProducts.push({
+      product_id: productId,
+      listed_at: new Date(),
+      status,
+    });
+  }
+  return this.save();
+};
+
+userSchema.methods.updateProductListingStatus = function (
+  productId: mongoose.Types.ObjectId,
+  status: ProductListing["status"]
+): Promise<IUser> {
+  const listing = this.listedProducts.find(
+    (listing: ProductListing) => listing.product_id.toString() === productId.toString()
+  );
+  if (listing) {
+    listing.status = status;
+  }
+  return this.save();
 };
 
 userSchema.methods.likeProduct = function (

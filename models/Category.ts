@@ -22,6 +22,7 @@ const customFieldSchema = new Schema<ICustomField>(
     fieldName: {
       type: String,
       required: true,
+      trim: true,
     },
     fieldType: {
       type: String,
@@ -31,6 +32,7 @@ const customFieldSchema = new Schema<ICustomField>(
     label: {
       type: String,
       required: true,
+      trim: true,
     },
     required: {
       type: Boolean,
@@ -39,6 +41,7 @@ const customFieldSchema = new Schema<ICustomField>(
     options: [
       {
         type: String,
+        trim: true,
       },
     ],
     placeholder: String,
@@ -60,6 +63,7 @@ export interface ISubcategory {
   isActive?: boolean;
   sortOrder?: number;
   customFields?: ICustomField[];
+  products?: any[]; // Added to support dynamic product population
   _id?: mongoose.Types.ObjectId;
 }
 
@@ -68,12 +72,17 @@ const subcategorySchema = new Schema<ISubcategory>(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     slug: {
       type: String,
       required: true,
+      trim: true,
     },
-    description: String,
+    description: {
+      type: String,
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -109,17 +118,22 @@ const categorySchema = new Schema<ICategory>(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     slug: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     icon: {
       type: String,
       required: true,
     },
-    description: String,
+    description: {
+      type: String,
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -135,10 +149,22 @@ const categorySchema = new Schema<ICategory>(
   }
 );
 
-categorySchema.index({ slug: 1 });
+// Create indexes for efficient queries
+categorySchema.index({ slug: 1 }, { unique: true });
 categorySchema.index({ "subcategories.slug": 1 });
 categorySchema.index({ sortOrder: 1 });
 
+// Pre-save middleware to ensure unique subcategory slugs within a category
+categorySchema.pre<ICategory>("save", function (next) {
+  const slugs = this.subcategories.map((sub) => sub.slug);
+  const uniqueSlugs = new Set(slugs);
+  if (slugs.length !== uniqueSlugs.size) {
+    return next(new Error("Subcategory slugs must be unique within a category"));
+  }
+  next();
+});
+
+// Instance methods
 categorySchema.methods.getSubcategory = function (
   subcategoryId: mongoose.Types.ObjectId
 ): ISubcategory | undefined {
@@ -153,13 +179,19 @@ categorySchema.methods.getSubcategoryBySlug = function (
   return this.subcategories.find((sub: ISubcategory) => sub.slug === slug);
 };
 
+// Static methods
 categorySchema.statics.findActiveCategories = function () {
   return this.find({ isActive: true }).sort({ sortOrder: 1 });
 };
 
 categorySchema.statics.findBySlug = function (slug: string) {
-  return this.findOne({ slug: slug, isActive: true });
+  return this.findOne({ slug, isActive: true });
 };
+
+// Ensure virtual fields are serialized
+categorySchema.set("toJSON", {
+  virtuals: true,
+});
 
 const Category: Model<ICategory> = mongoose.model<ICategory>(
   "Category",
