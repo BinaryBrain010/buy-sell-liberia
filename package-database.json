@@ -4,11 +4,11 @@
   "description": "Database models and schemas for marketplace listing system",
   "main": "models/index.js",
   "scripts": {
-    "seed:categories": "node seeders/categorySeeder.js",
-    "seed:all": "node seeders/categorySeeder.js",
-    "db:init": "node -e \"require('./models').utils.initializeDatabase()\"",
-    "db:cleanup": "node -e \"require('./models').utils.cleanupExpiredProducts()\"",
-    "db:stats": "node -e \"require('./models').utils.getMarketplaceStats().then(console.log)\""
+    "seed:categories": "ts-node seeders/categorySeeder.ts",
+    "seed:all": "ts-node seeders/categorySeeder.ts",
+    "db:init": "ts-node -e \"require('./models').utils.initializeDatabase()\"",
+    "db:cleanup": "ts-node -e \"require('./models').utils.cleanupExpiredProducts()\"",
+    "db:stats": "ts-node -e \"require('./models').utils.getMarketplaceStats().then(console.log)\""
   },
   "dependencies": {
     "mongoose": "^8.0.0",

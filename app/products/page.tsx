@@ -326,337 +326,327 @@ export default function ProductsPage() {
           </div>
 
           {/* Products Grid/List */}
-          {productsLoading ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading products...</p>
-            </div>
-          ) : products.length > 0 ? (
-            <>
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid gap-6 mb-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                    : "space-y-4 mb-8"
-                }
-              >
-                {products.map((product: any, index) => (
-                  <motion.div
-                    key={product._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className={viewMode === "list" ? "w-full" : ""}
-                  >
-                    {viewMode === "grid" ? (
-                      <ProductCard
-                        product={product}
-                        variant="compact"
-                        onLike={(productId) => {
-                          // TODO: Implement like functionality
-                          console.log("Liked product:", productId);
-                        }}
-                      />
-                    ) : (
-                      <Card className="overflow-hidden border-0 card-shadow hover:shadow-lg transition-all duration-300 cursor-pointer">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            {/* Product Image */}
-                            <div className="relative flex-shrink-0">
-                              <img
-                                src={
-                                  product.images?.[0]?.url || "/placeholder.jpg"
-                                }
-                                alt={product.title}
-                                width={150}
-                                height={100}
-                                className="w-32 h-24 object-cover rounded-lg"
-                              />
-                              {product.featured && (
-                                <span className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-500 to-orange-500 border-0 text-xs px-2 py-1 rounded text-white">
-                                  Featured
-                                </span>
-                              )}
-                            </div>
-                            {/* Product Details */}
-                            <div className="flex-1 min-w-0 flex flex-col justify-between">
-                              <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="font-semibold text-lg flex-1">
-                                    {product.title}
-                                  </h3>
-                                  <span className="text-2xl font-bold text-primary">
-                                    {product.price?.amount
-                                      ? `$${product.price.amount}`
-                                      : "-"}
-                                  </span>
-                                  {product.price?.negotiable && (
-                                    <span className="ml-2 text-xs text-green-600 font-semibold">
-                                      Negotiable
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2 flex-wrap">
-                                  <span className="flex items-center">
-                                    <svg
-                                      className="h-4 w-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2z"
-                                      />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M12 22s8-7.333 8-12A8 8 0 0 0 4 10c0 4.667 8 12 8 12z"
-                                      />
-                                    </svg>
-                                    {product.location?.city ||
-                                      product.location?.state ||
-                                      product.location?.country ||
-                                      "Unknown location"}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <svg
-                                      className="h-4 w-4 mr-1"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <circle cx="12" cy="12" r="10" />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M12 6v6l4 2"
-                                      />
-                                    </svg>
-                                    {new Date(
-                                      product.created_at
-                                    ).toLocaleDateString()}
-                                  </span>
-                                  {product.views !== undefined && (
-                                    <span className="flex items-center">
-                                      <svg
-                                        className="h-4 w-4 mr-1"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <circle cx="12" cy="12" r="10" />
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
-                                        />
-                                      </svg>
-                                      {product.views} views
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                  {product.category && (
-                                    <span className="bg-gray-200 text-xs px-2 py-1 rounded">
-                                      {product.category}
-                                    </span>
-                                  )}
-                                  {(product.subcategory ||
-                                    product.subCategory) && (
-                                    <span className="bg-gray-200 text-xs px-2 py-1 rounded">
-                                      {product.subcategory ||
-                                        product.subCategory}
-                                    </span>
-                                  )}
-                                  {product.condition && (
-                                    <span className="bg-gray-200 text-xs px-2 py-1 rounded">
-                                      {product.condition}
-                                    </span>
-                                  )}
-                                  {Array.isArray(product.tags) &&
-                                    product.tags.map(
-                                      (tag: string, idx: number) => (
-                                        <span
-                                          key={idx}
-                                          className="bg-gray-100 text-xs px-2 py-1 rounded border"
-                                        >
-                                          {tag}
-                                        </span>
-                                      )
-                                    )}
-                                </div>
-                                <div className="text-sm text-gray-700 mb-2 line-clamp-3">
-                                  {product.description || (
-                                    <span className="italic text-gray-400">
-                                      No description available
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                    <svg
-                                      className="h-4 w-4 text-white"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <circle cx="12" cy="7" r="4" />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="M5.5 21a7.5 7.5 0 0 1 13 0"
-                                      />
-                                    </svg>
-                                  </div>
-                                  <span className="text-sm font-medium">
-                                    {product.user_id?.profile?.displayName ||
-                                      product.user_id?.fullName ||
-                                      (product.user_id?.firstName &&
-                                      product.user_id?.lastName
-                                        ? `${product.user_id.firstName} ${product.user_id.lastName}`
-                                        : product.user_id?.firstName
-                                        ? product.user_id.firstName
-                                        : product.user_id?.lastName
-                                        ? product.user_id.lastName
-                                        : product.user_id?.username
-                                        ? product.user_id.username
-                                        : "Unknown Name")}
-                                  </span>
-                                </div>
-                                <Button
-                                  className="btn-shadow"
-                                  onClick={() => {
-                                    /* TODO: Show contact popup as in grid view */
-                                  }}
-                                >
-                                  Contact Seller
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-sm text-muted-foreground">
-                    Page {currentPage} of {totalPages}
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    {/* Previous Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1 || productsLoading}
-                      className="flex items-center space-x-1"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      <span className="hidden sm:inline">Previous</span>
-                    </Button>
-
-                    {/* Page Numbers */}
-                    <div className="flex items-center space-x-1">
-                      {getPaginationNumbers().map((page, index) => (
-                        <Button
-                          key={index}
-                          variant={page === currentPage ? "default" : "outline"}
-                          size="sm"
-                          onClick={() =>
-                            typeof page === "number"
-                              ? handlePageChange(page)
-                              : null
-                          }
-                          disabled={page === "..." || productsLoading}
-                          className="min-w-[40px]"
-                        >
-                          {page}
-                        </Button>
-                      ))}
-                    </div>
-
-                    {/* Next Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages || productsLoading}
-                      className="flex items-center space-x-1"
-                    >
-                      <span className="hidden sm:inline">Next</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Jump to page input (for large datasets) */}
-                  {totalPages > 10 && (
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-muted-foreground">Go to:</span>
-                      <Input
-                        type="number"
-                        min="1"
-                        max={totalPages}
-                        placeholder="Page"
-                        className="w-20 h-8 text-center"
-                        onKeyPress={(e) => {
-                          if (e.key === "Enter") {
-                            const page = parseInt(
-                              (e.target as HTMLInputElement).value
-                            );
-                            if (page >= 1 && page <= totalPages) {
-                              handlePageChange(page);
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
+{productsLoading ? (
+  <div className="text-center py-12">
+    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+    <p className="text-muted-foreground">Loading products...</p>
+  </div>
+) : products.length > 0 ? (
+  <>
+    <div
+      className={
+        viewMode === "grid"
+          ? "grid gap-6 mb-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          : "space-y-4 mb-8"
+      }
+    >
+      {products.map((product: any, index) => (
+        <motion.div
+          key={product._id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: index * 0.05 }}
+          className={viewMode === "list" ? "w-full" : ""}
+        >
+          {viewMode === "grid" ? (
+            <ProductCard
+              product={product}
+              variant="compact"
+              onLike={(productId) => {
+                console.log("Liked product:", productId);
+              }}
+            />
           ) : (
-            <div className="text-center py-16">
-              <Card className="glass border-0 max-w-md mx-auto">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-8 w-8 text-white" />
+            <Card className="overflow-hidden border-0 card-shadow hover:shadow-lg transition-all duration-300 cursor-pointer">
+              <CardContent className="p-4">
+                <div className="flex gap-4">
+                  {/* Product Image */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={
+                        Array.isArray(product.images) &&
+                        product.images.length > 0 &&
+                        product.images[0]?.url
+                          ? product.images[0].url
+                          : "/placeholder.jpg"
+                      }
+                      alt={product.title || "Product image"}
+                      width={150}
+                      height={100}
+                      className="w-32 h-24 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.jpg"; // Fallback on error
+                      }}
+                    />
+                    {product.featured && (
+                      <span className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-500 to-orange-500 border-0 text-xs px-2 py-1 rounded text-white">
+                        Featured
+                      </span>
+                    )}
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    No Products Found
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Try adjusting your filters or search terms to find what
-                    you're looking for.
-                  </p>
-                  <Button
-                    onClick={() => {
-                      setFilters({});
-                      setSearchQuery("");
-                      setCurrentPage(1);
-                      fetchProducts({});
-                    }}
-                    variant="outline"
-                  >
-                    Clear All Filters
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+                  {/* Product Details */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg flex-1">
+                          {product.title}
+                        </h3>
+                        <span className="text-2xl font-bold text-primary">
+                          {product.price?.amount
+                            ? `$${product.price.amount}`
+                            : "-"}
+                        </span>
+                        {product.price?.negotiable && (
+                          <span className="ml-2 text-xs text-green-600 font-semibold">
+                            Negotiable
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mb-2 flex-wrap">
+                        <span className="flex items-center">
+                          <svg
+                            className="h-4 w-4 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 11c1.104 0 2-.896 2-2s-.896-2-2-2-2 .896-2 2 .896 2 2 2z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 22s8-7.333 8-12A8 8 0 0 0 4 10c0 4.667 8 12 8 12z"
+                            />
+                          </svg>
+                          {product.location?.city ||
+                            product.location?.state ||
+                            product.location?.country ||
+                            "Unknown location"}
+                        </span>
+                        <span className="flex items-center">
+                          <svg
+                            className="h-4 w-4 mr-1"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 6v6l4 2"
+                            />
+                          </svg>
+                          {new Date(product.created_at).toLocaleDateString()}
+                        </span>
+                        {product.views !== undefined && (
+                          <span className="flex items-center">
+                            <svg
+                              className="h-4 w-4 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
+                              />
+                            </svg>
+                            {product.views} views
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {product.category && (
+                          <span className="bg-gray-200 text-xs px-2 py-1 rounded">
+                            {product.category}
+                          </span>
+                        )}
+                        {(product.subcategory || product.subCategory) && (
+                          <span className="bg-gray-200 text-xs px-2 py-1 rounded">
+                            {product.subcategory || product.subCategory}
+                          </span>
+                        )}
+                        {product.condition && (
+                          <span className="bg-gray-200 text-xs px-2 py-1 rounded">
+                            {product.condition}
+                          </span>
+                        )}
+                        {Array.isArray(product.tags) &&
+                          product.tags.map((tag: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="bg-gray-100 text-xs px-2 py-1 rounded border"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                      </div>
+                      <div className="text-sm text-gray-700 mb-2 line-clamp-3">
+                        {product.description || (
+                          <span className="italic text-gray-400">
+                            No description available
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <svg
+                            className="h-4 w-4 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle cx="12" cy="7" r="4" />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M5.5 21a7.5 7.5 0 0 1 13 0"
+                            />
+                          </svg>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {product.user_id?.displayName ||
+                            product.user_id?.username ||
+                            product.user_id?.fullName ||
+                            (product.user_id?.firstName &&
+                            product.user_id?.lastName
+                              ? `${product.user_id.firstName} ${product.user_id.lastName}`
+                              : product.user_id?.firstName ||
+                                product.user_id?.lastName ||
+                                "Unknown Name")}
+                        </span>
+                      </div>
+                      <Button
+                        className="btn-shadow"
+                        onClick={() => {
+                          /* TODO: Show contact popup as in grid view */
+                        }}
+                      >
+                        Contact Seller
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
+        </motion.div>
+      ))}
+    </div>
+
+    {/* Pagination */}
+    {totalPages > 1 && (
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="text-sm text-muted-foreground">
+          Page {currentPage} of {totalPages}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {/* Previous Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1 || productsLoading}
+            className="flex items-center space-x-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Previous</span>
+          </Button>
+
+          {/* Page Numbers */}
+          <div className="flex items-center space-x-1">
+            {getPaginationNumbers().map((page, index) => (
+              <Button
+                key={index}
+                variant={page === currentPage ? "default" : "outline"}
+                size="sm"
+                onClick={() =>
+                  typeof page === "number" ? handlePageChange(page) : null
+                }
+                disabled={page === "..." || productsLoading}
+                className="min-w-[40px]"
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+
+          {/* Next Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages || productsLoading}
+            className="flex items-center space-x-1"
+          >
+            <span className="hidden sm:inline">Next</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Jump to page input (for large datasets) */}
+        {totalPages > 10 && (
+          <div className="flex items-center space-x-2 text-sm">
+            <span className="text-muted-foreground">Go to:</span>
+            <Input
+              type="number"
+              min="1"
+              max={totalPages}
+              placeholder="Page"
+              className="w-20 h-8 text-center"
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  const page = parseInt((e.target as HTMLInputElement).value);
+                  if (page >= 1 && page <= totalPages) {
+                    handlePageChange(page);
+                  }
+                }
+              }}
+            />
+          </div>
+        )}
+      </div>
+    )}
+  </>
+) : (
+  <div className="text-center py-16">
+    <Card className="glass border-0 max-w-md mx-auto">
+      <CardContent className="p-8 text-center">
+        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Search className="h-8 w-8 text-white" />
+        </div>
+        <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+        <p className="text-muted-foreground mb-4">
+          Try adjusting your filters or search terms to find what you're looking for.
+        </p>
+        <Button
+          onClick={() => {
+            setFilters({});
+            setSearchQuery("");
+            setCurrentPage(1);
+            fetchProducts({});
+          }}
+          variant="outline"
+        >
+          Clear All Filters
+        </Button>
+      </CardContent>
+    </Card>
+  </div>
+)}
         </div>
       </div>
     </div>

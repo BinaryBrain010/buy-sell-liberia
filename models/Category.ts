@@ -1,5 +1,6 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
+// ====================== Custom Field ======================
 export interface ICustomField {
   fieldName: string;
   fieldType: "text" | "number" | "select" | "boolean" | "textarea" | "date";
@@ -19,31 +20,15 @@ export interface ICustomField {
 
 const customFieldSchema = new Schema<ICustomField>(
   {
-    fieldName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    fieldName: { type: String, required: true, trim: true },
     fieldType: {
       type: String,
       required: true,
       enum: ["text", "number", "select", "boolean", "textarea", "date"],
     },
-    label: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    required: {
-      type: Boolean,
-      default: false,
-    },
-    options: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+    label: { type: String, required: true, trim: true },
+    required: { type: Boolean, default: false },
+    options: [{ type: String, trim: true }],
     placeholder: String,
     validation: {
       min: Number,
@@ -56,6 +41,7 @@ const customFieldSchema = new Schema<ICustomField>(
   { _id: true }
 );
 
+// ====================== Subcategory ======================
 export interface ISubcategory {
   name: string;
   slug: string;
@@ -63,39 +49,23 @@ export interface ISubcategory {
   isActive?: boolean;
   sortOrder?: number;
   customFields?: ICustomField[];
-  products?: any[]; // Added to support dynamic product population
+  products?: any[];
   _id?: mongoose.Types.ObjectId;
 }
 
 const subcategorySchema = new Schema<ISubcategory>(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    sortOrder: {
-      type: Number,
-      default: 0,
-    },
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, trim: true },
+    description: { type: String, trim: true },
+    isActive: { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },
     customFields: [customFieldSchema],
   },
   { _id: true }
 );
 
+// ====================== Category ======================
 export interface ICategory extends Document {
   name: string;
   slug: string;
@@ -106,42 +76,18 @@ export interface ICategory extends Document {
   subcategories: ISubcategory[];
   created_at?: Date;
   updated_at?: Date;
-  getSubcategory(
-    subcategoryId: mongoose.Types.ObjectId
-  ): ISubcategory | undefined;
+  getSubcategory(subcategoryId: mongoose.Types.ObjectId): ISubcategory | undefined;
   getSubcategoryBySlug(slug: string): ISubcategory | undefined;
 }
 
 const categorySchema = new Schema<ICategory>(
   {
-    name: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
-    icon: {
-      type: String,
-      required: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    sortOrder: {
-      type: Number,
-      default: 0,
-    },
+    name: { type: String, required: true, unique: true, trim: true },
+    slug: { type: String, required: true, trim: true, index: true },
+    icon: { type: String, required: true },
+    description: { type: String, trim: true },
+    isActive: { type: Boolean, default: true },
+    sortOrder: { type: Number, default: 0 },
     subcategories: [subcategorySchema],
   },
   {
@@ -149,16 +95,14 @@ const categorySchema = new Schema<ICategory>(
   }
 );
 
-// Create indexes for efficient queries
-categorySchema.index({ slug: 1 }, { unique: true });
+// Indexes
 categorySchema.index({ "subcategories.slug": 1 });
 categorySchema.index({ sortOrder: 1 });
 
-// Pre-save middleware to ensure unique subcategory slugs within a category
+// Middleware: Unique subcategory slugs
 categorySchema.pre<ICategory>("save", function (next) {
   const slugs = this.subcategories.map((sub) => sub.slug);
-  const uniqueSlugs = new Set(slugs);
-  if (slugs.length !== uniqueSlugs.size) {
+  if (new Set(slugs).size !== slugs.length) {
     return next(new Error("Subcategory slugs must be unique within a category"));
   }
   next();
@@ -188,13 +132,11 @@ categorySchema.statics.findBySlug = function (slug: string) {
   return this.findOne({ slug, isActive: true });
 };
 
-// Ensure virtual fields are serialized
-categorySchema.set("toJSON", {
-  virtuals: true,
-});
+// Serialize virtuals
+categorySchema.set("toJSON", { virtuals: true });
 
-const Category: Model<ICategory> = mongoose.model<ICategory>(
-  "Category",
-  categorySchema
-);
+// ✅ Prevent model overwrite (critical for Next.js dev)
+const Category: Model<ICategory> =
+  mongoose.models.Category || mongoose.model<ICategory>("Category", categorySchema);
+
 export default Category;
