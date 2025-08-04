@@ -82,6 +82,14 @@ export function OtpForm({ email, onBack, onSuccess, context = "signup" }: OtpFor
       if (context === "signup") {
         await verifyOtp(email, otpCode)
         console.log(`[OTP FORM] OTP verified successfully for ${email}`)
+        
+        // Add success toast here after verification is complete
+        toast({
+          title: "Account created successfully!",
+          description: "Your account has been verified and is now ready to use.",
+          variant: "default",
+        })
+        
         setStep("success")
         setTimeout(() => {
           onSuccess()

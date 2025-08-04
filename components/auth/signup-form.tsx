@@ -83,8 +83,14 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleSignup, setIsGoogleSignup] = useState(false)
+  const [usernameError, setUsernameError] = useState("") // Add state for username error
   const { signup, loginWithGoogle } = useAuth()
   const { toast } = useToast()
+
+  // Function to validate username (only letters and numbers)
+  const isValidUsername = (username: string) => {
+    return /^[a-zA-Z0-9]+$/.test(username)
+  }
 
   // Update form data when initialData changes (from Google signup)
   useEffect(() => {
@@ -98,10 +104,21 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
   }, [initialData])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }))
+    
+    // Check username validation when username field changes
+    if (name === "username") {
+      if (value.trim() && !isValidUsername(value)) {
+        setUsernameError("Please use letters and numbers only in username")
+      } else {
+        setUsernameError("")
+      }
+    }
   }
 
   const handleCountryChange = (value: string) => {
@@ -128,6 +145,16 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
       toast({
         title: "Invalid username",
         description: "Username must be at least 3 characters long.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Add username format validation
+    if (!isValidUsername(formData.username)) {
+      toast({
+        title: "Invalid username format",
+        description: "Username must contain only letters and numbers.",
         variant: "destructive",
       })
       return
@@ -250,6 +277,21 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
     }
   }
 
+  // Check if form is valid for enabling/disabling submit button
+  const isFormValid = () => {
+    return (
+      formData.fullName.trim() !== "" &&
+      formData.username.trim() !== "" &&
+      formData.username.length >= 3 &&
+      isValidUsername(formData.username) &&
+      formData.email.trim() !== "" &&
+      formData.phone.trim() !== "" &&
+      formData.country !== "" &&
+      formData.password.length >= 6 &&
+      formData.password === formData.confirmPassword
+    )
+  }
+
   return (
     <motion.div
       key="signup-form"
@@ -327,10 +369,13 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
                 placeholder="johndoe"
                 value={formData.username}
                 onChange={handleChange}
-                className="pl-10 h-10"
+                className={`pl-10 h-10 ${usernameError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                 required
               />
             </div>
+            {usernameError && (
+              <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+            )}
           </div>
         </div>
 
@@ -464,7 +509,11 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
           </div>
         </div>
 
-        <Button type="submit" className="w-full h-10 mt-4" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          className="w-full h-10 mt-4" 
+          disabled={isLoading || !isFormValid()}
+        >
           {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
