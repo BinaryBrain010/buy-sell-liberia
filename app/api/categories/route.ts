@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import Category, { ICategory, ISubcategory, ICustomField } from '../../../models/Category';
+import Category, { ICategory, ISubcategory } from '../../../models/Category';
 import { IProduct } from '../../../models/Product';
 
 // Force dynamic rendering for all routes
@@ -13,7 +13,7 @@ type LeanProduct = Omit<IProduct, keyof Document> & {
 };
 
 interface ICategoryWithProducts extends Omit<ICategory, 'subcategories'> {
-  subcategories: Array<ISubcategory & { products?: LeanProduct[] }>;
+  subcategories: Array<ISubcategory & { products?: LeanProduct[]; productsPagination?: { total: number; page: number; limit: number; totalPages: number } }>;
 }
 
 // Connect to MongoDB
@@ -25,7 +25,7 @@ async function connectDB() {
   }
 }
 
-// GET: Fetch all categories or a specific category
+// GET: Fetch all categories or a specific category with pagination
 export async function GET(request: NextRequest) {
   try {
     console.log('Starting GET request for categories');
@@ -34,10 +34,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const includeProducts = searchParams.get('includeProducts') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '0') || 0;
+    const limit = parseInt(searchParams.get('limit') || '10') || 10;
+    const page = parseInt(searchParams.get('page') || '1') || 1;
+    const skip = (page - 1) * limit;
     const categoryId = searchParams.get('categoryId');
     const slug = searchParams.get('slug');
-    console.log('Query params:', { includeProducts, limit, categoryId, slug });
+    console.log('Query params:', { includeProducts, limit, page, skip, categoryId, slug });
 
     if (categoryId) {
       if (!mongoose.Types.ObjectId.isValid(categoryId)) {
@@ -70,7 +72,10 @@ export async function GET(request: NextRequest) {
             subcategory_id: subcategory._id,
             status: 'active',
             expires_at: { $gt: new Date() },
-          }).lean() as LeanProduct[];
+          })
+            .limit(limit)
+            .skip(skip)
+            .lean() as LeanProduct[];
         }
         console.log('Products fetched for category');
       }
@@ -82,12 +87,12 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Fetching all categories');
-    let query = Category.find({ isActive: true }).sort({ sortOrder: 1 });
-    if (limit > 0) {
-      query = query.limit(limit);
-    }
-
-    const categories: ICategoryWithProducts[] = await query.lean();
+    const query = Category.find({ isActive: true }).sort({ sortOrder: 1 });
+    const total = await Category.countDocuments({ isActive: true });
+    const categories: ICategoryWithProducts[] = await query
+      .skip(skip)
+      .limit(limit)
+      .lean();
     console.log('Categories fetched:', categories.length);
 
     if (includeProducts) {
@@ -100,7 +105,10 @@ export async function GET(request: NextRequest) {
             subcategory_id: subcategory._id,
             status: 'active',
             expires_at: { $gt: new Date() },
-          }).lean() as LeanProduct[];
+          })
+            .limit(limit)
+            .skip(skip)
+            .lean() as LeanProduct[];
         }
       }
       console.log('Products fetched for all categories');
@@ -108,6 +116,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       categories,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
       message: 'Categories fetched successfully',
     });
   } catch (error) {
