@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
 
     const query = searchParams.get("q") || "";
     const limit = Number(searchParams.get("limit")) || 10;
+    const categoryId = searchParams.get("categoryId");
+    const categorySlug = searchParams.get("categorySlug");
 
     if (!query.trim()) {
       return NextResponse.json({ results: [] });
@@ -16,8 +18,14 @@ export async function GET(request: NextRequest) {
 
     const filters: any = {
       search: query,
-      status: "active", // Optional: Only show active listings
+      status: "active",
     };
+    if (categoryId) {
+      filters.category_id = categoryId;
+    }
+    if (categorySlug) {
+      filters.categorySlug = categorySlug;
+    }
 
     const sortOptions = {
       sortBy: "createdAt" as "createdAt",
