@@ -116,74 +116,7 @@ export function ProductCarousel({
       </div>
 
       {/* Carousel */}
-      <div className="relative overflow-hidden" ref={carouselRef}>
-        <motion.div
-          className="flex gap-4"
-          animate={{
-            x: `-${currentIndex * (100 / itemsPerView)}%`,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-          }}
-          style={{
-            width: `${(products.length / itemsPerView) * 100}%`,
-          }}
-        >
-          {products.map((product, index) => (
-            <motion.div
-              key={product._id || product.id || index}
-              className="flex-shrink-0"
-              style={{ width: `${100 / products.length}%` }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <ProductCard
-                product={{
-                  ...product,
-                  _id: product._id || product.id || "",
-                }}
-                onLike={onLike}
-                variant="compact"
-                className="h-full"
-              />
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Overlay navigation (appears on hover) */}
-        <AnimatePresence>
-          {isHovered && products.length > itemsPerView && (
-            <>
-              {currentIndex > 0 && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={prevSlide}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all duration-200"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </motion.button>
-              )}
-
-              {currentIndex < maxIndex && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={nextSlide}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all duration-200"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </motion.button>
-              )}
-            </>
-          )}
-        </AnimatePresence>
-      </div>
+      
 
       {/* Dots indicator */}
       {products.length > itemsPerView && (

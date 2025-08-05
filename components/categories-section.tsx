@@ -3,14 +3,11 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Loader2 } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
-import { ProductCarousel } from "./product-carousel";
 import Link from "next/link";
 import React from "react";
 
-// Color mappings for categories (matching existing design)
+// Color mappings for categories
 const categoryColors: { [key: string]: string } = {
   electronics: "from-blue-500 to-cyan-500",
   vehicles: "from-green-500 to-emerald-500",
@@ -27,9 +24,9 @@ const categoryColors: { [key: string]: string } = {
 export function CategoriesSection() {
   const [categories, setCategories] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [showAll, setShowAll] = React.useState(false);
 
   React.useEffect(() => {
-    setLoading(true);
     fetch("/api/categories?includeProducts=false")
       .then(async (res) => {
         if (!res.ok) {
@@ -56,7 +53,7 @@ export function CategoriesSection() {
             <h2 className="text-2xl md:text-3xl font-bold mb-2">Categories</h2>
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-8">
-            {[...Array(12)].map((_, index) => (
+            {[...Array(8)].map((_, index) => (
               <div
                 key={index}
                 className="animate-pulse flex items-center justify-center"
@@ -74,6 +71,8 @@ export function CategoriesSection() {
     );
   }
 
+  const displayedCategories = showAll ? categories : categories.slice(0, 8);
+
   return (
     <section className="py-10 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -81,7 +80,7 @@ export function CategoriesSection() {
           <h2 className="text-2xl md:text-3xl font-bold mb-2">Categories</h2>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-8">
-          {categories.slice(0, 16).map((category: any) => (
+          {displayedCategories.map((category: any) => (
             <motion.div
               key={category._id}
               initial={{ opacity: 0, y: 20 }}
@@ -113,13 +112,18 @@ export function CategoriesSection() {
             </motion.div>
           ))}
         </div>
-        <div className="text-center mt-4">
-          <Link href="/categories">
-            <Button variant="outline" size="lg" className="glass border-0">
-              View All
+        {categories.length > 8 && (
+          <div className="text-center mt-4">
+            <Button
+              variant="outline"
+              size="lg"
+              className="glass border-0"
+              onClick={() => setShowAll((prev) => !prev)}
+            >
+              {showAll ? "Show Less" : "View All Categories"}
             </Button>
-          </Link>
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -6,6 +6,9 @@ import { uploadProductImagesToLocal, validateImageFilesForLocal } from "@/lib/lo
 import mongoose from "mongoose";
 
 // Force dynamic rendering for this route
+// product get and post requests
+
+
 export const dynamic = 'force-dynamic';
 
 const productService = new ProductService();

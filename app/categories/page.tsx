@@ -106,7 +106,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Quick Links */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
+        {/* <div className="flex flex-wrap justify-center gap-4 mb-12">
           <Link href="/products">
             <Button
               variant="outline"
@@ -117,7 +117,7 @@ export default function CategoriesPage() {
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </Link>
-        </div>
+        </div> */}
 
         {/* Category-wise Product Sections */}
         <div className="space-y-16">
@@ -144,8 +144,6 @@ export default function CategoriesPage() {
                   <div>
                     <h2 className="text-2xl font-bold mb-1">{category.name}</h2>
                     <p className="text-muted-foreground">
-                      {category.totalCount?.toLocaleString() || 0} products
-                      available
                     </p>
                   </div>
                 </div>
@@ -182,32 +180,7 @@ export default function CategoriesPage() {
                   </div>
                 </div>
               )}
-
-              {/* Products Carousel */}
-              {categoryProducts[category.slug] &&
-              categoryProducts[category.slug].length > 0 ? (
-                <ProductCarousel
-                  products={categoryProducts[category.slug]}
-                  title={`Latest in ${category.name}`}
-                  categorySlug={category.slug}
-                  totalCount={category.totalCount}
-                  onLike={(productId) => {
-                    console.log("Liked product:", productId);
-                  }}
-                />
-              ) : (
-                <div className="text-center py-12 text-muted-foreground">
-                  <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">{category.icon}</span>
-                  </div>
-                  <p className="mb-4">No products in this category yet.</p>
-                  <Link href="/sell">
-                    <Button size="sm" className="btn-shadow">
-                      Be the first to sell
-                    </Button>
-                  </Link>
-                </div>
-              )}
+            
             </motion.section>
           ))}
         </div>
