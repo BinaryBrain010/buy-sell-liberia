@@ -9,7 +9,9 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   try {
     const { searchParams } = new URL(request.url);
     const incrementViews = searchParams.get("incrementViews") === "true";
-    const product = await productService.getProductBySlug(params.slug);
+    // Always lowercase and trim the slug for robust querying
+    const normalizedSlug = params.slug.trim().toLowerCase();
+    const product = await productService.getProductBySlug(normalizedSlug, incrementViews);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
