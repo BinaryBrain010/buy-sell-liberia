@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProductCard } from "@/components/product-card";
 import {
   Loader2,
   Search,
@@ -21,55 +22,16 @@ import {
   AdvancedFilters,
   FilterState,
 } from "@/components/filters/advanced-filters";
-import { ProductCard } from "@/components/product-card";
+import { ProductList } from "@/components/ProductList";
+import { Pagination } from "@/components/Pagination";
 import axios from "axios";
 
-interface Product {
-  _id: string;
-  title: string;
-  description: string;
-  price: {
-    amount: number;
-    currency: string;
-    negotiable: boolean;
-  };
-  location: {
-    city: string;
-    state?: string;
-    country: string;
-  };
-  images: {
-    url: string;
-    alt?: string;
-    isPrimary: boolean;
-    order: number;
-  }[];
-  customFields: {
-    fieldName: string;
-    value: any;
-  }[];
-  status: string;
-  created_at: string;
-  expires_at: string;
-  slug: string;
-  user_id: {
-    firstName: string;
-    lastName: string;
-    profile?: {
-      displayName?: string;
-      avatar?: string;
-    };
-  };
-  views: number;
-  featured: boolean;
-}
-
+// Product type is defined in the ProductList/ProductCard components or can be imported from a types file if needed.
 export default function ProductsPage() {
-  const { categories, loading: categoriesLoading } = useCategories();
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<FilterState>({});
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [totalResults, setTotalResults] = useState(0);
@@ -258,7 +220,7 @@ export default function ProductsPage() {
         </div>
 
         {/* Filter Modal - appears when filter button is clicked */}
-        {showFilters && (
+        {/* {showFilters && (
           <div className="w-full mb-8">
             <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-6 border border-zinc-200 dark:border-zinc-800 max-w-full">
               <div className="flex items-center justify-between mb-4">
@@ -286,7 +248,7 @@ export default function ProductsPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Products Section */}
         <div id="products-section">
@@ -328,7 +290,7 @@ export default function ProductsPage() {
           <ProductCard
             product={product}
             variant="compact"
-            onLike={(productId) => {
+            onLike={(productId: any) => {
               console.log("Liked product:", productId);
             }}
           />
