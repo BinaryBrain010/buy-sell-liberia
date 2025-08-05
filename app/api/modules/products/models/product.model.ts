@@ -47,6 +47,7 @@ export interface IProduct extends Document {
   createdAt: Date
   updatedAt: Date
   expiresAt?: Date
+  slug: string;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -57,6 +58,13 @@ const ProductSchema = new Schema<IProduct>(
       trim: true,
       maxlength: [100, "Title cannot exceed 100 characters"],
       minlength: [5, "Title must be at least 5 characters"],
+    },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
     description: {
       type: String,
