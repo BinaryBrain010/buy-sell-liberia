@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useCategories } from "@/hooks/useCategories"
-import { ProductCarousel } from "./product-carousel"
 import Link from "next/link"
 
 // Color mappings for categories (matching existing design)
@@ -71,7 +70,7 @@ export function CategoriesSection() {
 
         {/* Categories Grid - Show only 4-5 categories on home page */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-16">
-          {categories.slice(0, 5).map((category, index) => (
+          {categories.slice(0, 10).map((category, index) => (
             <motion.div
               key={category._id}
               initial={{ opacity: 0, y: 30 }}
