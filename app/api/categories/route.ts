@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const includeProducts = searchParams.get('includeProducts') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '10') || 10;
+    const limit = parseInt(searchParams.get('limit') || '17') || 17;
     const page = parseInt(searchParams.get('page') || '1') || 1;
     const skip = (page - 1) * limit;
     const categoryId = searchParams.get('categoryId');

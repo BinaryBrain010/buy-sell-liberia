@@ -57,7 +57,10 @@ export function CategoriesSection() {
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-8">
             {[...Array(12)].map((_, index) => (
-              <div key={index} className="animate-pulse flex items-center justify-center">
+              <div
+                key={index}
+                className="animate-pulse flex items-center justify-center"
+              >
                 <Card className="bg-card/50 backdrop-blur-sm border border-border/50">
                   <CardContent className="p-4 flex items-center justify-center">
                     <div className="w-12 h-12 rounded-2xl bg-muted/50"></div>
@@ -78,28 +81,41 @@ export function CategoriesSection() {
           <h2 className="text-2xl md:text-3xl font-bold mb-2">Categories</h2>
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-4 mb-8">
-          {categories.map((category: any) => (
+          {categories.slice(0, 16).map((category: any) => (
             <motion.div
               key={category._id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
               viewport={{ once: true }}
-              className="flex items-center justify-center"
+              className="flex flex-col items-center justify-center"
             >
-              <Card className="bg-card/50 backdrop-blur-sm border border-border/50 hover:bg-card/80 transition-all duration-200 shadow-sm hover:shadow-lg overflow-hidden group p-0">
-                <CardContent className="p-4 flex items-center justify-center">
-                  <div
-                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${
-                      categoryColors[category.slug] || "from-gray-500 to-gray-600"
-                    } flex items-center justify-center text-2xl shadow-lg`}
-                  >
-                    {category.icon}
-                  </div>
-                </CardContent>
-              </Card>
+              <Link href={`/categories/${category.slug}`} className="w-full">
+                <Card className="bg-card/50 backdrop-blur-sm border border-border/50 hover:bg-card/80 transition-all duration-200 shadow-sm hover:shadow-lg overflow-hidden group p-0 w-full">
+                  <CardContent className="p-4 flex flex-col items-center justify-center">
+                    <div
+                      className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${
+                        categoryColors[category.slug] ||
+                        "from-gray-500 to-gray-600"
+                      } flex items-center justify-center text-2xl shadow-lg mb-2`}
+                    >
+                      {category.icon}
+                    </div>
+                    <div className="text-xs text-center font-medium text-foreground line-clamp-2 w-full">
+                      {category.name}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </motion.div>
           ))}
+        </div>
+        <div className="text-center mt-4">
+          <Link href="/categories">
+            <Button variant="outline" size="lg" className="glass border-0">
+              View All
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
