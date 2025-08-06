@@ -1,7 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import React from "react";
-import { useCategories } from "@/hooks/useCategories";
 
 export default function SearchBar() {
   const [query, setQuery] = React.useState("");
@@ -10,12 +9,10 @@ export default function SearchBar() {
   const [showResults, setShowResults] = React.useState(false);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const { categories } = useCategories();
 
   React.useEffect(() => {
     // Normalize query: trim and replace multiple spaces with a single space
     const normalizedQuery = query.replace(/\s+/g, " ").trim();
-    const joinedQuery = normalizedQuery.replace(/ /g, "");
     if (!normalizedQuery) {
       setResults([]);
       setShowResults(false);
@@ -23,11 +20,12 @@ export default function SearchBar() {
     }
     setLoading(true);
     const timeout = setTimeout(() => {
-      let url = `/api/search/product?q=${encodeURIComponent(
+      // Build API URL according to route.ts contract
+      let url = `/api/products/search?search=${encodeURIComponent(
         normalizedQuery
-      )}&joined=${encodeURIComponent(joinedQuery)}&limit=8`;
+      )}`;
       if (selectedCategory) {
-        url += `&categoryId=${encodeURIComponent(selectedCategory)}`;
+        url += `&category=${encodeURIComponent(selectedCategory)}`;
       }
       fetch(url)
         .then(async (res) => {
@@ -35,7 +33,8 @@ export default function SearchBar() {
           return res.json();
         })
         .then((data) => {
-          setResults(data.results || []);
+          // API returns { products, total, page, totalPages }
+          setResults(Array.isArray(data.products) ? data.products : []);
           setShowResults(true);
         })
         .catch(() => {
@@ -87,12 +86,12 @@ export default function SearchBar() {
                 <ul>
                   {results.map((item) => (
                     <li
-                      key={item.id}
+                      key={item._id}
                       className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
                     >
-                      {item.image && (
+                      {(item.image || (item.images && item.images[0])) && (
                         <img
-                          src={item.image}
+                          src={item.image || item.images[0]}
                           alt={item.title}
                           className="w-8 h-8 rounded object-cover"
                         />

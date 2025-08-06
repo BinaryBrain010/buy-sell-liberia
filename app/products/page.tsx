@@ -25,6 +25,7 @@ import {
 import { ProductList } from "@/components/ProductList";
 import { Pagination } from "@/components/Pagination";
 import axios from "axios";
+import { useRouter } from "next/navigation";
 
 // Product type is defined in the ProductList/ProductCard components or can be imported from a types file if needed.
 export default function ProductsPage() {
@@ -41,6 +42,9 @@ export default function ProductsPage() {
   const [isMounted, setIsMounted] = useState(false);
 
   const itemsPerPage = 30; // Show 30 products per page (10 rows × 3 columns)
+
+
+  const router=useRouter();
 
   // Fetch products using filter API
   const fetchProducts = async (
@@ -86,9 +90,7 @@ export default function ProductsPage() {
       if (search && searchQuery) {
         params.append("search", searchQuery);
       }
-      const response = await axios.get(
-        `/api/products?${params.toString()}`
-      );
+      const response = await axios.get(`/api/products?${params.toString()}`);
       setProducts(response.data.products || []);
       setTotalResults(
         response.data.totalItems || response.data.products?.length || 0
@@ -268,138 +270,148 @@ export default function ProductsPage() {
                 </p>
               )}
             </div>
-
- 
           </div>
 
           {productsLoading ? (
-  <div className="text-center py-12">
-    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-    <p className="text-muted-foreground">Loading products...</p>
-  </div>
-) : products.length > 0 ? (
-  <>
-    <div className="grid gap-6 mb-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-      {products.map((product: any, index) => (
-        <motion.div
-          key={product._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
-        >
-          <ProductCard
-            product={product}
-            variant="compact"
-            onLike={(productId: any) => {
-              console.log("Liked product:", productId);
-            }}
-          />
-        </motion.div>
-      ))}
-    </div>
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          ) : products.length > 0 ? (
+            <>
+              <div className="grid gap-6 mb-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {products.map((product: any, index) => (
+                  <motion.div
+                    key={product._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    onClick={() => {
+  router.push(`/products/${product._id}`);
+}}
 
-    {/* Pagination */}
-    {totalPages > 1 && (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages}
-        </div>
 
-        <div className="flex items-center space-x-2">
-          {/* Previous Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1 || productsLoading}
-            className="flex items-center space-x-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Previous</span>
-          </Button>
+                    className="cursor-pointer"
+                  >
+                    <ProductCard
+                      product={product}
+                      variant="compact"
+                      onLike={(productId: any) => {
+                        console.log("Liked product:", productId);
+                      }}
+                    />
+                  </motion.div>
+                ))}
+              </div>
 
-          {/* Page Numbers */}
-          <div className="flex items-center space-x-1">
-            {getPaginationNumbers().map((page, index) => (
-              <Button
-                key={index}
-                variant={page === currentPage ? "default" : "outline"}
-                size="sm"
-                onClick={() =>
-                  typeof page === "number" ? handlePageChange(page) : null
-                }
-                disabled={page === "..." || productsLoading}
-                className="min-w-[40px]"
-              >
-                {page}
-              </Button>
-            ))}
-          </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
 
-          {/* Next Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages || productsLoading}
-            className="flex items-center space-x-1"
-          >
-            <span className="hidden sm:inline">Next</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+                  <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1 || productsLoading}
+                      className="flex items-center space-x-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Previous</span>
+                    </Button>
 
-        {/* Jump to Page */}
-        {totalPages > 10 && (
-          <div className="flex items-center space-x-2 text-sm">
-            <span className="text-muted-foreground">Go to:</span>
-            <Input
-              type="number"
-              min="1"
-              max={totalPages}
-              placeholder="Page"
-              className="w-20 h-8 text-center"
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  const page = parseInt((e.target as HTMLInputElement).value);
-                  if (page >= 1 && page <= totalPages) {
-                    handlePageChange(page);
-                  }
-                }
-              }}
-            />
-          </div>
-        )}
-      </div>
-    )}
-  </>
-) : (
-  <div className="text-center py-16">
-    <Card className="glass border-0 max-w-md mx-auto">
-      <CardContent className="p-8 text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Search className="h-8 w-8 text-white" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
-        <p className="text-muted-foreground mb-4">
-          Try adjusting your filters or search terms to find what you're looking for.
-        </p>
-        <Button
-          onClick={() => {
-            setFilters({});
-            setSearchQuery("");
-            setCurrentPage(1);
-            fetchProducts({});
-          }}
-          variant="outline"
-        >
-          Clear All Filters
-        </Button>
-      </CardContent>
-    </Card>
-  </div>
-)}
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {getPaginationNumbers().map((page, index) => (
+                        <Button
+                          key={index}
+                          variant={page === currentPage ? "default" : "outline"}
+                          size="sm"
+                          onClick={() =>
+                            typeof page === "number"
+                              ? handlePageChange(page)
+                              : null
+                          }
+                          disabled={page === "..." || productsLoading}
+                          className="min-w-[40px]"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
 
+                    {/* Next Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages || productsLoading}
+                      className="flex items-center space-x-1"
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Jump to Page */}
+                  {totalPages > 10 && (
+                    <div className="flex items-center space-x-2 text-sm">
+                      <span className="text-muted-foreground">Go to:</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        placeholder="Page"
+                        className="w-20 h-8 text-center"
+                        onKeyPress={(e) => {
+                          if (e.key === "Enter") {
+                            const page = parseInt(
+                              (e.target as HTMLInputElement).value
+                            );
+                            if (page >= 1 && page <= totalPages) {
+                              handlePageChange(page);
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-16">
+              <Card className="glass border-0 max-w-md mx-auto">
+                <CardContent className="p-8 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">
+                    No Products Found
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Try adjusting your filters or search terms to find what
+                    you're looking for.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setFilters({});
+                      setSearchQuery("");
+                      setCurrentPage(1);
+                      fetchProducts({});
+                    }}
+                    variant="outline"
+                  >
+                    Clear All Filters
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>
