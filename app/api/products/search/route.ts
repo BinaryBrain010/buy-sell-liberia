@@ -6,17 +6,13 @@ export const dynamic = 'force-dynamic';
 
 const productService = new ProductService();
 
-
-
-// Define the PaginationOptions type
 interface PaginationOptions {
   page: number;
   limit: number;
 }
 
-// Define the response type for searchProducts
 interface SearchProductsResponse {
-  products: any[]; // Replace with a proper Product interface if available
+  products: any[]; // Replace with actual Product interface if available
   total: number;
   currentPage: number;
   pages: number;
@@ -26,25 +22,25 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // Parse filters
-    const filters: ProductFilters = {};
-    if (searchParams.get("category")) filters.category = searchParams.get("category")!;
-    if (searchParams.get("minPrice")) filters.minPrice = Number(searchParams.get("minPrice"));
-    if (searchParams.get("maxPrice")) filters.maxPrice = Number(searchParams.get("maxPrice"));
-    if (searchParams.get("condition")) filters.condition = searchParams.get("condition")!.split(",");
-    if (searchParams.get("search")) filters.search = searchParams.get("search")!;
-    if (searchParams.get("seller")) filters.seller = searchParams.get("seller")!;
-    if (searchParams.get("status")) filters.status = searchParams.get("status")!;
-    if (searchParams.get("negotiable")) filters.negotiable = searchParams.get("negotiable") === "true";
-    if (searchParams.get("featured")) filters.featured = searchParams.get("featured") === "true";
+    // Construct filters from query params
+    const filters: ProductFilters = {
+      search: searchParams.get("search") || undefined, // Title / Keyword search
+      category: searchParams.get("category") || undefined, // Category slug or ID
+      seller: searchParams.get("seller") || undefined, // Seller/User ID
+      status: searchParams.get("status") || undefined, // e.g., 'active'
+      minPrice: searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined,
+      maxPrice: searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined,
+      condition: searchParams.get("condition") ? searchParams.get("condition")!.split(",") : undefined,
+      negotiable: searchParams.get("negotiable") === "true" ? true : undefined,
+      featured: searchParams.get("featured") === "true" ? true : undefined,
+    };
 
-    // Parse pagination
     const pagination: PaginationOptions = {
       page: Number(searchParams.get("page")) || 1,
       limit: Number(searchParams.get("limit")) || 20,
     };
 
-    // Call the service method with filters and pagination
+    // Call productService with filters
     const result: SearchProductsResponse = await productService.searchProducts(
       filters.search || "",
       filters,
