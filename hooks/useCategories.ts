@@ -86,7 +86,7 @@ interface UseCategoriesResult {
   refetch: () => void;
 }
 
-export function useCategories(includeProducts = false, limit = 6): UseCategoriesResult {
+export function useCategories(includeProducts = false, limit?: number ): UseCategoriesResult {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
