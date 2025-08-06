@@ -25,25 +25,30 @@ export function CategoriesSection() {
   const [categories, setCategories] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [showAll, setShowAll] = React.useState(false);
+const hasFetched = React.useRef(false);
 
-  React.useEffect(() => {
-    fetch("/api/categories?includeProducts=false")
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || "Failed to fetch categories");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setCategories(data.categories || []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setCategories([]);
-        setLoading(false);
-      });
-  }, []);
+React.useEffect(() => {
+  if (hasFetched.current) return;
+  hasFetched.current = true;
+
+  fetch("/api/categories?includeProducts=false")
+    .then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to fetch categories");
+      }
+      return res.json();
+    })
+    .then((data) => {
+      setCategories(data.categories || []);
+      setLoading(false);
+    })
+    .catch(() => {
+      setCategories([]);
+      setLoading(false);
+    });
+}, []);
+
 
   if (loading) {
     return (
