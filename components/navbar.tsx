@@ -21,6 +21,7 @@ import MobileMenuAnimated from "@/components/navbar/mobileMenuAnimated";
 import { Menu, X } from "lucide-react";
 // Remove duplicate import since ThemeToggle is already imported above
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "./theme-toggle";
 
 export function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -49,6 +50,7 @@ export function Navbar() {
   //   setMobileMenuOpen(false); // Close mobile menu
   // };
 
+
   return (
     <>
       <motion.nav
@@ -56,22 +58,28 @@ export function Navbar() {
         animate={{ y: 0 }}
         className="sticky top-0 z-50 glass border-b navbar-shadow"
       >
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
+        <div className="container mx-auto px-2 md:px-4">
+          <div className="flex items-center justify-between h-16 gap-2 md:gap-4">
             {/* Logo */}
-            <Logo />
+            <div className="flex items-center h-full">
+              <Logo />
+            </div>
 
             {/* Search Bar - Hidden on mobile */}
-            <SearchBar />
+            <div className="hidden md:flex flex-1 mx-2">
+              <SearchBar />
+            </div>
 
             {/* Navigation Links - Hidden on mobile */}
-            <NavigationLinks />
+            <div className="hidden md:flex items-center mx-2">
+              <NavigationLinks />
+            </div>
 
             {/* Right Side - Desktop */}
-            <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
-              {/* Prominent Sell Button for all users */}
-              <SellButton />
-
+            <div className="hidden md:flex items-center gap-2 lg:gap-4">
+              {/* Sell Button only for logged-in users */}
+              {user && <SellButton />}
+              <ThemeToggle />
               <MobileMenuToggleButton />
               {user ? (
                 <>
@@ -86,8 +94,11 @@ export function Navbar() {
               )}
             </div>
 
-            {/* Mobile Menu Toggle Button - Only visible on mobile */}
-            <div className="md:hidden flex items-center space-x-2">
+            {/* Mobile Theme Toggle and Hamburger - Only visible on mobile */}
+            <div className="md:hidden flex items-center gap-2">
+              <ThemeToggle />
+                            {user && <DropDownMenu/>}
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -106,7 +117,7 @@ export function Navbar() {
       </motion.nav>
 
       {/* Mobile Menu - Animated */}
-      <MobileMenuAnimated 
+      <MobileMenuAnimated
         isOpen={mobileMenuOpen}
         setIsOpen={setMobileMenuOpen}
         onAuthClick={handleAuthClick}

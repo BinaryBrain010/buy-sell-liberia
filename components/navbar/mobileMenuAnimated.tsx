@@ -1,6 +1,7 @@
 import React from "react";
 import { AnimatePresence } from "framer-motion";
 import MobileMenu from "./mobileMenu";
+import SellButton from "./sellButton";
 
 interface MobileMenuAnimatedProps {
   isOpen: boolean;

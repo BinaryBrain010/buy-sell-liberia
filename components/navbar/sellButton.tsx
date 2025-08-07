@@ -22,17 +22,16 @@ const SellButton = () => {
     setMobileMenuOpen(false); // Close mobile menu when auth modal opens
   };
   return (
-    <div>
-      <Button
-        variant="default"
-        size="sm"
-        onClick={() => (user ? handleSellClick() : handleAuthClick("signup"))}
-        className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white btn-shadow"
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        <span className="font-medium">Sell</span>
-      </Button>
-    </div>
+    <Button
+      variant="default"
+      size="sm"
+      onClick={() => (user ? handleSellClick() : handleAuthClick("signup"))}
+      className="flex items-center gap-1 px-3 py-2 border bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white btn-shadow transition-all duration-150"
+      style={{ minWidth: 0 }}
+    >
+      <Plus className="h-4 w-4" />
+      <span className="font-semibold text-base">Sell</span>
+    </Button>
   );
 };
 
