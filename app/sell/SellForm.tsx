@@ -159,7 +159,7 @@ export default function SellForm() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full mx-auto">
       <StepIndicator currentStep={currentStep} />
 
       <Card className="shadow-lg">

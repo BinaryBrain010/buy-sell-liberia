@@ -5,6 +5,7 @@ import Image from "next/image";
 import ContactSellerButton from "@/components/ContactSellerPopup";
 import { useEffect, useState } from "react";
 
+
 type ImageType = string | { url: string; alt?: string; isPrimary?: boolean };
 
 interface ProductDetailProps {
