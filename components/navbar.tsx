@@ -13,7 +13,7 @@ import NavigationLinks from "@/components/navbar/navigationLinks";
 import AuthButtons from "@/components/navbar/authButton";
 import UserActions from "@/components/navbar/userAction";
 import SellButton from "@/components/navbar/sellButton";
-import Logo from "@/components/navbar/logo";
+import Logo from "@/components/ui/logo";
 import MobileMenuToggleButton from "@/components/navbar/mobileMenuToggleButton";
 import MobileMenuAnimated from "@/components/navbar/mobileMenuAnimated";
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from "lucide-react"
 import { NewsletterSubscribe } from "./footer/newsLetterSubscribe"
+import Logo from "./ui/logo"
 
 export function Footer() {
   return (
@@ -14,12 +15,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">BS</span>
-              </div>
-              <span className="font-bold text-xl">BuySell</span>
-            </div>
+            <Logo />
             <p className="text-muted-foreground mb-4">
               The leading marketplace connecting buyers and sellers. Safe, secure, and trusted by thousands.
             </p>
