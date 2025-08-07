@@ -1,52 +1,52 @@
-import mongoose, { Schema, type Document } from "mongoose"
+import mongoose, { Schema, type Document } from "mongoose";
 
 export interface IProduct extends Document {
-  _id: mongoose.Types.ObjectId
-  title: string
-  description: string
-  price: number
-  category: string
-  subCategory?: string
-  condition: "new" | "like-new" | "good" | "fair" | "poor"
-  images: string[]
-  titleImageIndex: number
+  _id: mongoose.Types.ObjectId;
+  title: string;
+  description: string;
+  price: number;
+  category_id: mongoose.Types.ObjectId;
+  subcategory_id?: mongoose.Types.ObjectId;
+  condition: "new" | "like-new" | "good" | "fair" | "poor";
+  images: string[];
+  titleImageIndex: number;
   location: {
-    city: string
-    state: string
-    country: string
+    city: string;
+    state: string;
+    country: string;
     coordinates?: {
-      latitude: number
-      longitude: number
-    }
-  }
+      latitude: number;
+      longitude: number;
+    };
+  };
   contactInfo: {
-    phone: string
-    email?: string
-    whatsapp?: string
-  }
-  seller: mongoose.Types.ObjectId
-  status: "active" | "sold" | "inactive" | "pending"
-  tags: string[]
+    phone: string;
+    email?: string;
+    whatsapp?: string;
+  };
+  seller: mongoose.Types.ObjectId;
+  status: "active" | "sold" | "inactive" | "pending";
+  tags: string[];
   specifications: {
-    brand?: string
-    model?: string
-    year?: number
-    color?: string
-    size?: string
-    weight?: string
+    brand?: string;
+    model?: string;
+    year?: number;
+    color?: string;
+    size?: string;
+    weight?: string;
     dimensions?: {
-      length: number
-      width: number
-      height: number
-    }
-  }
-  negotiable: boolean
-  showPhoneNumber: boolean
-  views: number
-  favorites: mongoose.Types.ObjectId[]
-  createdAt: Date
-  updatedAt: Date
-  expiresAt?: Date
+      length: number;
+      width: number;
+      height: number;
+    };
+  };
+  negotiable: boolean;
+  showPhoneNumber: boolean;
+  views: number;
+  favorites: mongoose.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date;
   slug: string;
 }
 
@@ -79,25 +79,16 @@ const ProductSchema = new Schema<IProduct>(
       min: [0, "Price must be positive"],
       max: [10000000, "Price is too high"],
     },
-    category: {
-      type: String,
+    category_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
       required: [true, "Category is required"],
-      enum: [
-        "Electronics",
-        "Vehicles",
-        "Real Estate",
-        "Fashion",
-        "Home & Garden",
-        "Sports & Recreation",
-        "Books & Media",
-        "Services",
-        "Jobs",
-        "Other"
-      ],
+      index: true,
     },
-    subCategory: {
-      type: String,
-      trim: true,
+    subcategory_id: {
+      type: Schema.Types.ObjectId,
+      ref: "SubCategory",
+      index: true,
     },
     condition: {
       type: String,
@@ -105,10 +96,12 @@ const ProductSchema = new Schema<IProduct>(
       enum: ["new", "like-new", "good", "fair", "poor"],
       default: "good",
     },
-    images: [{
-      type: String,
-      required: true,
-    }],
+    images: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
     titleImageIndex: {
       type: Number,
       required: [true, "Title image index is required"],
@@ -162,11 +155,13 @@ const ProductSchema = new Schema<IProduct>(
       enum: ["active", "sold", "inactive", "pending"],
       default: "active",
     },
-    tags: [{
-      type: String,
-      trim: true,
-      lowercase: true,
-    }],
+    tags: [
+      {
+        type: String,
+        trim: true,
+        lowercase: true,
+      },
+    ],
     specifications: {
       brand: { type: String, trim: true },
       model: { type: String, trim: true },
@@ -192,10 +187,12 @@ const ProductSchema = new Schema<IProduct>(
       type: Number,
       default: 0,
     },
-    favorites: [{
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    }],
+    favorites: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     expiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
@@ -204,16 +201,16 @@ const ProductSchema = new Schema<IProduct>(
   {
     timestamps: true,
   }
-)
+);
 
 // Indexes for better performance
-ProductSchema.index({ seller: 1, status: 1 })
-ProductSchema.index({ category: 1, status: 1 })
-ProductSchema.index({ "location.city": 1, "location.country": 1 })
-ProductSchema.index({ price: 1 })
-ProductSchema.index({ createdAt: -1 })
-ProductSchema.index({ title: "text", description: "text", tags: "text" })
-ProductSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+ProductSchema.index({ seller: 1, status: 1 });
+ProductSchema.index({ category_id: 1, status: 1 });
+ProductSchema.index({ "location.city": 1, "location.country": 1 });
+ProductSchema.index({ price: 1 });
+ProductSchema.index({ createdAt: -1 });
+ProductSchema.index({ title: "text", description: "text", tags: "text" });
+ProductSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-
-export const Product = mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema)
+export const Product =
+  mongoose.models.Product || mongoose.model<IProduct>("Product", ProductSchema);

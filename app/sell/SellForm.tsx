@@ -125,8 +125,8 @@ export default function SellForm() {
         title: formData.title,
         description: formData.description,
         price: formData.price,
-        category: formData.category,
-        subCategory: formData.subCategory,
+        category_id: formData.category, // ObjectId
+        subcategory_id: formData.subCategory, // ObjectId
         condition: formData.condition,
         negotiable: formData.negotiable,
         location: formData.location,

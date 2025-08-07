@@ -1,32 +1,29 @@
-import React from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent
-} from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Package, DollarSign } from 'lucide-react';
-import { Step1BasicInfoProps, CONDITIONS, Condition } from './types';
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Package, DollarSign } from "lucide-react";
+import { Step1BasicInfoProps, CONDITIONS, Condition } from "./types";
 
 const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   formData,
   setFormData,
   categories,
   errors,
-  setErrors
+  setErrors,
 }) => {
-  const selectedCategory = categories.find(cat => cat.name === formData.category);
+  const selectedCategory = categories.find(
+    (cat) => cat._id === formData.category
+  );
 
   return (
     <div className="space-y-6">
@@ -47,12 +44,14 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               placeholder="Enter product title"
               value={formData.title}
               onChange={(e) => {
-                setFormData(prev => ({ ...prev, title: e.target.value }));
-                setErrors(prev => ({ ...prev, title: '' }));
+                setFormData((prev) => ({ ...prev, title: e.target.value }));
+                setErrors((prev) => ({ ...prev, title: "" }));
               }}
-              className={`mt-1 ${errors.title ? 'border-red-500' : ''}`}
+              className={`mt-1 ${errors.title ? "border-red-500" : ""}`}
             />
-            {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
+            {errors.title && (
+              <p className="text-sm text-red-500 mt-1">{errors.title}</p>
+            )}
           </div>
 
           {/* Category & Subcategory */}
@@ -62,16 +61,22 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               <Select
                 value={formData.category}
                 onValueChange={(value) => {
-                  setFormData(prev => ({ ...prev, category: value, subCategory: '' }));
-                  setErrors(prev => ({ ...prev, category: '' }));
+                  setFormData((prev) => ({
+                    ...prev,
+                    category: value,
+                    subCategory: "",
+                  }));
+                  setErrors((prev) => ({ ...prev, category: "" }));
                 }}
               >
-                <SelectTrigger className={`mt-1 ${errors.category ? 'border-red-500' : ''}`}>
+                <SelectTrigger
+                  className={`mt-1 ${errors.category ? "border-red-500" : ""}`}
+                >
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat._id} value={cat.name}>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id}>
                       <div className="flex items-center gap-2">
                         <span>{cat.icon}</span>
                         <span>{cat.name}</span>
@@ -80,7 +85,9 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
+              {errors.category && (
+                <p className="text-sm text-red-500 mt-1">{errors.category}</p>
+              )}
             </div>
 
             {!!selectedCategory?.subcategories?.length && (
@@ -89,22 +96,30 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 <Select
                   value={formData.subCategory}
                   onValueChange={(value) => {
-                    setFormData(prev => ({ ...prev, subCategory: value }));
-                    setErrors(prev => ({ ...prev, subCategory: '' }));
+                    setFormData((prev) => ({ ...prev, subCategory: value }));
+                    setErrors((prev) => ({ ...prev, subCategory: "" }));
                   }}
                 >
-                  <SelectTrigger className={`mt-1 ${errors.subCategory ? 'border-red-500' : ''}`}>
+                  <SelectTrigger
+                    className={`mt-1 ${
+                      errors.subCategory ? "border-red-500" : ""
+                    }`}
+                  >
                     <SelectValue placeholder="Select a subcategory" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedCategory.subcategories.map(sub => (
-                      <SelectItem key={sub._id} value={sub.name}>
+                    {selectedCategory.subcategories.map((sub) => (
+                      <SelectItem key={sub._id} value={sub._id}>
                         {sub.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.subCategory && <p className="text-sm text-red-500 mt-1">{errors.subCategory}</p>}
+                {errors.subCategory && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {errors.subCategory}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -117,12 +132,19 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               placeholder="Describe your product in detail..."
               value={formData.description}
               onChange={(e) => {
-                setFormData(prev => ({ ...prev, description: e.target.value }));
-                setErrors(prev => ({ ...prev, description: '' }));
+                setFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }));
+                setErrors((prev) => ({ ...prev, description: "" }));
               }}
-              className={`mt-1 min-h-[100px] ${errors.description ? 'border-red-500' : ''}`}
+              className={`mt-1 min-h-[100px] ${
+                errors.description ? "border-red-500" : ""
+              }`}
             />
-            {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
+            {errors.description && (
+              <p className="text-sm text-red-500 mt-1">{errors.description}</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -143,14 +165,19 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               id="price"
               type="number"
               placeholder="0.00"
-              value={formData.price || ''}
+              value={formData.price || ""}
               onChange={(e) => {
-                setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }));
-                setErrors(prev => ({ ...prev, price: '' }));
+                setFormData((prev) => ({
+                  ...prev,
+                  price: parseFloat(e.target.value) || 0,
+                }));
+                setErrors((prev) => ({ ...prev, price: "" }));
               }}
-              className={`mt-1 ${errors.price ? 'border-red-500' : ''}`}
+              className={`mt-1 ${errors.price ? "border-red-500" : ""}`}
             />
-            {errors.price && <p className="text-sm text-red-500 mt-1">{errors.price}</p>}
+            {errors.price && (
+              <p className="text-sm text-red-500 mt-1">{errors.price}</p>
+            )}
           </div>
 
           {/* Condition */}
@@ -162,26 +189,33 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   key={condition.value}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     formData.condition === condition.value
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-border hover:border-muted-foreground/50 bg-background'
+                      ? "border-blue-500 bg-blue-50 text-blue-900"
+                      : "border-border hover:border-muted-foreground/50 bg-background"
                   }`}
                   onClick={() => {
-                    setFormData(prev => ({ ...prev, condition: condition.value }));
-                    setErrors(prev => ({ ...prev, condition: '' }));
+                    setFormData((prev) => ({
+                      ...prev,
+                      condition: condition.value,
+                    }));
+                    setErrors((prev) => ({ ...prev, condition: "" }));
                   }}
                 >
                   <div className="font-medium text-sm">{condition.label}</div>
-                  <div className={`text-xs mt-1 ${
-                    formData.condition === condition.value 
-                      ? 'text-blue-700' 
-                      : 'text-muted-foreground'
-                  }`}>
+                  <div
+                    className={`text-xs mt-1 ${
+                      formData.condition === condition.value
+                        ? "text-blue-700"
+                        : "text-muted-foreground"
+                    }`}
+                  >
                     {condition.description}
                   </div>
                 </div>
               ))}
             </div>
-            {errors.condition && <p className="text-sm text-red-500 mt-1">{errors.condition}</p>}
+            {errors.condition && (
+              <p className="text-sm text-red-500 mt-1">{errors.condition}</p>
+            )}
           </div>
 
           {/* Negotiable */}
@@ -190,7 +224,10 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               id="negotiable"
               checked={formData.negotiable}
               onCheckedChange={(checked) =>
-                setFormData(prev => ({ ...prev, negotiable: checked as boolean }))
+                setFormData((prev) => ({
+                  ...prev,
+                  negotiable: checked as boolean,
+                }))
               }
             />
             <Label htmlFor="negotiable" className="text-sm">
@@ -206,7 +243,7 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({
 export default Step1BasicInfo;
 
 // ✅ Validation function
-export const validateStep1 = (formData: Step1BasicInfoProps['formData']) => {
+export const validateStep1 = (formData: Step1BasicInfoProps["formData"]) => {
   const newErrors: Partial<Record<keyof typeof formData, string>> = {};
 
   if (!formData.title || formData.title.trim().length < 5) {

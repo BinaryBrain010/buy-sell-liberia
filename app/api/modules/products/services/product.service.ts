@@ -1,6 +1,10 @@
 import { Product, type IProduct } from "../models/product.model";
 import { User } from "../../auth/models/user.model";
-import { BaseService, type PaginationOptions, type SortOptions } from "../../shared/services/base.service";
+import {
+  BaseService,
+  type PaginationOptions,
+  type SortOptions,
+} from "../../shared/services/base.service";
 import mongoose from "mongoose";
 import slugify from "slugify";
 
@@ -8,8 +12,8 @@ export interface CreateProductData {
   title: string;
   description: string;
   price: number;
-  category: string;
-  subCategory?: string;
+  category_id: string;
+  subcategory_id: string;
   condition: "new" | "like-new" | "good" | "fair" | "poor";
   images: string[];
   titleImageIndex: number;
@@ -83,7 +87,10 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Create a new product with a unique slug
    */
-  async createProduct(sellerId: string, productData: CreateProductData): Promise<IProduct> {
+  async createProduct(
+    sellerId: string,
+    productData: CreateProductData
+  ): Promise<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Creating product for seller:", sellerId);
       await this.ensureConnection();
@@ -98,13 +105,20 @@ export class ProductService extends BaseService<IProduct> {
       let slug = slugify(productData.title, { lower: true, strict: true });
       let counter = 1;
       while (await this.findOne({ slug })) {
-        slug = `${slugify(productData.title, { lower: true, strict: true })}-${counter}`;
+        slug = `${slugify(productData.title, {
+          lower: true,
+          strict: true,
+        })}-${counter}`;
         counter++;
       }
 
-      // Create product using base service
+      // Convert category_id and subcategory_id to ObjectId
       const product = await this.create({
         ...productData,
+        category_id: new mongoose.Types.ObjectId(productData.category_id),
+        subcategory_id: productData.subcategory_id
+          ? new mongoose.Types.ObjectId(productData.subcategory_id)
+          : undefined,
         slug,
         seller: this.createObjectId(sellerId),
         status: "active",
@@ -120,7 +134,10 @@ export class ProductService extends BaseService<IProduct> {
         },
       });
 
-      console.log("[PRODUCT SERVICE] Product created successfully:", product._id);
+      console.log(
+        "[PRODUCT SERVICE] Product created successfully:",
+        product._id
+      );
       return product;
     } catch (error: any) {
       this.handleError(error, "create");
@@ -130,14 +147,19 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Get product by ID with optional view increment
    */
-  async getProductById(productId: string, incrementViews = false): Promise<IProduct | null> {
+  async getProductById(
+    productId: string,
+    incrementViews = false
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Getting product by ID:", productId);
       // Always convert to ObjectId if needed
-      const objectId = typeof productId === "string" && productId.length === 24
-        ? new mongoose.Types.ObjectId(productId)
-        : productId;
-      const idStr = typeof objectId === "string" ? objectId : objectId.toString();
+      const objectId =
+        typeof productId === "string" && productId.length === 24
+          ? new mongoose.Types.ObjectId(productId)
+          : productId;
+      const idStr =
+        typeof objectId === "string" ? objectId : objectId.toString();
       const product = await this.findById(idStr, "seller");
       if (!product) {
         return null;
@@ -158,7 +180,10 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Get product by slug with optional view increment
    */
-  async getProductBySlug(slug: string, incrementViews = false): Promise<IProduct | null> {
+  async getProductBySlug(
+    slug: string,
+    incrementViews = false
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Getting product by slug:", slug);
 
@@ -209,8 +234,10 @@ export class ProductService extends BaseService<IProduct> {
 
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
         queryFilters.price = {};
-        if (filters.minPrice !== undefined) queryFilters.price.$gte = filters.minPrice;
-        if (filters.maxPrice !== undefined) queryFilters.price.$lte = filters.maxPrice;
+        if (filters.minPrice !== undefined)
+          queryFilters.price.$gte = filters.minPrice;
+        if (filters.maxPrice !== undefined)
+          queryFilters.price.$lte = filters.maxPrice;
       }
 
       if (filters.condition && filters.condition.length > 0) {
@@ -218,9 +245,18 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       if (filters.location) {
-        if (filters.location.city) queryFilters["location.city"] = new RegExp(filters.location.city, "i");
-        if (filters.location.state) queryFilters["location.state"] = new RegExp(filters.location.state, "i");
-        if (filters.location.country) queryFilters["location.country"] = filters.location.country;
+        if (filters.location.city)
+          queryFilters["location.city"] = new RegExp(
+            filters.location.city,
+            "i"
+          );
+        if (filters.location.state)
+          queryFilters["location.state"] = new RegExp(
+            filters.location.state,
+            "i"
+          );
+        if (filters.location.country)
+          queryFilters["location.country"] = filters.location.country;
       }
 
       if (filters.seller) {
@@ -244,7 +280,12 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       // Use base service find method
-      const result = await this.find(queryFilters, pagination, sortOptions, "seller");
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      );
 
       return {
         products: result.data,
@@ -280,14 +321,23 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Update product with ownership verification
    */
-  async updateProduct(productId: string, sellerId: string, updateData: UpdateProductData): Promise<IProduct | null> {
+  async updateProduct(
+    productId: string,
+    sellerId: string,
+    updateData: UpdateProductData
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Updating product:", productId);
 
       // Find product and verify ownership
-      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) });
+      const product = await this.findOne({
+        _id: productId,
+        seller: this.createObjectId(sellerId),
+      });
       if (!product) {
-        throw new Error("Product not found or you don't have permission to update it");
+        throw new Error(
+          "Product not found or you don't have permission to update it"
+        );
       }
 
       // Handle status change for statistics
@@ -296,7 +346,10 @@ export class ProductService extends BaseService<IProduct> {
 
         if (product.status === "active" && updateData.status !== "active") {
           statusChanges["statistics.activeListings"] = -1;
-        } else if (product.status !== "active" && updateData.status === "active") {
+        } else if (
+          product.status !== "active" &&
+          updateData.status === "active"
+        ) {
           statusChanges["statistics.activeListings"] = 1;
         }
 
@@ -310,11 +363,16 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       // Update product using base service
-      const updatedProduct = await this.updateById(productId, { $set: updateData });
+      const updatedProduct = await this.updateById(productId, {
+        $set: updateData,
+      });
 
       // Populate seller information
       if (updatedProduct) {
-        await updatedProduct.populate("seller", "fullName username email profile.avatar profile.location");
+        await updatedProduct.populate(
+          "seller",
+          "fullName username email profile.avatar profile.location"
+        );
       }
 
       console.log("[PRODUCT SERVICE] Product updated successfully");
@@ -332,9 +390,14 @@ export class ProductService extends BaseService<IProduct> {
       console.log("[PRODUCT SERVICE] Deleting product:", productId);
 
       // Find product and verify ownership
-      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) });
+      const product = await this.findOne({
+        _id: productId,
+        seller: this.createObjectId(sellerId),
+      });
       if (!product) {
-        throw new Error("Product not found or you don't have permission to delete it");
+        throw new Error(
+          "Product not found or you don't have permission to delete it"
+        );
       }
 
       // Delete product using base service
@@ -360,9 +423,17 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Toggle favorite status for a product
    */
-  async toggleFavorite(productId: string, userId: string): Promise<{ isFavorite: boolean }> {
+  async toggleFavorite(
+    productId: string,
+    userId: string
+  ): Promise<{ isFavorite: boolean }> {
     try {
-      console.log("[PRODUCT SERVICE] Toggling favorite for product:", productId, "user:", userId);
+      console.log(
+        "[PRODUCT SERVICE] Toggling favorite for product:",
+        productId,
+        "user:",
+        userId
+      );
 
       const product = await this.findById(productId);
       if (!product) {
@@ -384,7 +455,11 @@ export class ProductService extends BaseService<IProduct> {
         });
       }
 
-      console.log(`[PRODUCT SERVICE] Product ${isFavorite ? "removed from" : "added to"} favorites`);
+      console.log(
+        `[PRODUCT SERVICE] Product ${
+          isFavorite ? "removed from" : "added to"
+        } favorites`
+      );
       return { isFavorite: !isFavorite };
     } catch (error: any) {
       this.handleError(error, "toggle favorite");
@@ -452,7 +527,10 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters.status = status;
       }
 
-      const result = await this.find(queryFilters, pagination, { sortBy: "createdAt", sortOrder: "desc" });
+      const result = await this.find(queryFilters, pagination, {
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
 
       return {
         products: result.data,
@@ -470,7 +548,9 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Get product categories with counts
    */
-  async getProductCategories(): Promise<Array<{ category: string; count: number }>> {
+  async getProductCategories(): Promise<
+    Array<{ category: string; count: number }>
+  > {
     try {
       console.log("[PRODUCT SERVICE] Getting product categories");
 
@@ -506,7 +586,6 @@ export class ProductService extends BaseService<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Searching products:", searchTerm);
 
-
       let queryFilters: any = {
         ...filters,
         status: "active",
@@ -515,7 +594,15 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters.$text = { $search: searchTerm };
       }
 
-      const result = await this.find(queryFilters, pagination, { ...sortOptions, sortBy: sortOptions.sortBy || (searchTerm ? "score" : "createdAt") }, "seller");
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        {
+          ...sortOptions,
+          sortBy: sortOptions.sortBy || (searchTerm ? "score" : "createdAt"),
+        },
+        "seller"
+      );
 
       return {
         products: result.data,
@@ -581,14 +668,23 @@ export class ProductService extends BaseService<IProduct> {
     hasPrev: boolean;
   }> {
     try {
-      console.log("[PRODUCT SERVICE] Getting products by category:", category, subCategory);
+      console.log(
+        "[PRODUCT SERVICE] Getting products by category:",
+        category,
+        subCategory
+      );
 
       const queryFilters: any = { category, status: "active" };
       if (subCategory) {
         queryFilters.subCategory = subCategory;
       }
 
-      const result = await this.find(queryFilters, pagination, sortOptions, "seller");
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      );
 
       return {
         products: result.data,
@@ -621,7 +717,11 @@ export class ProductService extends BaseService<IProduct> {
     hasPrev: boolean;
   }> {
     try {
-      console.log("[PRODUCT SERVICE] Getting products by location:", { city, state, country });
+      console.log("[PRODUCT SERVICE] Getting products by location:", {
+        city,
+        state,
+        country,
+      });
 
       const queryFilters: any = { status: "active" };
 
@@ -629,7 +729,12 @@ export class ProductService extends BaseService<IProduct> {
       if (state) queryFilters["location.state"] = new RegExp(state, "i");
       if (country) queryFilters["location.country"] = country;
 
-      const result = await this.find(queryFilters, pagination, sortOptions, "seller");
+      const result = await this.find(
+        queryFilters,
+        pagination,
+        sortOptions,
+        "seller"
+      );
 
       return {
         products: result.data,
@@ -647,16 +752,26 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Mark product as sold
    */
-  async markAsSold(productId: string, sellerId: string): Promise<IProduct | null> {
+  async markAsSold(
+    productId: string,
+    sellerId: string
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Marking product as sold:", productId);
 
-      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) });
+      const product = await this.findOne({
+        _id: productId,
+        seller: this.createObjectId(sellerId),
+      });
       if (!product) {
-        throw new Error("Product not found or you don't have permission to update it");
+        throw new Error(
+          "Product not found or you don't have permission to update it"
+        );
       }
 
-      const updatedProduct = await this.updateById(productId, { status: "sold" });
+      const updatedProduct = await this.updateById(productId, {
+        status: "sold",
+      });
 
       // Update seller statistics
       await User.findByIdAndUpdate(sellerId, {
@@ -675,13 +790,21 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Renew product (extend expiration)
    */
-  async renewProduct(productId: string, sellerId: string): Promise<IProduct | null> {
+  async renewProduct(
+    productId: string,
+    sellerId: string
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Renewing product:", productId);
 
-      const product = await this.findOne({ _id: productId, seller: this.createObjectId(sellerId) });
+      const product = await this.findOne({
+        _id: productId,
+        seller: this.createObjectId(sellerId),
+      });
       if (!product) {
-        throw new Error("Product not found or you don't have permission to update it");
+        throw new Error(
+          "Product not found or you don't have permission to update it"
+        );
       }
 
       const newExpiryDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
@@ -716,9 +839,15 @@ export class ProductService extends BaseService<IProduct> {
           $group: {
             _id: null,
             totalProducts: { $sum: 1 },
-            activeProducts: { $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] } },
-            soldProducts: { $sum: { $cond: [{ $eq: ["$status", "sold"] }, 1, 0] } },
-            expiredProducts: { $sum: { $cond: [{ $lt: ["$expiresAt", new Date()] }, 1, 0] } },
+            activeProducts: {
+              $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+            },
+            soldProducts: {
+              $sum: { $cond: [{ $eq: ["$status", "sold"] }, 1, 0] },
+            },
+            expiredProducts: {
+              $sum: { $cond: [{ $lt: ["$expiresAt", new Date()] }, 1, 0] },
+            },
             totalViews: { $sum: "$views" },
             averagePrice: { $avg: "$price" },
           },
@@ -795,7 +924,10 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Get similar products
    */
-  async getSimilarProducts(productId: string, limit: number = 6): Promise<IProduct[]> {
+  async getSimilarProducts(
+    productId: string,
+    limit: number = 6
+  ): Promise<IProduct[]> {
     try {
       console.log("[PRODUCT SERVICE] Getting similar products for:", productId);
 
@@ -807,7 +939,7 @@ export class ProductService extends BaseService<IProduct> {
       const result = await this.find(
         {
           _id: { $ne: productId },
-          category: product.category,
+          category_id: product.category_id,
           status: "active",
         },
         { page: 1, limit },
@@ -824,7 +956,10 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Bulk update products (admin function)
    */
-  async bulkUpdateProducts(filters: ProductFilters, updateData: UpdateProductData): Promise<{ modifiedCount: number }> {
+  async bulkUpdateProducts(
+    filters: ProductFilters,
+    updateData: UpdateProductData
+  ): Promise<{ modifiedCount: number }> {
     try {
       console.log("[PRODUCT SERVICE] Bulk updating products");
 
@@ -852,7 +987,10 @@ export class ProductService extends BaseService<IProduct> {
     hasPrev: boolean;
   }> {
     try {
-      console.log("[PRODUCT SERVICE] Getting products by price range:", { minPrice, maxPrice });
+      console.log("[PRODUCT SERVICE] Getting products by price range:", {
+        minPrice,
+        maxPrice,
+      });
 
       const result = await this.find(
         {
@@ -893,9 +1031,17 @@ export class ProductService extends BaseService<IProduct> {
     hasPrev: boolean;
   }> {
     try {
-      console.log("[PRODUCT SERVICE] Getting products by condition:", condition);
+      console.log(
+        "[PRODUCT SERVICE] Getting products by condition:",
+        condition
+      );
 
-      const result = await this.find({ condition, status: "active" }, pagination, sortOptions, "seller");
+      const result = await this.find(
+        { condition, status: "active" },
+        pagination,
+        sortOptions,
+        "seller"
+      );
 
       return {
         products: result.data,

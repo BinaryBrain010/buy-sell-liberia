@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProductService } from "../modules/products/services/product.service";
 import { verifyToken } from "../modules/auth/middlewares/next-auth-middleware";
 import { parseFiles, validateFiles } from "@/lib/multer";
-import { uploadProductImagesToLocal, validateImageFilesForLocal } from "@/lib/local-file-upload";
+import {
+  uploadProductImagesToLocal,
+  validateImageFilesForLocal,
+} from "@/lib/local-file-upload";
 import mongoose from "mongoose";
 
 // Force dynamic rendering for this route
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const productService = new ProductService();
 
@@ -22,22 +25,25 @@ export async function POST(request: NextRequest) {
 
     // Parse files and fields using multer
     const { files: imageFiles, fields } = await parseFiles(request);
-    
+
     // Parse form data from JSON string
     let formData;
     try {
-      formData = JSON.parse(fields.formData || '{}');
+      formData = JSON.parse(fields.formData || "{}");
     } catch (error) {
-      return NextResponse.json({ error: "Invalid form data format" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid form data format" },
+        { status: 400 }
+      );
     }
-    
+
     // Extract form fields
     const {
       title,
       description,
       price,
-      category,
-      subCategory = '',
+      category_id,
+      subcategory_id = "",
       condition,
       negotiable = true,
       showPhoneNumber = true,
@@ -49,51 +55,69 @@ export async function POST(request: NextRequest) {
     } = formData;
 
     // Validate required fields
-    if (!title || !description || !price || !category || !location?.city) {
+    if (!title || !description || !price || !category_id || !location?.city) {
       return NextResponse.json(
-        { error: "Missing required fields: title, description, price, category, location.city" },
+        {
+          error:
+            "Missing required fields: title, description, price, category_id, location.city",
+        },
         { status: 400 }
       );
     }
 
     if (price < 0) {
-      return NextResponse.json({ error: "Price must be positive" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Price must be positive" },
+        { status: 400 }
+      );
     }
 
-    if (typeof category !== 'string') {
-      return NextResponse.json({ error: "Valid category is required" }, { status: 400 });
+    if (typeof category_id !== "string") {
+      return NextResponse.json(
+        { error: "Valid category_id is required" },
+        { status: 400 }
+      );
     }
-    
+
     // Validate image files
     const validation = validateImageFilesForLocal(imageFiles);
     if (!validation.valid) {
-      return NextResponse.json({ 
-        error: "Image validation failed", 
-        details: validation.errors 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Image validation failed",
+          details: validation.errors,
+        },
+        { status: 400 }
+      );
     }
-    
+
     console.log(`[PRODUCTS API] Processing ${imageFiles.length} images`);
-    
+
     // Generate product ID for file naming
     const productId = new mongoose.Types.ObjectId().toString();
-    
+
     // Upload images to local storage
     const imagePaths = await uploadProductImagesToLocal(
       imageFiles,
-      category,
+      category_id,
       productId,
       title
     );
 
     // Validate images
     if (!Array.isArray(imagePaths) || imagePaths.length === 0) {
-      return NextResponse.json({ error: "At least one image is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "At least one image is required" },
+        { status: 400 }
+      );
     }
 
     // Validate title image index
     if (titleImageIndex < 0 || titleImageIndex >= imagePaths.length) {
-      return NextResponse.json({ error: "Invalid title image index" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid title image index" },
+        { status: 400 }
+      );
     }
 
     // Create product
@@ -104,13 +128,16 @@ export async function POST(request: NextRequest) {
       title,
       description,
       price,
-      category,
-      subCategory,
+      category_id,
+      subcategory_id,
       condition,
       images: imagePaths, // Only store string URLs
       titleImageIndex,
       location,
-      contactInfo: { ...contactInfo, phone: showPhoneNumber ? contactInfo.phone : undefined },
+      contactInfo: {
+        ...contactInfo,
+        phone: showPhoneNumber ? contactInfo.phone : undefined,
+      },
       tags,
       specifications,
       showPhoneNumber,
@@ -126,7 +153,8 @@ export async function POST(request: NextRequest) {
           title: product.title,
           description: product.description,
           price: product.price,
-          category: product.category,
+          category_id: product.category_id,
+          subcategory_id: product.subcategory_id,
           condition: product.condition,
           images: product.images,
           status: product.status,
@@ -137,7 +165,10 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error("[PRODUCTS API] Create product error:", error.message);
-    return NextResponse.json({ error: error.message || "Failed to create product" }, { status: 400 });
+    return NextResponse.json(
+      { error: error.message || "Failed to create product" },
+      { status: 400 }
+    );
   }
 }
 
@@ -149,33 +180,48 @@ export async function GET(request: NextRequest) {
 
     // Parse filters
     const filters: any = {};
-    if (searchParams.get("category")) filters.category = searchParams.get("category");
-    if (searchParams.get("subCategory")) filters.subCategory = searchParams.get("subCategory");
-    if (searchParams.get("minPrice")) filters.minPrice = Number(searchParams.get("minPrice"));
-    if (searchParams.get("maxPrice")) filters.maxPrice = Number(searchParams.get("maxPrice"));
-    if (searchParams.get("condition")) filters.condition = searchParams.get("condition")?.split(",");
+    if (searchParams.get("category_id"))
+      filters.category_id = searchParams.get("category_id");
+    if (searchParams.get("subcategory_id"))
+      filters.subcategory_id = searchParams.get("subcategory_id");
+    if (searchParams.get("minPrice"))
+      filters.minPrice = Number(searchParams.get("minPrice"));
+    if (searchParams.get("maxPrice"))
+      filters.maxPrice = Number(searchParams.get("maxPrice"));
+    if (searchParams.get("condition"))
+      filters.condition = searchParams.get("condition")?.split(",");
     if (searchParams.get("search")) filters.search = searchParams.get("search");
     if (searchParams.get("seller")) filters.seller = searchParams.get("seller");
     if (searchParams.get("status")) filters.status = searchParams.get("status");
-    if (searchParams.get("tags")) filters.tags = { $all: searchParams.get("tags")?.split(",") };
+    if (searchParams.get("tags"))
+      filters.tags = { $all: searchParams.get("tags")?.split(",") };
     if (searchParams.get("customField")) {
-      const [fieldName, value] = searchParams.get("customField")?.split(":") || [];
-      if (fieldName && value) filters.customFields = { $elemMatch: { fieldName, value } };
+      const [fieldName, value] =
+        searchParams.get("customField")?.split(":") || [];
+      if (fieldName && value)
+        filters.customFields = { $elemMatch: { fieldName, value } };
     }
 
     // Location filters
-    if (searchParams.get("city") || searchParams.get("state") || searchParams.get("country")) {
+    if (
+      searchParams.get("city") ||
+      searchParams.get("state") ||
+      searchParams.get("country")
+    ) {
       filters.location = {};
-      if (searchParams.get("city")) filters.location.city = searchParams.get("city");
-      if (searchParams.get("state")) filters.location.state = searchParams.get("state");
-      if (searchParams.get("country")) filters.location.country = searchParams.get("country");
+      if (searchParams.get("city"))
+        filters.location.city = searchParams.get("city");
+      if (searchParams.get("state"))
+        filters.location.state = searchParams.get("state");
+      if (searchParams.get("country"))
+        filters.location.country = searchParams.get("country");
     }
 
     // Parse sort options
     const sortOptions: any = {};
     const sortBy = searchParams.get("sortBy");
     if (sortBy) {
-      sortOptions[sortBy === "price" ? "price" : sortBy] = 
+      sortOptions[sortBy === "price" ? "price" : sortBy] =
         searchParams.get("sortOrder") === "desc" ? -1 : 1;
     } else {
       sortOptions.featured = -1;
@@ -186,7 +232,10 @@ export async function GET(request: NextRequest) {
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 20;
 
-    const result = await productService.getProducts(filters, sortOptions, { page, limit });
+    const result = await productService.getProducts(filters, sortOptions, {
+      page,
+      limit,
+    });
 
     console.log(`[PRODUCTS API] Returning ${result.products.length} products`);
 
@@ -199,6 +248,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error("[PRODUCTS API] Get products error:", error.message);
-    return NextResponse.json({ error: error.message || "Failed to get products" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to get products" },
+      { status: 500 }
+    );
   }
 }

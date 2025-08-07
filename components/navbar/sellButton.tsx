@@ -2,24 +2,24 @@ import React, { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const SellButton = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const handleSellClick = () => {
-    // Handle sell button click for logged in users
-    // Add your logic here
-    setMobileMenuOpen(false); // Close mobile menu
+    setMobileMenuOpen(false);
+    router.push("/sell");
   };
 
   const handleAuthClick = (mode: "login" | "signup") => {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
-    setMobileMenuOpen(false); // Close mobile menu when auth modal opens
+    setMobileMenuOpen(false);
   };
   return (
     <Button
