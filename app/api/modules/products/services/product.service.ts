@@ -8,10 +8,16 @@ import {
 import mongoose from "mongoose";
 import slugify from "slugify";
 
+export interface Price {
+  amount: number;
+  currency: string;
+  negotiable: boolean;
+}
+
 export interface CreateProductData {
   title: string;
   description: string;
-  price: number;
+  price: Price;
   category_id: string;
   subcategory_id: string;
   condition: "new" | "like-new" | "good" | "fair" | "poor";

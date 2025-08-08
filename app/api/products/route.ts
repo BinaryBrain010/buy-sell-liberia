@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const {
       title,
       description,
-      price,
+      price: amount,
       category_id,
       subcategory_id = "",
       condition,
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     } = formData;
 
     // Validate required fields
-    if (!title || !description || !price || !category_id || !location?.city) {
+    if (!title || !description || amount == null || !category_id || !location?.city) {
       return NextResponse.json(
         {
           error:
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (price < 0) {
+    if (amount < 0) {
       return NextResponse.json(
         { error: "Price must be positive" },
         { status: 400 }
@@ -120,10 +120,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create product
     if (!authResult.userId) {
       return NextResponse.json({ error: "Missing user id" }, { status: 400 });
     }
+
+    // Construct full price object with negotiable inside
+    const price = {
+      amount,
+      currency: "PKR", // Set dynamically if needed
+      negotiable: negotiable ?? true, // Fallback to true if undefined
+    };
+
+    // Create product
     const product = await productService.createProduct(authResult.userId, {
       title,
       description,
@@ -131,7 +139,7 @@ export async function POST(request: NextRequest) {
       category_id,
       subcategory_id,
       condition,
-      images: imagePaths, // Only store string URLs
+      images: imagePaths,
       titleImageIndex,
       location,
       contactInfo: {
@@ -171,6 +179,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
 
 export async function GET(request: NextRequest) {
   try {

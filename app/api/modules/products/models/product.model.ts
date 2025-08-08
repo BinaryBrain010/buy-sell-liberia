@@ -1,10 +1,11 @@
 import mongoose, { Schema, type Document } from "mongoose";
+import { Price } from "../services/product.service";
 
 export interface IProduct extends Document {
   _id: mongoose.Types.ObjectId;
   title: string;
   description: string;
-  price: number;
+  price: Price;
   category_id: mongoose.Types.ObjectId;
   subcategory_id?: mongoose.Types.ObjectId;
   condition: "new" | "like-new" | "good" | "fair" | "poor";
@@ -74,11 +75,22 @@ const ProductSchema = new Schema<IProduct>(
       minlength: [20, "Description must be at least 20 characters"],
     },
     price: {
-      type: Number,
-      required: [true, "Price is required"],
-      min: [0, "Price must be positive"],
-      max: [10000000, "Price is too high"],
-    },
+  amount: {
+    type: Number,
+    required: [true, "Price amount is required"],
+    min: [0, "Price must be positive"],
+    max: [10000000, "Price is too high"],
+  },
+  currency: {
+    type: String,
+    default: "PKR",
+  },
+  negotiable: {
+    type: Boolean,
+    default: false,
+  },
+},
+
     category_id: {
       type: Schema.Types.ObjectId,
       ref: "Category",
@@ -174,10 +186,6 @@ const ProductSchema = new Schema<IProduct>(
         width: Number,
         height: Number,
       },
-    },
-    negotiable: {
-      type: Boolean,
-      default: true,
     },
     showPhoneNumber: {
       type: Boolean,
