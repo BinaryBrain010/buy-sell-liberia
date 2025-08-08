@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Upload, X, Camera, MapPin, Phone, Mail, Star } from 'lucide-react'
+import { Upload, X, Camera, MapPin, Phone, Star } from 'lucide-react'
 import { ProductFormData, FormErrors } from './types'
 
 interface Step2ImagesLocationProps {
@@ -50,11 +50,9 @@ const Step2ImagesLocation: React.FC<Step2ImagesLocationProps> = ({
     }))
     setImagePreview(prev => prev.filter((_, i) => i !== index))
     
-    // If the removed image was the title image, reset title image
     if (formData.titleImageIndex === index) {
       setFormData(prev => ({ ...prev, titleImageIndex: 0 }))
     } else if (formData.titleImageIndex > index) {
-      // Adjust title image index if it was after the removed image
       setFormData(prev => ({ ...prev, titleImageIndex: prev.titleImageIndex - 1 }))
     }
   }
@@ -87,125 +85,114 @@ const Step2ImagesLocation: React.FC<Step2ImagesLocationProps> = ({
   }, [])
 
   return (
-    <div className="space-y-6">
-      {/* Images Section */}
+    <div className="max-w-4xl w-full mx-auto px-2 space-y-2">
+      {/* Compact Single Card */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Camera className="h-5 w-5" />
-            Upload Images ({formData.images.length}/{maxImages})
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Camera className="h-3 w-3" />
+            Images & Location ({formData.images.length}/{maxImages})
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Drag & Drop Area */}
-          <div
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-              errors.images 
-                ? 'border-red-300 bg-red-50' 
-                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-            }`}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-          >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground mb-2">
-              Drag and drop images here, or click to select
-            </p>
-            <p className="text-xs text-muted-foreground/70 mb-4">
-              Upload up to {maxImages} images (JPG, PNG, WebP)
-            </p>
-            <Input
-              id="images"
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('images')?.click()}
+        <CardContent className="space-y-3">
+          {/* Compact Image Upload */}
+          <div>
+            <Label className="text-xs">Images *</Label>
+            <div
+              className={`border border-dashed rounded p-2 text-center transition-colors ${
+                errors.images 
+                  ? 'border-red-300 bg-red-50' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              }`}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
             >
-              Choose Files
-            </Button>
+              <Upload className="w-4 h-4 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground mb-1">
+                Drag & drop or click to select
+              </p>
+              <Input
+                id="images"
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('images')?.click()}
+                className="h-6 text-xs px-2"
+              >
+                Choose Files
+              </Button>
+            </div>
+            {errors.images && (
+              <p className="text-[10px] text-red-500 mt-1">{errors.images}</p>
+            )}
           </div>
 
-          {errors.images && (
-            <p className="text-sm text-red-500">{errors.images}</p>
-          )}
-
-          {/* Image Preview Grid */}
+          {/* Compact Image Preview */}
           {imagePreview.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-yellow-500" />
-                <span className="text-sm font-medium">Select a title image (first image shown to buyers)</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-yellow-500" />
+                <span className="text-xs">Select title image</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-1">
                 {imagePreview.map((preview, index) => (
                   <div key={index} className="relative group">
-                    <div className={`relative rounded-lg overflow-hidden border-2 ${
+                    <div className={`relative rounded overflow-hidden border ${
                       formData.titleImageIndex === index 
-                        ? 'border-blue-500 ring-2 ring-blue-200' 
+                        ? 'border-blue-500 ring-1 ring-blue-200' 
                         : 'border-border'
                     }`}>
                       <img
-                        src={preview}
+                        src={preview || "/placeholder.svg"}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-24 object-cover"
+                        className="w-full h-12 object-cover"
                       />
                       {formData.titleImageIndex === index && (
-                        <div className="absolute top-1 left-1 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center">
-                          <Star className="w-3 h-3" />
+                        <div className="absolute top-0 left-0 w-3 h-3 bg-blue-500 text-white rounded-br flex items-center justify-center">
+                          <Star className="w-2 h-2" />
                         </div>
                       )}
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-0 right-0 w-3 h-3 bg-red-500 text-white rounded-bl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-2 h-2" />
                       </button>
                     </div>
                     <button
                       type="button"
                       onClick={() => setTitleImage(index)}
-                      className={`w-full mt-1 text-xs py-1 rounded transition-colors ${
+                      className={`w-full mt-0.5 text-[8px] py-0.5 rounded transition-colors ${
                         formData.titleImageIndex === index
                           ? 'bg-blue-500 text-white'
                           : 'bg-muted text-muted-foreground hover:bg-muted/80'
                       }`}
                     >
-                      {formData.titleImageIndex === index ? 'Title Image' : 'Set as Title'}
+                      {formData.titleImageIndex === index ? 'Title' : 'Set'}
                     </button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Contact Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Phone className="h-5 w-5" />
-            Contact Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="phone" className="text-sm font-medium">
-                Phone Number *
-              </Label>
+          {/* Compact Contact Info */}
+          <div>
+            <Label className="text-xs flex items-center gap-1">
+              <Phone className="h-2 w-2" />
+              Contact *
+            </Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1">
               <Input
-                id="phone"
-                type="tel"
-                placeholder="Enter your phone number"
+                placeholder="Phone *"
                 value={formData.contactInfo?.phone || ''}
                 onChange={(e) =>
                   setFormData(prev => ({
@@ -213,21 +200,10 @@ const Step2ImagesLocation: React.FC<Step2ImagesLocationProps> = ({
                     contactInfo: { ...prev.contactInfo, phone: e.target.value }
                   }))
                 }
-                className={`mt-1 ${errors.phone ? 'border-red-500' : ''}`}
+                className={`h-7 text-xs ${errors.phone ? 'border-red-500' : ''}`}
               />
-              {errors.phone && (
-                <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
+                placeholder="Email (optional)"
                 value={formData.contactInfo?.email || ''}
                 onChange={(e) =>
                   setFormData(prev => ({
@@ -235,104 +211,74 @@ const Step2ImagesLocation: React.FC<Step2ImagesLocationProps> = ({
                     contactInfo: { ...prev.contactInfo, email: e.target.value }
                   }))
                 }
-                className="mt-1"
+                className="h-7 text-xs"
+              />
+              <Input
+                placeholder="WhatsApp (optional)"
+                value={formData.contactInfo?.whatsapp || ''}
+                onChange={(e) =>
+                  setFormData(prev => ({
+                    ...prev,
+                    contactInfo: { ...prev.contactInfo, whatsapp: e.target.value }
+                  }))
+                }
+                className="h-7 text-xs"
               />
             </div>
+            {errors.phone && (
+              <p className="text-[10px] text-red-500 mt-1">{errors.phone}</p>
+            )}
           </div>
 
+          {/* Compact Location */}
           <div>
-            <Label htmlFor="whatsapp" className="text-sm font-medium">
-              WhatsApp (optional)
+            <Label className="text-xs flex items-center gap-1">
+              <MapPin className="h-2 w-2" />
+              Location *
             </Label>
-            <Input
-              id="whatsapp"
-              type="tel"
-              placeholder="Enter WhatsApp number"
-              value={formData.contactInfo?.whatsapp || ''}
-              onChange={(e) =>
-                setFormData(prev => ({
-                  ...prev,
-                  contactInfo: { ...prev.contactInfo, whatsapp: e.target.value }
-                }))
-              }
-              className="mt-1"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Location Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <MapPin className="h-5 w-5" />
-            Location Details
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="city" className="text-sm font-medium">
-                City *
-              </Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1">
               <Input
-                id="city"
-                placeholder="Enter city"
+                placeholder="City *"
                 value={formData.location.city}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData(prev => ({
                     ...prev,
                     location: { ...prev.location, city: e.target.value }
                   }))
-                }
-                className={`mt-1 ${errors.city ? 'border-red-500' : ''}`}
+                  setErrors(prev => ({ ...prev, city: '' }))
+                }}
+                className={`h-7 text-xs ${errors.city ? 'border-red-500' : ''}`}
               />
-              {errors.city && (
-                <p className="text-sm text-red-500 mt-1">{errors.city}</p>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="state" className="text-sm font-medium">
-                State/Province *
-              </Label>
               <Input
-                id="state"
-                placeholder="Enter state"
+                placeholder="State *"
                 value={formData.location.state}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData(prev => ({
                     ...prev,
                     location: { ...prev.location, state: e.target.value }
                   }))
-                }
-                className={`mt-1 ${errors.state ? 'border-red-500' : ''}`}
+                  setErrors(prev => ({ ...prev, state: '' }))
+                }}
+                className={`h-7 text-xs ${errors.state ? 'border-red-500' : ''}`}
               />
-              {errors.state && (
-                <p className="text-sm text-red-500 mt-1">{errors.state}</p>
-              )}
-            </div>
-            
-            <div>
-              <Label htmlFor="country" className="text-sm font-medium">
-                Country *
-              </Label>
               <Input
-                id="country"
-                placeholder="Enter country"
+                placeholder="Country *"
                 value={formData.location.country}
-                onChange={(e) =>
+                onChange={(e) => {
                   setFormData(prev => ({
                     ...prev,
                     location: { ...prev.location, country: e.target.value }
                   }))
-                }
-                className={`mt-1 ${errors.country ? 'border-red-500' : ''}`}
+                  setErrors(prev => ({ ...prev, country: '' }))
+                }}
+                className={`h-7 text-xs ${errors.country ? 'border-red-500' : ''}`}
               />
-              {errors.country && (
-                <p className="text-sm text-red-500 mt-1">{errors.country}</p>
-              )}
             </div>
+            {(errors.city || errors.state || errors.country) && (
+              <p className="text-[10px] text-red-500 mt-1">
+                {errors.city || errors.state || errors.country}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
