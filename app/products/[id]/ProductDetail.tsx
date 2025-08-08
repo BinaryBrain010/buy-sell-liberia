@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Eye, Star, User, Heart } from "lucide-react";
+import { MapPin, Clock, Eye, Star, User, Heart } from 'lucide-react';
 import Image from "next/image";
-import ContactSellerButton from "@/components/ContactSellerPopup";
+import { ContactSellerButton } from "@/components/ContactSellerPopup";
 import { useEffect, useState } from "react";
 
 
@@ -83,7 +83,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
         >
           {images.length > 0 && getImageUrl(images[currentImageIndex]) ? (
             <Image
-              src={getImageUrl(images[currentImageIndex])!}
+              src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
               alt={
                 typeof images[currentImageIndex] === "object"
                   ? images[currentImageIndex].alt ||
@@ -166,7 +166,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
           >
             <div className="relative max-w-3xl w-full aspect-[4/3] bg-black rounded-lg overflow-hidden flex items-center justify-center">
               <Image
-                src={getImageUrl(images[currentImageIndex])!}
+                src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
                 alt={productData.title || "Product image"}
                 fill
                 className="object-contain"
@@ -228,7 +228,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
               >
                 {getImageUrl(img) ? (
                   <Image
-                    src={getImageUrl(img)!}
+                    src={getImageUrl(img)! || "/placeholder.svg"}
                     alt={
                       typeof img === "object"
                         ? img.alt || productData.title
