@@ -1,6 +1,10 @@
+"use client";
+
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function SearchBar() {
   const [query, setQuery] = React.useState("");
@@ -8,34 +12,36 @@ export default function SearchBar() {
   const [loading, setLoading] = React.useState(false);
   const [showResults, setShowResults] = React.useState(false);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = React.useState<number>(-1);
 
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  // Debounced fetch on query/category change
   React.useEffect(() => {
-    // Normalize query: trim and replace multiple spaces with a single space
     const normalizedQuery = query.replace(/\s+/g, " ").trim();
     if (!normalizedQuery) {
       setResults([]);
       setShowResults(false);
       return;
     }
+
     setLoading(true);
     const timeout = setTimeout(() => {
-      // Build API URL according to route.ts contract
-      let url = `/api/products/search?search=${encodeURIComponent(
-        normalizedQuery
-      )}`;
+      let url = `/api/products?search=${encodeURIComponent(normalizedQuery)}`;
       if (selectedCategory) {
-        url += `&category=${encodeURIComponent(selectedCategory)}`;
+        url += `&category_id=${encodeURIComponent(selectedCategory)}`;
       }
+
       fetch(url)
         .then(async (res) => {
           if (!res.ok) throw new Error("Failed to fetch");
           return res.json();
         })
         .then((data) => {
-          // API returns { products, total, page, totalPages }
           setResults(Array.isArray(data.products) ? data.products : []);
           setShowResults(true);
+          setHighlightedIndex(-1);
         })
         .catch(() => {
           setResults([]);
@@ -43,21 +49,46 @@ export default function SearchBar() {
         })
         .finally(() => setLoading(false));
     }, 400);
+
     return () => clearTimeout(timeout);
   }, [query, selectedCategory]);
 
-  // Hide results on outside click
+  // Handle outside click
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
         setShowResults(false);
       }
     }
+
     if (showResults) {
       document.addEventListener("mousedown", handleClick);
     }
+
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showResults]);
+
+  // Handle keyboard events
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showResults || results.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % results.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev - 1 + results.length) % results.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+        const selectedProduct = results[highlightedIndex];
+        router.push(`/products/${selectedProduct._id}`);
+        setShowResults(false);
+      }
+    } else if (e.key === "Escape") {
+      setShowResults(false);
+    }
+  };
 
   return (
     <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
@@ -71,6 +102,7 @@ export default function SearchBar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => query && setShowResults(true)}
+            onKeyDown={handleKeyDown}
           />
           {showResults && (
             <div className="absolute left-0 right-0 mt-2 bg-background border border-border rounded-lg shadow-lg z-50 max-h-72 overflow-y-auto">
@@ -84,24 +116,35 @@ export default function SearchBar() {
                 </div>
               ) : (
                 <ul>
-                  {results.map((item) => (
-                    <li
-                      key={item._id}
-                      className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
-                    >
-                      {(item.image || (item.images && item.images[0])) && (
-                        <img
-                          src={item.image || item.images[0]}
-                          alt={item.title}
-                          className="w-8 h-8 rounded object-cover"
-                        />
-                      )}
-                      <span className="font-medium text-sm">{item.title}</span>
-                      <span className="ml-auto text-xs text-muted-foreground">
-                        {item.price ? `L$${item.price}` : ""}
-                      </span>
-                    </li>
-                  ))}
+                  {results.map((item, index) => {
+                    const isHighlighted = index === highlightedIndex;
+                    return (
+                      <Link href={`/products/${item._id}`} key={item._id}>
+                        <li
+                          className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
+                            isHighlighted ? "bg-muted" : "hover:bg-muted"
+                          }`}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                        >
+                          {(item.image || (item.images && item.images[0])) && (
+                            <img
+                              src={item.image || item.images[0]}
+                              alt={item.title}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                          )}
+                          <span className="font-medium text-sm">
+                            {item.title}
+                          </span>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {item.price?.amount
+                              ? `${item.price.currency || "₨"}${item.price.amount}`
+                              : ""}
+                          </span>
+                        </li>
+                      </Link>
+                    );
+                  })}
                 </ul>
               )}
             </div>
