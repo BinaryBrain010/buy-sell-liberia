@@ -4,12 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Heart, MapPin, Clock, Eye } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { Price } from "@/app/api/modules/products/services/product.service";
 
 interface Product {
   _id: string;
   title: string;
   description: string;
-  price: number;
+  price: Price;
   category: string;
   subCategory: string;
   condition: string;
@@ -351,9 +352,9 @@ export function ProductCard({
                   isDark ? "text-blue-400" : "text-blue-600"
                 }`}
               >
-                {product.price ? `$${product.price}` : "-"}
+                {product.price ? `$${product.price.amount}` : "-"}
               </span>
-              {product.negotiable && (
+              {product.price.negotiable && (
                 <span
                   className={`text-xs font-semibold ${
                     isDark ? "text-green-400" : "text-green-600"
