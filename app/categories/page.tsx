@@ -1,15 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect, Key, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Loader2 } from "lucide-react";
-import { useCategories } from "@/hooks/useCategories";
-import { ProductCarousel } from "@/components/product-carousel";
+import { ArrowRight, Loader2, X, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import React from "react";
+import { ProductCard } from "@/components/product-card";
 
 // Color mappings for categories (matching existing design)
 const categoryColors: { [key: string]: string } = {
@@ -33,14 +30,20 @@ const categoryColors: { [key: string]: string } = {
 };
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [categoryProducts, setCategoryProducts] = React.useState<
-    Record<string, any[]>
-  >({});
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20; // Number of products to show per page
+  const productsSectionRef = useRef<HTMLDivElement>(null); // Ref for the products section
 
-  React.useEffect(() => {
-    setLoading(true);
+  // 1. Fetch all categories on initial load
+  useEffect(() => {
+    setLoadingCategories(true);
     fetch("/api/categories?includeProducts=false&limit=100")
       .then(async (res) => {
         if (!res.ok) throw new Error("Failed to fetch categories");
@@ -49,44 +52,101 @@ export default function CategoriesPage() {
       .then((data) => {
         setCategories(data.categories || []);
       })
-      .catch(() => setCategories([]))
-      .finally(() => setLoading(false));
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+        setCategories([]);
+      })
+      .finally(() => setLoadingCategories(false));
   }, []);
 
-  React.useEffect(() => {
-    if (!categories.length) return;
-    // For each category, fetch products using the search API
-    const fetchAll = async () => {
-      const results: Record<string, any[]> = {};
-      await Promise.all(
-        categories.map(async (cat) => {
-          try {
-            const res = await fetch(
-              `/api/search/product?categorySlug=${encodeURIComponent(
-                cat.slug
-              )}&limit=10&q=`
-            );
-            if (!res.ok) return;
-            const data = await res.json();
-            results[cat.slug] = data.results || [];
-          } catch {
-            results[cat.slug] = [];
-          }
-        })
-      );
-      setCategoryProducts(results);
-    };
-    fetchAll();
-  }, [categories]);
+  // 2. Fetch products when selectedCategoryId or currentPage changes
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      setProducts([]);
+      setTotalProducts(0);
+      setCurrentPage(1);
+      return;
+    }
 
-  if (loading || categories.length === 0) {
+    setLoadingProducts(true);
+    const fetchCategoryProducts = async () => {
+      try {
+        const url = `/api/products?category_id=${encodeURIComponent(selectedCategoryId)}&limit=${itemsPerPage}&page=${currentPage}`;
+        console.log(`[CategoriesPage] Fetching products for category ID: ${selectedCategoryId}, Page: ${currentPage}, URL: ${url}`);
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        setProducts(data.products || []);
+        setTotalProducts(data.total || 0);
+      } catch (error) {
+        console.error(`Error fetching products for category ${selectedCategoryId}:`, error);
+        setProducts([]);
+        setTotalProducts(0);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchCategoryProducts();
+  }, [selectedCategoryId, currentPage]);
+
+  // 3. Scroll to products section when selectedCategoryId changes and products section is rendered
+  useEffect(() => {
+    if (selectedCategoryId && productsSectionRef.current) {
+      productsSectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedCategoryId]); // This effect runs after selectedCategoryId updates and re-render occurs
+
+  // Handle category card click
+  const handleCategoryClick = (category: any) => {
+    setSelectedCategoryId(category._id);
+    setSelectedCategoryName(category.name);
+    setCurrentPage(1); // Reset to first page when a new category is selected
+    // The scrolling logic is now in the useEffect above
+  };
+
+  // Handle pagination for products
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Calculate total pages for products
+  const totalProductPages = Math.ceil(totalProducts / itemsPerPage);
+
+  // Generate pagination numbers for products
+  const getProductPaginationNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    if (totalProductPages <= maxVisible) {
+      for (let i = 1; i <= totalProductPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      const end = Math.min(totalProductPages, start + maxVisible - 1);
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) pages.push("...");
+      }
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (end < totalProductPages) {
+        if (end < totalProductPages - 1) pages.push("...");
+        pages.push(totalProductPages);
+      }
+    }
+    return pages;
+  };
+
+  if (loadingCategories) {
     return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-20">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading categories...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading categories...</p>
         </div>
       </div>
     );
@@ -101,89 +161,155 @@ export default function CategoriesPage() {
             All Categories
           </h1>
           <p className="text-xl text-muted-foreground">
-            Browse products by category
+            Explore products by category
           </p>
         </div>
 
-        {/* Quick Links */}
-        {/* <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <Link href="/products">
-            <Button
-              variant="outline"
-              size="lg"
-              className="glass border-0 btn-shadow"
-            >
-              All Products
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-        </div> */}
-
-        {/* Category-wise Product Sections */}
-        <div className="space-y-16">
-          {categories.map((category, index) => (
-            <motion.section
+        {/* Grid of Category Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-16">
+          {categories.map((category) => (
+            <Card
               key={category._id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className="bg-background/50 rounded-2xl p-6 border border-border/50 card-shadow"
+              onClick={() => handleCategoryClick(category)}
+              className={`bg-background/50 rounded-xl p-3 border border-border/50 card-shadow hover:scale-105 transition-transform cursor-pointer h-full flex flex-col items-center justify-center text-center
+                ${selectedCategoryId === category._id ? 'ring-2 ring-primary ring-offset-2' : ''}`}
             >
-              {/* Category Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-4">
-                  <div
-                    className={`w-16 h-16 rounded-3xl bg-gradient-to-br ${
-                      categoryColors[category.slug] ||
-                      "from-gray-500 to-gray-600"
-                    } flex items-center justify-center text-3xl shadow-lg`}
-                  >
-                    {category.icon}
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-1">{category.name}</h2>
-                    <p className="text-muted-foreground">
-                    </p>
-                  </div>
+              <CardContent className="flex flex-col items-center justify-center p-0">
+                <div
+                  className={`w-16 h-16 rounded-full bg-gradient-to-br ${
+                    categoryColors[category.slug] ||
+                    "from-gray-500 to-gray-600"
+                  } flex items-center justify-center text-3xl shadow-lg text-white mb-3`}
+                >
+                  {category.icon}
                 </div>
-                <Link href={`/categories/${category.slug}`}>
-                  <Button variant="outline" className="btn-shadow">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Subcategories */}
-              {category.subcategories.length > 0 && (
-                <div className="mb-6">
-                  <div className="flex flex-wrap gap-2">
-                    {category.subcategories.slice(0, 6).map((subcategory: { _id: React.Key | null | undefined; slug: any; name: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; }) => (
-                      <Link
-                        key={subcategory._id}
-                        href={`/categories/${category.slug}/${subcategory.slug}`}
-                      >
-                        <Badge
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
-                          {subcategory.name}
-                        </Badge>
-                      </Link>
-                    ))}
-                    {category.subcategories.length > 6 && (
-                      <Badge variant="outline">
-                        +{category.subcategories.length - 6} more
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              )}
-            
-            </motion.section>
+                <h2 className="text-base font-bold mb-1 line-clamp-1">{category.name}</h2>
+                <p className="text-muted-foreground text-xs line-clamp-2">
+                  {category.description}
+                </p>
+              </CardContent>
+            </Card>
           ))}
         </div>
+
+        {/* Products Section (conditionally rendered) */}
+        {selectedCategoryId && (
+          <div ref={productsSectionRef} className="mt-16 pt-8 border-t border-border/50">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold">
+                Products in {selectedCategoryName}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedCategoryId(null)}
+                aria-label="Clear category filter"
+                className="flex items-center"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear Filter
+              </Button>
+            </div>
+
+            {loadingProducts ? (
+              <div className="text-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading products...</p>
+              </div>
+            ) : products.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                  {products.map((product) => (
+                    <Link key={product._id} href={`/products/${product._id}`} passHref>
+                      <ProductCard
+                        product={product}
+                        variant="compact"
+                        onLike={(productId: any) => {
+                          console.log("Liked product:", productId);
+                          // Implement actual like logic here
+                        }}
+                      />
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Pagination for Products */}
+                {totalProductPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                    <div className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalProductPages}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {/* Previous Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1 || loadingProducts}
+                        className="flex items-center space-x-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </Button>
+                      {/* Page Numbers */}
+                      <div className="flex items-center space-x-1">
+                        {getProductPaginationNumbers().map((page, index) => (
+                          <Button
+                            key={index}
+                            variant={page === currentPage ? "default" : "outline"}
+                            size="sm"
+                            onClick={() =>
+                              typeof page === "number"
+                                ? handlePageChange(page)
+                                : null
+                            }
+                            disabled={page === "..." || loadingProducts}
+                            className="min-w-[40px]"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      {/* Next Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalProductPages || loadingProducts}
+                        className="flex items-center space-x-1"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16">
+                <Card className="glass border-0 max-w-md mx-auto">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Products Found
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      There are no products listed for this category yet.
+                    </p>
+                    <Button
+                      onClick={() => setSelectedCategoryId(null)}
+                      variant="outline"
+                    >
+                      View All Categories
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
