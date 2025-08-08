@@ -3,14 +3,31 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { UserListings } from "@/components/dashboard/userListings";
+import UserListings from "@/components/dashboard/userListings";
 import { UserProfile } from "@/components/dashboard/userProfile";
 import { Favorites } from "@/components/dashboard/favourites";
 import { Chats } from "@/components/dashboard/chats";
 
+// Define the shape of the user object to match API response
+interface User {
+  _id: string;
+  fullName: string;
+  username: string;
+  email: string;
+  phone: string;
+  password: string;
+  country: string;
+  isEmailVerified: boolean;
+  refreshToken: string;
+  role: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function DashboardPage() {
   const [tab, setTab] = useState("profile");
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,14 +64,34 @@ export default function DashboardPage() {
             <p>Failed to load user.</p>
           )}
         </TabsContent>
-        <TabsContent value="listings">{/* <UserListings /> */}</TabsContent>
-
-        <TabsContent value="favorites">{/* <Favorites /> */}</TabsContent>
-
-        <TabsContent value="chats">{/* <Chats /> */}</TabsContent>
-
+        <TabsContent value="listings">
+          {loading ? (
+            <p>Loading listings...</p>
+          ) : user ? (
+            <UserListings userId={user._id} />
+          ) : (
+            <p>Failed to load user listings.</p>
+          )}
+        </TabsContent>
+        <TabsContent value="favorites">
+          {loading ? (
+            <p>Loading favorites...</p>
+          ) : user ? (
+            <Favorites />
+          ) : (
+            <p>Failed to load favorites.</p>
+          )}
+        </TabsContent>
+        <TabsContent value="chats">
+          {loading ? (
+            <p>Loading chats...</p>
+          ) : user ? (
+            <Chats />
+          ) : (
+            <p>Failed to load chats.</p>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-

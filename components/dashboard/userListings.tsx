@@ -2,57 +2,127 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { Loader2, Package } from "lucide-react";
 import { ProductCard } from "@/components/product-card";
+import { Price } from "@/app/api/modules/products/services/product.service";
 
-type Product = {
+// Define the shape of a product
+interface Product {
   _id: string;
   title: string;
   description: string;
-  price: number;
+  price: Price;
   category: string;
   subCategory: string;
   condition: string;
+  images: { url: string; alt?: string }[];
   titleImageIndex: number;
-  contactInfo: string;
-  images: string[];
-  location: string;
+  location: {
+    city: string;
+    state?: string;
+    country: string;
+  };
+  contactInfo: object;
+  seller: string;
+  status: string;
+  tags: string[];
+  negotiable: boolean;
+  showPhoneNumber: boolean;
+  views: number;
+  // expiresAt: string;
   createdAt: string;
   updatedAt: string;
-  sellerId: string;
-  views: number;
-  likes: number;
-  isActive: boolean;
-  isSold: boolean;
-  tags: string[];
-  seller: string; // Add seller property
-  status: string; // Add status property
-  negotiable: boolean; // Add negotiable property
-  showPhoneNumber: boolean; // Add showPhoneNumber property
-  
-  // Add any other properties required by ProductCard's Product type here
-  [key: string]: any;
-};
+}
 
-export function UserListings() {
+
+// Define the shape of the API response
+interface ApiResponse {
+  message: string;
+  products: Product[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+// Define props for UserListings
+interface UserListingsProps {
+  userId: string;
+}
+
+export default function UserListings({ userId }: UserListingsProps) {
   const [listings, setListings] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axios.get("/api/user/listings").then((res) => {
-      setListings(res.data);
+    if (!userId) {
+      setError("User ID is required to fetch products.");
       setLoading(false);
-    });
-  }, []);
+      return;
+    }
 
-  if (loading) return <p>Loading your listings...</p>;
+    axios(`/api/products?seller=${userId}`)
+      .then((res: { data: ApiResponse }) => {
+        setListings(res.data.products || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch products:", err);
+        setError("Failed to load products.");
+        setLoading(false);
+      });
+  }, [userId]);
 
-  if (listings.length === 0)
-    return <p className="text-muted-foreground">You have no listings yet.</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  if (listings.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No products yet</h3>
+        <p className="text-muted-foreground">Start by creating your first product!</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {listings.map((product) => (
-        <ProductCard key={product._id} product={product} variant="compact" />
-      ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">My Products</h2>
+          <p className="text-sm text-muted-foreground">
+            {listings.length} total products
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {listings.map((product) => (
+          <ProductCard
+            key={product._id}
+            product={product}
+            variant="compact" // or "default" depending on your styling
+            onLike={(productId) => {
+              console.log("Liked product:", productId);
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
