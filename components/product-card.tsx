@@ -28,11 +28,9 @@ interface Product {
   negotiable: boolean;
   showPhoneNumber: boolean;
   views: number;
-  favorites: string[];
-  expiresAt: string;
+  // expiresAt: string;
   createdAt: string;
   updatedAt: string;
-  __v: number;
 }
 
 interface ProductCardProps {
