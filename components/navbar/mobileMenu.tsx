@@ -20,11 +20,12 @@ export default function MobileMenu({
 
   return (
     <motion.div
-      initial={{ height: 0 }}
-      animate={{ height: "auto" }}
-      exit={{ height: 0 }}
-      className="lg:hidden px-4 pt-4 pb-6 space-y-4 glass border-t"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="lg:hidden fixed top-16 left-0 right-0 z-40 px-4 pt-4 pb-6 space-y-4 glass border-t shadow-lg"
     >
+      
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input

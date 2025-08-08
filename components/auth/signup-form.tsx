@@ -221,9 +221,10 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
 
       console.log(`[SIGNUP FORM] User registered successfully: ${formData.email}`)
 
+      // Remove the success toast from here
       toast({
-        title: "Account created!",
-        description: result.message,
+        title: "Please check your email",
+        description: "We've sent a verification code to your email address.",
       })
 
       onVerification(formData.email)

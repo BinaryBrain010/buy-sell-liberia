@@ -125,8 +125,8 @@ export default function SellForm() {
         title: formData.title,
         description: formData.description,
         price: formData.price,
-        category: formData.category,
-        subCategory: formData.subCategory,
+        category_id: formData.category, // ObjectId
+        subcategory_id: formData.subCategory, // ObjectId
         condition: formData.condition,
         negotiable: formData.negotiable,
         location: formData.location,
@@ -159,7 +159,7 @@ export default function SellForm() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full mx-auto">
       <StepIndicator currentStep={currentStep} />
 
       <Card className="shadow-lg">

@@ -322,7 +322,7 @@ export function AdvancedFilters({
 
                 {/* Price Range */}
                 <div>
-                  <Label className="text-sm mb-2 block flex items-center">
+                  <Label className="text-sm mb-2 block items-center">
                     <DollarSign className="h-4 w-4 mr-1" />
                     Price Range
                   </Label>
@@ -368,7 +368,7 @@ export function AdvancedFilters({
                 {/* Custom Fields */}
                 {selectedSubcategory && selectedSubcategory.customFields.length > 0 && (
                   <div>
-                    <Label className="text-sm mb-2 block flex items-center">
+                    <Label className="text-sm mb-2 block items-center">
                       <Tag className="h-4 w-4 mr-1" />
                       Specifications
                     </Label>
