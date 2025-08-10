@@ -1,5 +1,5 @@
 import { HeroSection } from "@/components/hero-section"
-import { CategoriesSection } from "@/components/categories-section"
+import  { CategoriesSection }  from "@/components/categories-section"
 import { FeaturedListings } from "@/components/featured-listings"
 import { StatsSection } from "@/components/stats-section"
 

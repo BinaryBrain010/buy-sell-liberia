@@ -10,6 +10,7 @@ import { VerificationSuccess } from "./auth/verification-success"
 import { AnimatePresence } from "framer-motion"
 
 interface AuthModalProps {
+  onLoginSuccess: () => void
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   initialMode?: "login" | "signup"
