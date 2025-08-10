@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MapPin, Clock, Eye } from "lucide-react";
+import { Heart, MapPin, Clock, Eye, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
@@ -28,6 +29,7 @@ interface Product {
   negotiable: boolean;
   showPhoneNumber: boolean;
   views: number;
+  featured: boolean;
   // expiresAt: string;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +46,10 @@ export function ProductCard({
   variant = "compact",
   onLike,
 }: ProductCardProps) {
+
+  //FOR TESTING FEATURED BADGE
+  product.featured = true;
+
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -93,8 +99,18 @@ export function ProductCard({
       } ${variant === "list" ? "w-full" : ""}`}
     >
       <CardContent className={variant === "list" ? "p-4 flex gap-4" : "p-4"}>
-
+      
           <div className="relative">
+            {/* Featured badge */}
+      {product.featured && (
+        <Badge
+          className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 cursor-default select-none"
+          title="Featured Product"
+        >
+          <Star className="h-4 w-4 mr-1" />
+          Featured
+        </Badge>
+      )}
             <div className="relative w-full h-48 mb-4">
               <Image
                 src={

@@ -10,8 +10,6 @@ import { ProductCard } from "@/components/product-card";
 import {
   Loader2,
   Search,
-  Grid,
-  List,
   Filter,
   ChevronLeft,
   ChevronRight,
@@ -30,7 +28,6 @@ import { useRouter } from "next/navigation";
 // Product type is defined in the ProductList/ProductCard components or can be imported from a types file if needed.
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<FilterState>({});
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -43,8 +40,7 @@ export default function ProductsPage() {
 
   const itemsPerPage = 30; // Show 30 products per page (10 rows × 3 columns)
 
-
-  const router=useRouter();
+  const router = useRouter();
 
   // Fetch products using filter API
   const fetchProducts = async (
@@ -287,10 +283,8 @@ export default function ProductsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                     onClick={() => {
-  router.push(`/products/${product._id}`);
-}}
-
-
+                      router.push(`/products/${product._id}`);
+                    }}
                     className="cursor-pointer"
                   >
                     <ProductCard
