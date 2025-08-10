@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Heart, MapPin, Clock, Star } from "lucide-react"
 import Image from "next/image"
+import ContactSellerButton from "./ContactSellerPopup"
 
 const listings = [
   {
@@ -137,13 +138,9 @@ export function FeaturedListings() {
                     <Badge variant="secondary" className="glass border-0">
                       {listing.category}
                     </Badge>
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                      {listing.rating}
-                    </div>
                   </div>
 
-                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{listing.title}</h3>
+                  <h3 className="font-semibold text-lg mb-2 line-clamp-1">{listing.title}</h3>
 
                   <div className="flex items-center text-muted-foreground text-sm mb-3">
                     <MapPin className="h-4 w-4 mr-1" />
@@ -160,7 +157,14 @@ export function FeaturedListings() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">by {listing.seller}</span>
-                    <Button size="sm">Contact Seller</Button>
+                    <ContactSellerButton
+                                sellerId={productData.seller?._id || productData.user_id?._id || ""}
+                                productTitle={productData.title || "Untitled Product"}
+                                showPhoneNumber={productData.showPhoneNumber ?? true}
+                                sellerName={displayName}
+                                variant="both"
+                                size="lg"
+                              />
                   </div>
                 </CardContent>
               </Card>

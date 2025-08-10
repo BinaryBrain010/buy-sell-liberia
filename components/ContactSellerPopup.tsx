@@ -44,7 +44,7 @@ export function ContactSellerButton({
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("/api/auth/me");
+      const response = await fetch("/api/auth/profile");
       setIsAuthenticated(response.ok);
     } catch (error) {
       setIsAuthenticated(false);

@@ -1,4 +1,4 @@
-import axios from "./axios"
+import axios from "../app/services/BaseService"
 
 interface User {
   id: string
