@@ -1,6 +1,8 @@
 import axios from "./BaseService";
 
 interface User {
+  user: any;
+  data: any;
   id: string;
   name: string;
   email: string;

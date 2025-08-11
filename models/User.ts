@@ -46,7 +46,7 @@ const likedProductSchema = new Schema<LikedProduct>(
       type: Date,
       default: Date.now,
     },
-  },
+  }, 
   { _id: false }
 );
 
