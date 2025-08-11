@@ -14,6 +14,8 @@ export interface IUser extends Document {
   status: "active" | "inactive" | "suspended"
   createdAt: Date
   updatedAt: Date
+  chatRooms?: string[] // Array of room IDs the user is part of
+  recentContacts?: mongoose.Types.ObjectId[] // Array of user IDs
 }
 
 const UserSchema = new Schema<IUser>(
@@ -74,6 +76,8 @@ const UserSchema = new Schema<IUser>(
       enum: ["active", "inactive", "suspended"],
       default: "active",
     },
+    chatRooms: [{ type: String }],
+    recentContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   {
     timestamps: true,
