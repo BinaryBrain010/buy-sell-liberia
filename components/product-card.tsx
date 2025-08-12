@@ -47,8 +47,6 @@ export function ProductCard({
   onLike,
 }: ProductCardProps) {
 
-  //FOR TESTING FEATURED BADGE
-  product.featured = true;
 
   const { theme } = useTheme();
   const isDark = theme === "dark";

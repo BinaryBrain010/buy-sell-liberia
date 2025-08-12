@@ -58,10 +58,12 @@ export interface CreateProductData {
     cost?: number;
     methods: ("pickup" | "delivery" | "shipping")[];
   };
+  featured?: boolean;
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
   status?: "active" | "sold" | "inactive" | "pending";
+  featured?: boolean;
 }
 
 export interface ProductFilters {
@@ -130,6 +132,7 @@ export class ProductService extends BaseService<IProduct> {
         status: "active",
         views: 0,
         favorites: [],
+        featured: productData.featured ?? false,
       });
 
       // Update seller statistics
