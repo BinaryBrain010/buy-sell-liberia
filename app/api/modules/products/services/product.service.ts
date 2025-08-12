@@ -69,6 +69,7 @@ export interface UpdateProductData extends Partial<CreateProductData> {
 export interface ProductFilters {
   category?: string;
   category_id?: string | mongoose.Types.ObjectId;
+  subcategory_id?: string | mongoose.Types.ObjectId;
   minPrice?: number;
   maxPrice?: number;
   condition?: string[];
@@ -240,6 +241,9 @@ export class ProductService extends BaseService<IProduct> {
 
       if (filters.category_id) {
         queryFilters.category_id = filters.category_id;
+      }
+      if (filters.subcategory_id) {
+        queryFilters.subcategory_id = filters.subcategory_id;
       }
 
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
