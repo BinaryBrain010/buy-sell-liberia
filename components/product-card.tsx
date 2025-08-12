@@ -7,7 +7,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
 
-interface Product {
+export interface Product {
   _id: string;
   title: string;
   description: string;

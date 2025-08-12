@@ -1,37 +1,25 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState, useEffect } from "react"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ArrowLeft,
   Search,
-  Filter,
   Grid3X3,
   List,
-  MapPin,
-  Clock,
-  Star,
-  Heart,
   Loader2,
   ChevronDown,
   SlidersHorizontal,
-} from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { useCategories } from "@/hooks/useCategories";
-// import { AdvancedFilters } from "@/components/filters/advanced-filters"
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+import Link from "next/link"
+import { ProductCard, type Product } from "@/components/product-card"
+import Image from "next/image"
 
 // Color mappings for categories
 const categoryColors: { [key: string]: string } = {
@@ -45,301 +33,129 @@ const categoryColors: { [key: string]: string } = {
   services: "from-indigo-500 to-purple-500",
   jobs: "from-emerald-500 to-teal-500",
   "sports-outdoors": "from-red-500 to-pink-500",
-};
-
-// Mock products data - In real app, this would come from API
-const generateMockProducts = (categoryName: string, count: number = 12) => {
-  const products = [];
-  const baseProducts = {
-    Electronics: [
-      {
-        name: "iPhone 15 Pro Max",
-        price: "$1,199",
-        image: "/placeholder.svg?height=200&width=300&text=iPhone+15",
-        condition: "Brand New",
-      },
-      {
-        name: "Samsung Galaxy S24",
-        price: "$899",
-        image: "/placeholder.svg?height=200&width=300&text=Samsung+S24",
-        condition: "Like New",
-      },
-      {
-        name: "MacBook Pro M3",
-        price: "$2,499",
-        image: "/placeholder.svg?height=200&width=300&text=MacBook+Pro",
-        condition: "Brand New",
-      },
-      {
-        name: "iPad Air 5th Gen",
-        price: "$699",
-        image: "/placeholder.svg?height=200&width=300&text=iPad+Air",
-        condition: "Good",
-      },
-      {
-        name: "Sony WH-1000XM5",
-        price: "$349",
-        image: "/placeholder.svg?height=200&width=300&text=Sony+Headphones",
-        condition: "Brand New",
-      },
-      {
-        name: "Dell XPS 13",
-        price: "$1,299",
-        image: "/placeholder.svg?height=200&width=300&text=Dell+XPS",
-        condition: "Like New",
-      },
-    ],
-    Vehicles: [
-      {
-        name: "2023 Toyota Camry",
-        price: "$28,500",
-        image: "/placeholder.svg?height=200&width=300&text=Toyota+Camry",
-        condition: "Excellent",
-      },
-      {
-        name: "2022 Honda Civic",
-        price: "$24,900",
-        image: "/placeholder.svg?height=200&width=300&text=Honda+Civic",
-        condition: "Good",
-      },
-      {
-        name: "2021 BMW X3",
-        price: "$42,000",
-        image: "/placeholder.svg?height=200&width=300&text=BMW+X3",
-        condition: "Excellent",
-      },
-      {
-        name: "2020 Tesla Model 3",
-        price: "$35,000",
-        image: "/placeholder.svg?height=200&width=300&text=Tesla+Model+3",
-        condition: "Good",
-      },
-      {
-        name: "2023 Ford F-150",
-        price: "$38,500",
-        image: "/placeholder.svg?height=200&width=300&text=Ford+F150",
-        condition: "Brand New",
-      },
-      {
-        name: "2022 Subaru Outback",
-        price: "$29,900",
-        image: "/placeholder.svg?height=200&width=300&text=Subaru+Outback",
-        condition: "Like New",
-      },
-    ],
-    "Real Estate": [
-      {
-        name: "3BR Downtown Apartment",
-        price: "$450,000",
-        image: "/placeholder.svg?height=200&width=300&text=Apartment",
-        condition: "Move-in Ready",
-      },
-      {
-        name: "4BR Suburban House",
-        price: "$685,000",
-        image: "/placeholder.svg?height=200&width=300&text=House",
-        condition: "Newly Renovated",
-      },
-      {
-        name: "2BR City Condo",
-        price: "$320,000",
-        image: "/placeholder.svg?height=200&width=300&text=Condo",
-        condition: "Good",
-      },
-      {
-        name: "Commercial Office Space",
-        price: "$1,200,000",
-        image: "/placeholder.svg?height=200&width=300&text=Office",
-        condition: "Excellent",
-      },
-      {
-        name: "1BR Studio Loft",
-        price: "$285,000",
-        image: "/placeholder.svg?height=200&width=300&text=Loft",
-        condition: "Modern",
-      },
-      {
-        name: "5BR Family Home",
-        price: "$750,000",
-        image: "/placeholder.svg?height=200&width=300&text=Family+Home",
-        condition: "Excellent",
-      },
-    ],
-  };
-
-  const defaultProducts = [
-    {
-      name: `${categoryName} Item 1`,
-      price: "$199",
-      image: "/placeholder.svg?height=200&width=300&text=Product+1",
-      condition: "Brand New",
-    },
-    {
-      name: `${categoryName} Item 2`,
-      price: "$299",
-      image: "/placeholder.svg?height=200&width=300&text=Product+2",
-      condition: "Like New",
-    },
-    {
-      name: `${categoryName} Item 3`,
-      price: "$149",
-      image: "/placeholder.svg?height=200&width=300&text=Product+3",
-      condition: "Good",
-    },
-    {
-      name: `${categoryName} Item 4`,
-      price: "$399",
-      image: "/placeholder.svg?height=200&width=300&text=Product+4",
-      condition: "Excellent",
-    },
-    {
-      name: `${categoryName} Item 5`,
-      price: "$249",
-      image: "/placeholder.svg?height=200&width=300&text=Product+5",
-      condition: "Brand New",
-    },
-    {
-      name: `${categoryName} Item 6`,
-      price: "$179",
-      image: "/placeholder.svg?height=200&width=300&text=Product+6",
-      condition: "Good",
-    },
-  ];
-
-  const productTemplates =
-    baseProducts[categoryName as keyof typeof baseProducts] || defaultProducts;
-
-  for (let i = 0; i < count; i++) {
-    const template = productTemplates[i % productTemplates.length];
-    products.push({
-      id: i + 1,
-      title: template.name,
-      price: template.price,
-      location: "Downtown, Central City",
-      image: template.image,
-      condition: template.condition,
-      featured: i < 3,
-      rating: 4.5 + Math.random() * 0.5,
-      seller: "John Doe",
-      timeAgo: `${Math.floor(Math.random() * 24)} hours ago`,
-      liked: false,
-    });
-  }
-
-  return products;
-};
-
-interface Product {
-  id: number;
-  title: string;
-  price: string;
-  location: string;
-  image: string;
-  condition: string;
-  featured: boolean;
-  rating: number;
-  seller: string;
-  timeAgo: string;
-  liked: boolean;
 }
 
 export default function CategoryPage() {
-  const params = useParams();
-  const router = useRouter();
-  const slug = params?.slug as string;
+  const params = useParams()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const slug = params?.slug as string
+  const subcategorySlug = searchParams?.get("subcategory")
 
-  const { categories, loading: categoriesLoading } = useCategories();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("newest");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentCategory, setCurrentCategory] = useState<any>(null);
+  const [currentCategory, setCurrentCategory] = useState<any>(null)
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [sortBy, setSortBy] = useState("newest")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalProducts, setTotalProducts] = useState(0)
+  const itemsPerPage = 20
 
-  // Find current category
+  const totalPages = Math.ceil(totalProducts / itemsPerPage)
+
+  const handleLike = (productId: string) => {
+    // Placeholder for like functionality
+    console.log(`Product ${productId} liked`)
+  }
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return
+    setCurrentPage(newPage)
+  }
+
+  const getPaginationNumbers = () => {
+    const paginationNumbers: (number | string)[] = []
+    const maxPagesToShow = 5
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2))
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1)
+
+    for (let i = startPage; i <= endPage; i++) {
+      paginationNumbers.push(i)
+    }
+
+    if (startPage > 1) {
+      paginationNumbers.unshift("...")
+    }
+
+    if (endPage < totalPages) {
+      paginationNumbers.push("...")
+    }
+
+    return paginationNumbers
+  }
+
+  // Fetch category details
   useEffect(() => {
-    if (categories.length > 0) {
-      const category = categories.find((cat) => cat.slug === slug);
-      setCurrentCategory(category);
+    const fetchCategory = async () => {
+      try {
+        const res = await fetch(`/api/categories?slug=${slug}`)
+        if (!res.ok) throw new Error("Failed to fetch category")
+        const data = await res.json()
+        const category = data.categories?.find((cat: any) => cat.slug === slug)
+        setCurrentCategory(category)
 
-      if (category) {
-        // Generate mock products for this category
-        const mockProducts = generateMockProducts(category.name, 20);
-        setProducts(mockProducts);
+        // Find subcategory if specified in URL
+        if (subcategorySlug && category?.subcategories) {
+          const subcategory = category.subcategories.find((sub: any) => sub.slug === subcategorySlug)
+          setSelectedSubcategory(subcategory)
+        }
+      } catch (error) {
+        console.error("Error fetching category:", error)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false);
     }
-  }, [categories, slug]);
 
-  const handleLike = (productId: number) => {
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? { ...product, liked: !product.liked }
-          : product
-      )
-    );
-  };
-
-  const filteredProducts = products.filter((product) =>
-    product.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case "price-low":
-        return (
-          parseFloat(a.price.replace(/[$,]/g, "")) -
-          parseFloat(b.price.replace(/[$,]/g, ""))
-        );
-      case "price-high":
-        return (
-          parseFloat(b.price.replace(/[$,]/g, "")) -
-          parseFloat(a.price.replace(/[$,]/g, ""))
-        );
-      case "rating":
-        return b.rating - a.rating;
-      case "newest":
-      default:
-        return new Date(b.timeAgo).getTime() - new Date(a.timeAgo).getTime();
+    if (slug) {
+      fetchCategory()
     }
-  });
+  }, [slug, subcategorySlug])
 
-  if (categoriesLoading || loading) {
-    return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-20">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading category...</p>
-          </div>
-        </div>
-      </div>
-    );
+  // Fetch products for this category/subcategory
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!currentCategory?._id) return
+
+      setLoadingProducts(true)
+      try {
+        let url = `/api/products?category_id=${encodeURIComponent(currentCategory._id)}&limit=${itemsPerPage}&page=${currentPage}&search=${encodeURIComponent(searchQuery)}`
+
+        // Add subcategory filter if selected
+        if (selectedSubcategory?._id) {
+          url += `&subcategory_id=${encodeURIComponent(selectedSubcategory._id)}`
+        }
+
+        const res = await fetch(url)
+        if (!res.ok) throw new Error("Failed to fetch products")
+        const data = await res.json()
+        setProducts(data.products || [])
+        setTotalProducts(data.total || 0)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+        setProducts([])
+        setTotalProducts(0)
+      } finally {
+        setLoadingProducts(false)
+      }
+    }
+
+    fetchProducts()
+  }, [currentCategory?._id, selectedSubcategory?._id, currentPage, searchQuery])
+
+  // Add function to handle subcategory selection
+  const handleSubcategorySelect = (subcategory: any) => {
+    setSelectedSubcategory(subcategory)
+    setCurrentPage(1)
+    // Update URL without page reload
+    const newUrl = subcategory ? `/categories/${slug}?subcategory=${subcategory.slug}` : `/categories/${slug}`
+    window.history.pushState({}, "", newUrl)
   }
 
-  if (!currentCategory) {
-    return (
-      <div className="min-h-screen">
-        <div className="container mx-auto px-4 py-20">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Category Not Found</h1>
-            <p className="text-muted-foreground mb-8">
-              The category you're looking for doesn't exist.
-            </p>
-            <Link href="/categories">
-              <Button>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Categories
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Update the category header section to show subcategory selection
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6">
@@ -353,9 +169,13 @@ export default function CategoryPage() {
             Categories
           </Link>
           <span>/</span>
-          <span className="text-foreground font-medium">
-            {currentCategory.name}
-          </span>
+          <span className="text-foreground font-medium">{currentCategory?.name}</span>
+          {selectedSubcategory && (
+            <>
+              <span>/</span>
+              <span className="text-foreground font-medium">{selectedSubcategory.name}</span>
+            </>
+          )}
         </nav>
 
         {/* Category Header */}
@@ -368,43 +188,63 @@ export default function CategoryPage() {
             <div className="flex items-center space-x-6">
               <div
                 className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
-                  categoryColors[currentCategory.slug] ||
-                  "from-gray-500 to-gray-600"
-                } flex items-center justify-center text-4xl shadow-lg`}
+                  categoryColors[currentCategory?.slug] || "from-gray-500 to-gray-600"
+                } flex items-center justify-center text-4xl shadow-lg text-white`}
               >
-                {currentCategory.icon}
+                {selectedSubcategory?.icon || currentCategory?.icon}
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {currentCategory.name}
+                  {selectedSubcategory ? selectedSubcategory.name : currentCategory?.name}
                 </h1>
-                <p className="text-muted-foreground text-lg">
-                  {sortedProducts.length} products available
-                </p>
-                {currentCategory.subcategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {currentCategory.subcategories
-                      .slice(0, 4)
-                      .map((sub: any) => (
-                        <Badge
+                <p className="text-muted-foreground text-lg">{totalProducts} products available</p>
+
+                {/* Subcategory Selection */}
+                {currentCategory?.subcategories?.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-3">Filter by subcategory:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant={!selectedSubcategory ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleSubcategorySelect(null)}
+                        className="text-xs h-8"
+                      >
+                        All {currentCategory.name}
+                      </Button>
+                      {currentCategory.subcategories.map((sub: any) => (
+                        <Button
                           key={sub._id}
-                          variant="secondary"
-                          className="card-shadow"
+                          variant={selectedSubcategory?._id === sub._id ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleSubcategorySelect(sub)}
+                          className="text-xs h-8 pl-1 pr-3 flex items-center gap-2"
                         >
+                          {/* Small subcategory image */}
+                          <div className="relative w-5 h-5 rounded overflow-hidden flex-shrink-0">
+                            <Image
+                              src={
+                                sub.image?.url ||
+                                `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0))}`
+                              }
+                              alt={sub.name}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0))}`
+                              }}
+                            />
+                          </div>
                           {sub.name}
-                        </Badge>
+                        </Button>
                       ))}
-                    {currentCategory.subcategories.length > 4 && (
-                      <Badge variant="outline">
-                        +{currentCategory.subcategories.length - 4} more
-                      </Badge>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
             <Link href="/categories">
-              <Button variant="outline" className="btn-shadow">
+              <Button variant="outline" className="btn-shadow bg-transparent">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Categories
               </Button>
@@ -412,7 +252,8 @@ export default function CategoryPage() {
           </div>
         </motion.div>
 
-        {/* Search and Filters */}
+        {/* Rest of the component remains the same... */}
+        {/* Search and Filters section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -425,7 +266,7 @@ export default function CategoryPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder={`Search in ${currentCategory.name}...`}
+                  placeholder={`Search in ${selectedSubcategory?.name || currentCategory?.name}...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 input-shadow"
@@ -467,18 +308,10 @@ export default function CategoryPage() {
             </div>
 
             {/* Filters Button */}
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="btn-shadow"
-            >
+            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="btn-shadow">
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filters
-              <ChevronDown
-                className={`h-4 w-4 ml-2 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
+              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </Button>
           </div>
 
@@ -493,50 +326,26 @@ export default function CategoryPage() {
               <div className="space-y-4">
                 {/* Condition Filter */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Condition
-                  </label>
+                  <label className="text-sm font-medium mb-2 block">Condition</label>
                   <div className="flex flex-wrap gap-2">
-                    {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
-                      (condition) => (
-                        <Button
-                          key={condition}
-                          variant="outline"
-                          size="sm"
-                          className="btn-shadow"
-                        >
-                          {condition}
-                        </Button>
-                      )
-                    )}
+                    {["Brand New", "Like New", "Good", "Fair", "Poor"].map((condition) => (
+                      <Button key={condition} variant="outline" size="sm" className="btn-shadow bg-transparent">
+                        {condition}
+                      </Button>
+                    ))}
                   </div>
                 </div>
 
                 {/* Price Range */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Min Price
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Min Price</label>
                     <Input placeholder="$0" className="input-shadow" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Max Price
-                    </label>
+                    <label className="text-sm font-medium mb-2 block">Max Price</label>
                     <Input placeholder="$10,000" className="input-shadow" />
                   </div>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Location
-                  </label>
-                  <Input
-                    placeholder="Enter city or area"
-                    className="input-shadow"
-                  />
                 </div>
 
                 {/* Apply Filters Button */}
@@ -549,21 +358,22 @@ export default function CategoryPage() {
         </motion.div>
 
         {/* Products Grid/List */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          {sortedProducts.length === 0 ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          {loadingProducts ? (
+            <div className="text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading products...</p>
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">{currentCategory.icon}</span>
+                <span className="text-4xl">{selectedSubcategory?.icon || currentCategory?.icon}</span>
               </div>
               <h3 className="text-xl font-semibold mb-2">No products found</h3>
               <p className="text-muted-foreground mb-6">
                 {searchQuery
                   ? "Try adjusting your search terms."
-                  : "Be the first to list a product in this category."}
+                  : `Be the first to list a product in ${selectedSubcategory?.name || currentCategory?.name}.`}
               </p>
               <div className="space-x-4">
                 {searchQuery && (
@@ -577,188 +387,80 @@ export default function CategoryPage() {
               </div>
             </div>
           ) : (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {sortedProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={viewMode === "list" ? "w-full" : ""}
-                >
-                  {viewMode === "grid" ? (
-                    <Card className="overflow-hidden border-0 card-shadow hover:shadow-lg transition-all duration-300 group cursor-pointer">
-                      <div className="relative">
-                        <Image
-                          src={product.image}
-                          alt={product.title}
-                          width={300}
-                          height={200}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        {product.featured && (
-                          <Badge className="absolute top-3 left-3 bg-gradient-to-r from-yellow-500 to-orange-500 border-0">
-                            <Star className="h-3 w-3 mr-1" />
-                            Featured
-                          </Badge>
-                        )}
+            <>
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                    : "space-y-4"
+                }
+              >
+                {products.map((product, index) => (
+                  <motion.div
+                    key={product._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={viewMode === "list" ? "w-full" : ""}
+                  >
+                    <Link href={`/products/${product._id}`} passHref>
+                      <ProductCard product={product} onLike={handleLike} />
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1 || loadingProducts}
+                      className="flex items-center space-x-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      <span className="hidden sm:inline">Previous</span>
+                    </Button>
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {getPaginationNumbers().map((page, index) => (
                         <Button
-                          variant="ghost"
+                          key={index}
+                          variant={page === currentPage ? "default" : "outline"}
                           size="sm"
-                          className={`absolute top-3 right-3 glass border-0 ${
-                            product.liked
-                              ? "bg-red-500 text-white hover:bg-red-600"
-                              : "hover:bg-red-500 hover:text-white"
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLike(product.id);
-                          }}
+                          onClick={() => (typeof page === "number" ? handlePageChange(page) : null)}
+                          disabled={page === "..." || loadingProducts}
+                          className="min-w-[40px]"
                         >
-                          <Heart
-                            className={`h-4 w-4 ${
-                              product.liked ? "fill-current" : ""
-                            }`}
-                          />
+                          {page}
                         </Button>
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {product.condition}
-                          </Badge>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                            {product.rating.toFixed(1)}
-                          </div>
-                        </div>
-                        <h3 className="font-semibold mb-2 line-clamp-2">
-                          {product.title}
-                        </h3>
-                        <div className="flex items-center text-muted-foreground text-sm mb-3">
-                          <MapPin className="h-3 w-3 mr-1" />
-                          {product.location}
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xl font-bold text-primary">
-                            {product.price}
-                          </span>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {product.timeAgo}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            by {product.seller}
-                          </span>
-                          <Button size="sm" className="btn-shadow">
-                            Contact
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="overflow-hidden border-0 card-shadow hover:shadow-lg transition-all duration-300 cursor-pointer">
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
-                          <div className="relative flex-shrink-0">
-                            <Image
-                              src={product.image}
-                              alt={product.title}
-                              width={150}
-                              height={100}
-                              className="w-32 h-24 object-cover rounded-lg"
-                            />
-                            {product.featured && (
-                              <Badge className="absolute -top-2 -left-2 bg-gradient-to-r from-yellow-500 to-orange-500 border-0 text-xs">
-                                Featured
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <h3 className="font-semibold text-lg mb-1">
-                                  {product.title}
-                                </h3>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
-                                  <div className="flex items-center">
-                                    <MapPin className="h-3 w-3 mr-1" />
-                                    {product.location}
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Clock className="h-3 w-3 mr-1" />
-                                    {product.timeAgo}
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                    {product.rating.toFixed(1)}
-                                  </div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`${
-                                  product.liked
-                                    ? "bg-red-500 text-white hover:bg-red-600"
-                                    : "hover:bg-red-500 hover:text-white"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleLike(product.id);
-                                }}
-                              >
-                                <Heart
-                                  className={`h-4 w-4 ${
-                                    product.liked ? "fill-current" : ""
-                                  }`}
-                                />
-                              </Button>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <span className="text-2xl font-bold text-primary">
-                                  {product.price}
-                                </span>
-                                <Badge variant="secondary">
-                                  {product.condition}
-                                </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  by {product.seller}
-                                </span>
-                              </div>
-                              <Button className="btn-shadow">
-                                Contact Seller
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </motion.div>
-              ))}
-            </div>
+                      ))}
+                    </div>
+                    {/* Next Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages || loadingProducts}
+                      className="flex items-center space-x-1"
+                    >
+                      <span className="hidden sm:inline">Next</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </motion.div>
-
-        {/* Load More */}
-        {sortedProducts.length > 0 && (
-          <div className="text-center mt-12">
-            <Button variant="outline" size="lg" className="btn-shadow">
-              Load More Products
-            </Button>
-          </div>
-        )}
       </div>
     </div>
-  );
+  )
 }
