@@ -240,10 +240,11 @@ export default function CategoriesPage() {
     setCurrentPage(1) // Reset to first page when selecting a new category
   }
 
-  // Handle subcategory click
+  // Handle subcategory click - pass both category and subcategory IDs
   const handleSubcategoryClick = (subcategory: any) => {
-    // Navigate to the category page with subcategory filter
-    window.location.href = `/categories/${selectedCategory.slug}?subcategory=${subcategory.slug}`
+    // Navigate to the category page with both category and subcategory IDs
+    const url = `/categories/${selectedCategory.slug}?category_id=${encodeURIComponent(selectedCategory._id)}&subcategory_id=${encodeURIComponent(subcategory._id)}`
+    window.location.href = url
   }
 
   // Handle pagination
@@ -284,6 +285,11 @@ export default function CategoriesPage() {
       }
     }
     return pages
+  }
+
+  // Generate URL for "View All Products" with category ID
+  const getViewAllProductsUrl = () => {
+    return `/categories/${selectedCategory.slug}?category_id=${encodeURIComponent(selectedCategory._id)}`
   }
 
   if (loadingCategories) {
@@ -345,7 +351,7 @@ export default function CategoriesPage() {
                 </p>
               </div>
               <div className="flex gap-3">
-                <Link href={`/categories/${selectedCategory.slug}`}>
+                <Link href={getViewAllProductsUrl()}>
                   <Button className="btn-shadow">
                     View All Products
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -384,6 +390,7 @@ export default function CategoriesPage() {
                           src={
                             subcategory.image?.url ||
                             getSubcategoryImage(subcategory.name, selectedCategory.slug) ||
+                            "/placeholder.svg" ||
                             "/placeholder.svg"
                           }
                           alt={subcategory.name}
@@ -441,7 +448,7 @@ export default function CategoriesPage() {
                 <p className="text-muted-foreground mb-6">
                   This category doesn't have any subcategories. View all products directly.
                 </p>
-                <Link href={`/categories/${selectedCategory.slug}`}>
+                <Link href={getViewAllProductsUrl()}>
                   <Button>
                     View All Products
                     <ArrowRight className="h-4 w-4 ml-2" />
@@ -479,7 +486,7 @@ export default function CategoriesPage() {
                   Showing {products.length} of {totalProducts} products
                 </p>
               </div>
-              <Link href={`/categories/${selectedCategory.slug}`}>
+              <Link href={getViewAllProductsUrl()}>
                 <Button variant="outline" className="btn-shadow bg-transparent">
                   View All {totalProducts} Products
                   <ArrowRight className="h-4 w-4 ml-2" />
@@ -548,7 +555,7 @@ export default function CategoriesPage() {
                       </Button>
                     </div>
                     {/* View All Products Button */}
-                    <Link href={`/categories/${selectedCategory.slug}`}>
+                    <Link href={getViewAllProductsUrl()}>
                       <Button className="btn-shadow">
                         View All Products
                         <ArrowRight className="h-4 w-4 ml-2" />
@@ -564,7 +571,7 @@ export default function CategoriesPage() {
                     Explore all {totalProducts} products in {selectedCategory.name} with advanced filters and sorting
                     options.
                   </p>
-                  <Link href={`/categories/${selectedCategory.slug}`}>
+                  <Link href={getViewAllProductsUrl()}>
                     <Button size="lg" className="btn-shadow">
                       Browse All {selectedCategory.name} Products
                       <ArrowRight className="h-4 w-4 ml-2" />

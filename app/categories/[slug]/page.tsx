@@ -18,8 +18,8 @@ import {
   ChevronRight,
 } from "lucide-react"
 import Link from "next/link"
-import { ProductCard, type Product } from "@/components/product-card"
 import Image from "next/image"
+import { ProductCard, type Product } from "@/components/product-card"
 
 // Color mappings for categories
 const categoryColors: { [key: string]: string } = {
@@ -40,7 +40,10 @@ export default function CategoryPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const slug = params?.slug as string
-  const subcategorySlug = searchParams?.get("subcategory")
+
+  // Get IDs from URL parameters
+  const categoryIdFromUrl = searchParams?.get("category_id")
+  const subcategoryIdFromUrl = searchParams?.get("subcategory_id")
 
   const [currentCategory, setCurrentCategory] = useState<any>(null)
   const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null)
@@ -95,12 +98,14 @@ export default function CategoryPage() {
         const res = await fetch(`/api/categories?slug=${slug}`)
         if (!res.ok) throw new Error("Failed to fetch category")
         const data = await res.json()
-        const category = data.categories?.find((cat: any) => cat.slug === slug)
+        // The API returns either { category } or { categories: [...] }
+        const category = data.category || (data.categories?.find((cat: any) => cat.slug === slug))
         setCurrentCategory(category)
 
         // Find subcategory if specified in URL
-        if (subcategorySlug && category?.subcategories) {
-          const subcategory = category.subcategories.find((sub: any) => sub.slug === subcategorySlug)
+        if (subcategoryIdFromUrl && category?.subcategories) {
+          // subcategoryIdFromUrl may be an ObjectId string
+          const subcategory = category.subcategories.find((sub: any) => sub._id?.toString() === subcategoryIdFromUrl)
           setSelectedSubcategory(subcategory)
         }
       } catch (error) {
@@ -113,49 +118,101 @@ export default function CategoryPage() {
     if (slug) {
       fetchCategory()
     }
-  }, [slug, subcategorySlug])
+  }, [slug, subcategoryIdFromUrl])
 
   // Fetch products for this category/subcategory
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!currentCategory?._id) return
+      // Use category ID from URL if available, otherwise use the fetched category ID
+      const categoryId = categoryIdFromUrl || currentCategory?._id;
+      if (!categoryId) return;
 
-      setLoadingProducts(true)
+      setLoadingProducts(true);
       try {
-        let url = `/api/products?category_id=${encodeURIComponent(currentCategory._id)}&limit=${itemsPerPage}&page=${currentPage}&search=${encodeURIComponent(searchQuery)}`
+        let url = `/api/products?category_id=${encodeURIComponent(categoryId)}&limit=${itemsPerPage}&page=${currentPage}`;
 
-        // Add subcategory filter if selected
-        if (selectedSubcategory?._id) {
-          url += `&subcategory_id=${encodeURIComponent(selectedSubcategory._id)}`
+        // Add subcategory filter if selected (either from URL or user selection)
+        const subcategoryId = subcategoryIdFromUrl || selectedSubcategory?._id;
+        if (subcategoryId) {
+          url += `&subcategory_id=${encodeURIComponent(subcategoryId)}`;
         }
 
-        const res = await fetch(url)
-        if (!res.ok) throw new Error("Failed to fetch products")
-        const data = await res.json()
-        setProducts(data.products || [])
-        setTotalProducts(data.total || 0)
-      } catch (error) {
-        console.error("Error fetching products:", error)
-        setProducts([])
-        setTotalProducts(0)
-      } finally {
-        setLoadingProducts(false)
-      }
-    }
+        // Add search query if present
+        if (searchQuery) {
+          url += `&search=${encodeURIComponent(searchQuery)}`;
+        }
 
-    fetchProducts()
-  }, [currentCategory?._id, selectedSubcategory?._id, currentPage, searchQuery])
+        console.log(`[CategoryPage] Fetching products with URL: ${url}`);
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Failed to fetch products");
+        const data = await res.json();
+        setProducts(data.products || []);
+        setTotalProducts(data.total || 0);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setProducts([]);
+        setTotalProducts(0);
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchProducts();
+  }, [
+    categoryIdFromUrl,
+    currentCategory?._id,
+    subcategoryIdFromUrl,
+    selectedSubcategory?._id,
+    currentPage,
+    searchQuery,
+  ])
 
   // Add function to handle subcategory selection
   const handleSubcategorySelect = (subcategory: any) => {
     setSelectedSubcategory(subcategory)
     setCurrentPage(1)
-    // Update URL without page reload
-    const newUrl = subcategory ? `/categories/${slug}?subcategory=${subcategory.slug}` : `/categories/${slug}`
+
+    // Update URL with both category and subcategory IDs
+    const categoryId = categoryIdFromUrl || currentCategory?._id
+    const newUrl = subcategory
+      ? `/categories/${slug}?category_id=${encodeURIComponent(categoryId)}&subcategory_id=${encodeURIComponent(subcategory._id)}`
+      : `/categories/${slug}?category_id=${encodeURIComponent(categoryId)}`
+
     window.history.pushState({}, "", newUrl)
   }
 
-  // Update the category header section to show subcategory selection
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <div className="container mx-auto px-4 py-20">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading category...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!currentCategory) {
+    return (
+      <div className="min-h-screen">
+        <div className="container mx-auto px-4 py-20">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Category Not Found</h1>
+            <p className="text-muted-foreground mb-8">The category you're looking for doesn't exist.</p>
+            <Link href="/categories">
+              <Button>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Categories
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6">
@@ -205,7 +262,7 @@ export default function CategoryPage() {
                     <p className="text-sm font-medium mb-3">Filter by subcategory:</p>
                     <div className="flex flex-wrap gap-2">
                       <Button
-                        variant={!selectedSubcategory ? "default" : "outline"}
+                        variant={!selectedSubcategory && !subcategoryIdFromUrl ? "default" : "outline"}
                         size="sm"
                         onClick={() => handleSubcategorySelect(null)}
                         className="text-xs h-8"
@@ -215,7 +272,11 @@ export default function CategoryPage() {
                       {currentCategory.subcategories.map((sub: any) => (
                         <Button
                           key={sub._id}
-                          variant={selectedSubcategory?._id === sub._id ? "default" : "outline"}
+                          variant={
+                            selectedSubcategory?._id === sub._id || subcategoryIdFromUrl === sub._id
+                              ? "default"
+                              : "outline"
+                          }
                           size="sm"
                           onClick={() => handleSubcategorySelect(sub)}
                           className="text-xs h-8 pl-1 pr-3 flex items-center gap-2"
@@ -225,7 +286,7 @@ export default function CategoryPage() {
                             <Image
                               src={
                                 sub.image?.url ||
-                                `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0))}`
+                                `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0)) || "/placeholder.svg"}`
                               }
                               alt={sub.name}
                               fill
@@ -252,7 +313,6 @@ export default function CategoryPage() {
           </div>
         </motion.div>
 
-        {/* Rest of the component remains the same... */}
         {/* Search and Filters section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
