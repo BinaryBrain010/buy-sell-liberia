@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 export default function SearchBar() {
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<any[]>([]);
+  const [subcategories, setSubcategories] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [showResults, setShowResults] = React.useState(false);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("");
@@ -17,7 +18,7 @@ export default function SearchBar() {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Debounced fetch on query/category change
+  // Debounced fetch on query change
   React.useEffect(() => {
     const normalizedQuery = query.replace(/\s+/g, " ").trim();
     if (!normalizedQuery) {
@@ -28,18 +29,18 @@ export default function SearchBar() {
 
     setLoading(true);
     const timeout = setTimeout(() => {
-      let url = `/api/products?search=${encodeURIComponent(normalizedQuery)}`;
-      if (selectedCategory) {
-        url += `&category_id=${encodeURIComponent(selectedCategory)}`;
-      }
-
-      fetch(url)
+      fetch(`/api/search?q=${encodeURIComponent(normalizedQuery)}`)
         .then(async (res) => {
           if (!res.ok) throw new Error("Failed to fetch");
           return res.json();
         })
         .then((data) => {
-          setResults(Array.isArray(data.products) ? data.products : []);
+          // Combine products, categories, and subcategories, add a type field for rendering
+          const productResults = (data.products || []).map((p: any) => ({ ...p, _type: "product" }));
+          const categoryResults = (data.categories || []).map((c: any) => ({ ...c, _type: "category" }));
+          const subcategoryResults = (data.subcategories || []).map((s: any) => ({ ...s, _type: "subcategory" }));
+          setResults([...productResults, ...categoryResults, ...subcategoryResults]);
+          setSubcategories(subcategoryResults);
           setShowResults(true);
           setHighlightedIndex(-1);
         })
@@ -48,10 +49,9 @@ export default function SearchBar() {
           setShowResults(false);
         })
         .finally(() => setLoading(false));
-    }, 400);
-
+    }, 300);
     return () => clearTimeout(timeout);
-  }, [query, selectedCategory]);
+  }, [query]);
 
   // Handle outside click
   React.useEffect(() => {
@@ -81,8 +81,12 @@ export default function SearchBar() {
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (highlightedIndex >= 0 && highlightedIndex < results.length) {
-        const selectedProduct = results[highlightedIndex];
-        router.push(`/products/${selectedProduct._id}`);
+        const selected = results[highlightedIndex];
+        if (selected._type === "product") {
+          router.push(`/products/${selected._id}`);
+        } else if (selected._type === "category") {
+          router.push(`/categories/${selected.slug || selected._id}`);
+        }
         setShowResults(false);
       }
     } else if (e.key === "Escape") {
@@ -118,32 +122,81 @@ export default function SearchBar() {
                 <ul>
                   {results.map((item, index) => {
                     const isHighlighted = index === highlightedIndex;
-                    return (
-                      <Link href={`/products/${item._id}`} key={item._id}>
-                        <li
-                          className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
-                            isHighlighted ? "bg-muted" : "hover:bg-muted"
-                          }`}
-                          onMouseEnter={() => setHighlightedIndex(index)}
-                        >
-                          {(item.image || (item.images && item.images[0])) && (
-                            <img
-                              src={item.image || item.images[0]}
-                              alt={item.title}
-                              className="w-8 h-8 rounded object-cover"
-                            />
-                          )}
-                          <span className="font-medium text-sm">
-                            {item.title}
-                          </span>
-                          <span className="ml-auto text-xs text-muted-foreground">
-                            {item.price?.amount
-                              ? `${item.price.currency || "₨"}${item.price.amount}`
-                              : ""}
-                          </span>
-                        </li>
-                      </Link>
-                    );
+                    if (item._type === "product") {
+                      return (
+                        <Link href={`/products/${item._id}`} key={item._id} onClick={() => setShowResults(false)}>
+                          <li
+                            className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
+                              isHighlighted ? "bg-muted" : "hover:bg-muted"
+                            }`}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                          >
+                            {(item.images && item.images[0]?.url) && (
+                              <img
+                                src={item.images[0].url}
+                                alt={item.title}
+                                className="w-8 h-8 rounded object-cover"
+                              />
+                            )}
+                            <span className="font-medium text-sm">
+                              {item.title}
+                            </span>
+                            {item.category && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {item.category.name}
+                              </span>
+                            )}
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              {item.price?.amount
+                                ? `${item.price.currency || "₨"}${item.price.amount}`
+                                : ""}
+                            </span>
+                          </li>
+                        </Link>
+                      );
+                    } else if (item._type === "category") {
+                      return (
+                        <Link href={`/categories/${item.slug || item._id}`} key={item._id} onClick={() => setShowResults(false)}>
+                          <li
+                            className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
+                              isHighlighted ? "bg-muted" : "hover:bg-muted"
+                            }`}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                          >
+                            <span className="font-medium text-sm">
+                              {item.name}
+                            </span>
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              Category
+                            </span>
+                          </li>
+                        </Link>
+                      );
+                    } else if (item._type === "subcategory") {
+                      return (
+                        <Link href={`/categories/${item.slug || item._id}`} key={item._id} onClick={() => setShowResults(false)}>
+                          <li
+                            className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
+                              isHighlighted ? "bg-muted" : "hover:bg-muted"
+                            }`}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                          >
+                            <span className="font-medium text-sm">
+                              {item.name}
+                            </span>
+                            {item.parent && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                {item.parent.name}
+                              </span>
+                            )}
+                            <span className="ml-auto text-xs text-muted-foreground">
+                              Subcategory
+                            </span>
+                          </li>
+                        </Link>
+                      );
+                    }
+                    return null;
                   })}
                 </ul>
               )}
