@@ -12,6 +12,7 @@ export interface IUser extends Document {
   refreshToken?: string
   role: "user" | "admin"
   status: "active" | "inactive" | "suspended"
+  favorites: mongoose.Types.ObjectId[]; // Array of Product IDs
   createdAt: Date
   updatedAt: Date
 }
@@ -74,6 +75,12 @@ const UserSchema = new Schema<IUser>(
       enum: ["active", "inactive", "suspended"],
       default: "active",
     },
+    favorites: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
   },
   {
     timestamps: true,

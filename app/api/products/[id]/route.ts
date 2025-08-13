@@ -11,7 +11,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   try {
     const { searchParams } = new URL(request.url);
     const incrementViews = searchParams.get("incrementViews") === "true";
-    const product = await productService.getProductById(params.id, incrementViews);
+    let userId: string | undefined = undefined;
+    // Try to get userId from token (if present)
+    try {
+      const { getUserFromRequest } = await import("@/app/api/modules/auth/middlewares/next-auth-middleware");
+      const user = getUserFromRequest(request);
+      if (user && user.userId) userId = user.userId;
+    } catch {}
+    const product = await productService.getProductById(params.id, incrementViews, userId);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }

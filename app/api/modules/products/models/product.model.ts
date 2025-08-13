@@ -44,6 +44,7 @@ export interface IProduct extends Document {
   negotiable: boolean;
   showPhoneNumber: boolean;
   views: number;
+  viewsBy: mongoose.Types.ObjectId[];
   favorites: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -196,6 +197,12 @@ const ProductSchema = new Schema<IProduct>(
       type: Number,
       default: 0,
     },
+    viewsBy: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     favorites: [
       {
         type: Schema.Types.ObjectId,

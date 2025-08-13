@@ -159,7 +159,8 @@ export class ProductService extends BaseService<IProduct> {
    */
   async getProductById(
     productId: string,
-    incrementViews = false
+    incrementViews = false,
+    userId?: string
   ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Getting product by ID:", productId);
@@ -174,12 +175,17 @@ export class ProductService extends BaseService<IProduct> {
       if (!product) {
         return null;
       }
-      // Increment views if requested
-      if (incrementViews) {
-        await this.updateById(idStr, { $inc: { views: 1 } });
-        await User.findByIdAndUpdate(product.seller._id, {
-          $inc: { "statistics.totalViews": 1 },
-        });
+      // Increment views if requested and user hasn't viewed before
+      if (incrementViews && userId && userId !== product.seller._id.toString()) {
+        if (!product.viewsBy?.map((id: any) => id.toString()).includes(userId)) {
+          await this.updateById(idStr, {
+            $inc: { views: 1 },
+            $push: { viewsBy: userId },
+          });
+          await User.findByIdAndUpdate(product.seller._id, {
+            $inc: { "statistics.totalViews": 1 },
+          });
+        }
       }
       return product;
     } catch (error: any) {
