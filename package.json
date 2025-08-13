@@ -6,6 +6,8 @@
     "seed:categories": "node seeders/categorySeeder.js",
     "build": "next build",
     "dev": "next dev",
+    "dev:socket": "node server/index.js",
+    "dev:all": "node scripts/start-dev.js",
     "lint": "next lint",
     "start": "next start"
   },
@@ -53,6 +55,7 @@
     "express": "^5.1.0",
     "firebase": "^12.0.0",
     "framer-motion": "latest",
+    "http": "^0.0.1-security",
     "input-otp": "1.4.1",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
