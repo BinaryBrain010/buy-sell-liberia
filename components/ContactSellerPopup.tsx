@@ -89,11 +89,11 @@ export function ContactSellerButton({
       await fetchSellerPhone();
       setIsDialogOpen(true);
     } else if (action === "chat") {
-      // Route to dashboard/messages with sellerId and productId
+      // Route to dashboard/messages with sellerId, productId, and productTitle
       router.push(
         `/dashboard?tab=messages&sellerId=${sellerId}&productId=${encodeURIComponent(
           productId || productTitle
-        )}`
+        )}&productTitle=${encodeURIComponent(productTitle)}`
       );
     }
   };
