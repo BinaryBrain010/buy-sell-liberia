@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MessagesComponent } from '@/components/dashboard/MessagesComponent';
+import UserListings from '@/components/dashboard/userListings';
 
 // JWT Decode function (no external dependencies needed)
 const decodeJWT = (token: string) => {
@@ -47,20 +48,8 @@ const ProfileTab = () => (
   </div>
 );
 
-const ListingsTab = () => (
-  <div className="space-y-4">
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          My Listings
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Listings component will be implemented here.</p>
-      </CardContent>
-    </Card>
-  </div>
+const ListingsTab = ({ userId }: { userId: string }) => (
+  <UserListings userId={userId} />
 );
 
 const FavouritesTab = () => (
@@ -149,7 +138,7 @@ export default function DashboardPage() {
 
         if (storedUserData) {
           // Use the stored user data from auth provider
-          setUser({
+          const userData = {
             id: storedUserData._id,
             firstName: storedUserData.fullName?.split(' ')[0] || storedUserData.username,
             lastName: storedUserData.fullName?.split(' ').slice(1).join(' ') || '',
@@ -157,7 +146,9 @@ export default function DashboardPage() {
             profile: {
               avatar: storedUserData.profile?.avatar || '/placeholder-user.jpg'
             }
-          });
+          };
+          console.log('🔐 Setting user from stored data:', userData);
+          setUser(userData);
           setIsAuthenticated(true);
           return;
         }
@@ -174,8 +165,8 @@ export default function DashboardPage() {
 
         if (userData && userData.user) {
           // Extract user data from JWT payload
-          console.log('Found user data in token:', userData.user);
-          setUser({
+          console.log('🔐 Found user data in token:', userData.user);
+          const userDataObj = {
             id: userData.user.id || userData.user._id,
             firstName: userData.user.firstName || userData.user.fullName?.split(' ')[0] || userData.user.username,
             lastName: userData.user.lastName || userData.user.fullName?.split(' ').slice(1).join(' ') || '',
@@ -183,12 +174,14 @@ export default function DashboardPage() {
             profile: {
               avatar: userData.user.profile?.avatar || '/placeholder-user.jpg'
             }
-          });
+          };
+          console.log('🔐 Setting user from JWT user data:', userDataObj);
+          setUser(userDataObj);
         } else if (userData && userData.userId) {
           // JWT only contains userId, we need to get user data from somewhere else
-          console.log('JWT only contains userId, need user data from auth provider');
+          console.log('🔐 JWT only contains userId:', userData.userId);
           // Since we don't have user data, we'll use a generic approach
-          setUser({
+          const userDataObj = {
             id: userData.userId,
             firstName: 'User',
             lastName: 'Account',
@@ -196,7 +189,9 @@ export default function DashboardPage() {
             profile: {
               avatar: '/placeholder-user.jpg'
             }
-          });
+          };
+          console.log('🔐 Setting user from JWT userId:', userDataObj);
+          setUser(userDataObj);
         } else {
           // Fallback to mock data if JWT decoding fails
           console.log('No user data found in token, using fallback');
@@ -299,7 +294,15 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="listings" className="space-y-6">
-            <ListingsTab />
+            {user?.id || user?._id ? (
+              <ListingsTab userId={user?.id || user?._id} />
+            ) : (
+              <div className="text-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">User ID Not Found</h3>
+                <p className="text-muted-foreground">Unable to load listings: User ID is missing</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="favourites" className="space-y-6">
