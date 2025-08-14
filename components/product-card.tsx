@@ -143,7 +143,7 @@ export function ProductCard({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onLike?.(product._id)}
+                onClick={() => product._id && onLike?.(product._id)}
                 className={`${
                   isDark
                     ? "text-gray-400 hover:text-red-400"
@@ -196,7 +196,7 @@ export function ProductCard({
               }`}
             >
               <Clock className="h-4 w-4 mr-1" />
-              {formatDaysAgo(product.createdAt)}
+              {product.createdAt ? formatDaysAgo(product.createdAt) : "Unknown date"}
               <span className="flex items-center ml-2">
                 <Eye className="h-4 w-4 mr-1" />
                 {typeof product.views === 'number' ? product.views : 0} views
