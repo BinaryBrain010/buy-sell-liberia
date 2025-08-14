@@ -564,5 +564,6 @@ productSchema.set("toJSON", {
   virtuals: true,
 })
 
-const Product: Model<IProduct> = mongoose.model<IProduct>("Product", productSchema)
+// Use the existing model if it exists, otherwise create a new one
+const Product: Model<IProduct> = mongoose.models.Product || mongoose.model<IProduct>("Product", productSchema)
 export default Product

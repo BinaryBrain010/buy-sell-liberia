@@ -156,5 +156,6 @@ reviewSchema.statics.findReportedReviews = function () {
     .sort({ created_at: -1 });
 };
 
-const Review: Model<IReview> = mongoose.model<IReview>("Review", reviewSchema);
+// Use the existing model if it exists, otherwise create a new one
+const Review: Model<IReview> = mongoose.models.Review || mongoose.model<IReview>("Review", reviewSchema);
 export default Review;

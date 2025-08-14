@@ -609,5 +609,6 @@ userSchema.set("toJSON", {
   },
 });
 
-const User: Model<IUser> = mongoose.model<IUser>("User", userSchema);
+// Use the existing model if it exists, otherwise create a new one
+const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 export default User;

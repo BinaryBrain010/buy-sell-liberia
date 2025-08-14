@@ -1,117 +1,135 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { MapPin, Clock, Eye, Star, User, Heart, ZoomIn, X, ChevronLeft, ChevronRight } from "lucide-react"
-import Image from "next/image"
-import { ContactSellerButton } from "@/components/ContactSellerPopup"
-import { useEffect, useState, useCallback } from "react"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  MapPin,
+  Clock,
+  Eye,
+  Star,
+  User,
+  Heart,
+  ZoomIn,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import Image from "next/image";
+import { ContactSellerButton } from "@/components/ContactSellerPopup";
+import { useEffect, useState, useCallback } from "react";
+import { cn } from "@/lib/utils";
 
-type ImageType = string | { url: string; alt?: string; isPrimary?: boolean }
+type ImageType = string | { url: string; alt?: string; isPrimary?: boolean };
 
 interface ProductDetailProps {
-  [key: string]: any
+  [key: string]: any;
 }
 
 export default function ProductDetail(productData: ProductDetailProps) {
-  const [liked, setLiked] = useState(false)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showGallery, setShowGallery] = useState(false)
-  const [isZoomed, setIsZoomed] = useState(false)
-  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
+  const [liked, setLiked] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showGallery, setShowGallery] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 
   const formatPrice = (price: any): string => {
-    if (typeof price === "number") return `USD ${price.toLocaleString()}`
-    if (!price || typeof price.amount !== "number") return "Price not available"
-    const currency = price.currency || "USD"
-    const formatted = `${currency} ${price.amount.toLocaleString()}`
-    return price.negotiable ? `${formatted} (Negotiable)` : formatted
-  }
+    if (typeof price === "number") return `USD ${price.toLocaleString()}`;
+    if (!price || typeof price.amount !== "number")
+      return "Price not available";
+    const currency = price.currency || "USD";
+    const formatted = `${currency} ${price.amount.toLocaleString()}`;
+    return price.negotiable ? `${formatted} (Negotiable)` : formatted;
+  };
 
   const getTimeAgo = (dateString: string): string => {
-    if (!dateString) return "Unknown date"
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return "Invalid date"
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    if (diffDays === 1) return "1 day ago"
-    if (diffDays < 7) return `${diffDays} days ago`
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`
-    return `${Math.ceil(diffDays / 30)} months ago`
-  }
+    if (!dateString) return "Unknown date";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays === 1) return "1 day ago";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return `${Math.ceil(diffDays / 30)} months ago`;
+  };
 
   const getImageUrl = (img: ImageType | undefined): string | undefined => {
-    if (!img) return undefined
+    if (!img) return undefined;
     if (typeof img === "string") {
-      if (img.startsWith("http")) return img
-      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`
+      if (img.startsWith("http")) return img;
+      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
     }
-    if (img.url.startsWith("http")) return img.url
-    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`
-  }
+    if (img.url.startsWith("http")) return img.url;
+    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+  };
 
-  const images = Array.isArray(productData?.images) ? productData.images : []
+  const images = Array.isArray(productData?.images) ? productData.images : [];
   const displayName =
     productData?.seller?.fullName ||
     productData?.user_id?.profile?.displayName ||
     (productData?.user_id?.firstName && productData?.user_id?.lastName
       ? `${productData.user_id.firstName} ${productData.user_id.lastName}`
-      : "Unknown Seller")
+      : "Unknown Seller");
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!showGallery) return
+      if (!showGallery) return;
 
       switch (e.key) {
         case "Escape":
-          setShowGallery(false)
-          break
+          setShowGallery(false);
+          break;
         case "ArrowLeft":
-          setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-          break
+          setCurrentImageIndex((prev) =>
+            prev === 0 ? images.length - 1 : prev - 1
+          );
+          break;
         case "ArrowRight":
-          setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-          break
+          setCurrentImageIndex((prev) =>
+            prev === images.length - 1 ? 0 : prev + 1
+          );
+          break;
       }
     },
-    [showGallery, images.length],
-  )
+    [showGallery, images.length]
+  );
 
   useEffect(() => {
-    document.addEventListener("keydown", handleKeyDown)
-    return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [handleKeyDown])
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isZoomed) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
-    setZoomPosition({ x, y })
-  }
+    if (!isZoomed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
-  }
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
-  }
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
 
   if (!productData || Object.keys(productData).length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Product details not found</h2>
-        <p className="text-muted-foreground mb-6">Unable to load product details. Please try again.</p>
+        <p className="text-muted-foreground mb-6">
+          Unable to load product details. Please try again.
+        </p>
         <Button onClick={() => window.history.back()} variant="outline">
           Go Back
         </Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -131,16 +149,21 @@ export default function ProductDetail(productData: ProductDetailProps) {
                   onClick={() => setShowGallery(true)}
                 >
                   <Image
-                    src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
+                    src={
+                      getImageUrl(images[currentImageIndex])! ||
+                      "/placeholder.svg"
+                    }
                     alt={
                       typeof images[currentImageIndex] === "object"
-                        ? images[currentImageIndex].alt || productData.title || "Product image"
+                        ? images[currentImageIndex].alt ||
+                          productData.title ||
+                          "Product image"
                         : productData.title || "Product image"
                     }
                     fill
                     className={cn(
                       "object-cover transition-transform duration-300",
-                      isZoomed ? "scale-150" : "scale-100",
+                      isZoomed ? "scale-150" : "scale-100"
                     )}
                     style={
                       isZoomed
@@ -206,14 +229,18 @@ export default function ProductDetail(productData: ProductDetailProps) {
                       "relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
                       idx === currentImageIndex
                         ? "border-primary ring-2 ring-primary/20"
-                        : "border-gray-200 hover:border-gray-300",
+                        : "border-gray-200 hover:border-gray-300"
                     )}
                     onClick={() => setCurrentImageIndex(idx)}
                   >
                     {getImageUrl(img) ? (
                       <Image
                         src={getImageUrl(img)! || "/placeholder.svg"}
-                        alt={typeof img === "object" ? img.alt || productData.title : productData.title}
+                        alt={
+                          typeof img === "object"
+                            ? img.alt || productData.title
+                            : productData.title
+                        }
                         fill
                         className="object-cover"
                       />
@@ -233,8 +260,12 @@ export default function ProductDetail(productData: ProductDetailProps) {
             {/* Header - Reduced spacing */}
             <div className="flex items-start gap-3">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold leading-tight mb-1">{productData.title || "Untitled Product"}</h1>
-                <div className="text-3xl font-bold text-primary mb-3">{formatPrice(productData.price)}</div>
+                <h1 className="text-2xl font-bold leading-tight mb-1">
+                  {productData.title || "Untitled Product"}
+                </h1>
+                <div className="text-3xl font-bold text-primary mb-3">
+                  {formatPrice(productData.price)}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {productData.featured && (
@@ -248,7 +279,12 @@ export default function ProductDetail(productData: ProductDetailProps) {
                   onClick={() => setLiked(!liked)}
                   className="hover:bg-red-50 h-8 w-8"
                 >
-                  <Heart className={cn("h-4 w-4", liked ? "fill-red-500 text-red-500" : "text-gray-600")} />
+                  <Heart
+                    className={cn(
+                      "h-4 w-4",
+                      liked ? "fill-red-500 text-red-500" : "text-gray-600"
+                    )}
+                  />
                 </Button>
               </div>
             </div>
@@ -264,7 +300,9 @@ export default function ProductDetail(productData: ProductDetailProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {getTimeAgo(productData.created_at || productData.createdAt || "")}
+                {getTimeAgo(
+                  productData.created_at || productData.createdAt || ""
+                )}
               </span>
               <span className="flex items-center gap-1">
                 <Eye className="h-3 w-3" />
@@ -301,29 +339,40 @@ export default function ProductDetail(productData: ProductDetailProps) {
             <div>
               <h3 className="text-base font-semibold mb-2">Description</h3>
               <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm max-h-20 overflow-hidden">
-                {productData.description || <span className="italic text-gray-400">No description available</span>}
+                {productData.description || (
+                  <span className="italic text-gray-400">
+                    No description available
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Custom Fields - More compact grid */}
-            {productData.customFields && productData.customFields.length > 0 && (
-              <div>
-                <h3 className="text-base font-semibold mb-2">Details</h3>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {productData.customFields.slice(0, 3).map((field: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
-                    >
-                      <span className="font-medium">{field.fieldName}</span>
-                      <span className="text-muted-foreground">
-                        {typeof field.value === "boolean" ? (field.value ? "Yes" : "No") : field.value}
-                      </span>
-                    </div>
-                  ))}
+            {productData.customFields &&
+              productData.customFields.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold mb-2">Details</h3>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {productData.customFields
+                      .slice(0, 3)
+                      .map((field: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                        >
+                          <span className="font-medium">{field.fieldName}</span>
+                          <span className="text-muted-foreground">
+                            {typeof field.value === "boolean"
+                              ? field.value
+                                ? "Yes"
+                                : "No"
+                              : field.value}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Seller Information - More compact */}
             <div className="border-t pt-4">
@@ -340,7 +389,10 @@ export default function ProductDetail(productData: ProductDetailProps) {
                 </div>
                 <div className="flex gap-2">
                   <ContactSellerButton
-                    sellerId={productData.seller?._id || productData.user_id?._id || ""}
+                    sellerId={
+                      productData.seller?._id || productData.user_id?._id || ""
+                    }
+                    productId={productData._id || productData.id}
                     productTitle={productData.title || "Untitled Product"}
                     showPhoneNumber={productData.showPhoneNumber ?? true}
                     sellerName={displayName}
@@ -375,7 +427,9 @@ export default function ProductDetail(productData: ProductDetailProps) {
             {/* Main image */}
             <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
               <Image
-                src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
+                src={
+                  getImageUrl(images[currentImageIndex])! || "/placeholder.svg"
+                }
                 alt={productData.title || "Product image"}
                 width={800}
                 height={600}
@@ -413,7 +467,9 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     onClick={() => setCurrentImageIndex(idx)}
                     className={cn(
                       "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
-                      idx === currentImageIndex ? "border-white" : "border-white/30 hover:border-white/60",
+                      idx === currentImageIndex
+                        ? "border-white"
+                        : "border-white/30 hover:border-white/60"
                     )}
                   >
                     <Image
@@ -431,5 +487,5 @@ export default function ProductDetail(productData: ProductDetailProps) {
         </div>
       )}
     </>
-  )
+  );
 }

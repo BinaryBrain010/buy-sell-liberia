@@ -1,420 +1,316 @@
-"use client"
+'use client';
 
-import { useEffect, useState, Suspense, lazy } from "react"
-import { authClient } from "../services/Auth.Service"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { MessageCircle, Plus, Star, Eye, Calendar, TrendingUp } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { DashboardSkeleton } from "@/components/dashboard/dashboardSkeleton"
-import { ErrorBoundary } from "@/components/dashboard/errorBoundary"
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { 
+  User, 
+  Package, 
+  Heart, 
+  MessageCircle, 
+  Shield
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { MessagesComponent } from '@/components/dashboard/MessagesComponent';
 
-// Lazy load heavy components for better performance
-const UserListings = lazy(() => import("@/components/dashboard/userListings"))
-const Chats = lazy(() => import("@/components/dashboard/chats").then((module) => ({ default: module.Chats })))
-const ProfileForm = lazy(() => import("@/components/dashboard/profileForm"))
-const FavouriteListings = lazy(() => import("@/components/dashboard/favouriteListings"))
+// JWT Decode function (no external dependencies needed)
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+};
 
-// Define the shape of the user object to match API response
-interface DashboardUser {
-  _id: string
-  fullName: string
-  username: string
-  email: string
-  phone: string
-  password: string
-  country: string
-  isEmailVerified: boolean
-  refreshToken: string
-  role: string
-  status: string
-  createdAt: string
-  updatedAt: string
-}
+// Child Components
+const ProfileTab = () => (
+  <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Profile Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">Profile component will be implemented here.</p>
+      </CardContent>
+    </Card>
+  </div>
+);
 
-interface Listing {
-  _id: string
-  title: string
-  price: number
-  status: string
-  createdAt: string
-  views?: number
-  featured?: boolean
-}
+const ListingsTab = () => (
+  <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Package className="h-5 w-5" />
+          My Listings
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">Listings component will be implemented here.</p>
+      </CardContent>
+    </Card>
+  </div>
+);
+
+const FavouritesTab = () => (
+  <div className="space-y-4">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Heart className="h-5 w-5" />
+          Favourite Listings
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">Favourites component will be implemented here.</p>
+      </CardContent>
+    </Card>
+  </div>
+);
 
 export default function DashboardPage() {
-  const [tab, setTab] = useState("dashboard")
-  const [user, setUser] = useState<DashboardUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [recentListings, setRecentListings] = useState<Listing[]>([])
-  const [totalListings, setTotalListings] = useState(0)
-  const [unreadMessages, setUnreadMessages] = useState(0)
-  // Add separate loading states for different sections
-  const [dashboardLoading, setDashboardLoading] = useState(true)
-  const [statsLoading, setStatsLoading] = useState(true)
-  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState('profile');
+  const [chatParams, setChatParams] = useState<{ sellerId?: string; productId?: string }>({});
+  const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Load user profile first, then load other data progressively
-    const loadUserProfile = async () => {
-      try {
-        const response = await authClient.getProfile()
-        setUser(response.data || response.user || response)
-        setLoading(false)
-      } catch (err) {
-        console.error("Failed to fetch user:", err)
-        setLoading(false)
+    checkAuthentication();
+    checkUrlParams();
+  }, []);
+
+  const checkUrlParams = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab');
+      const sellerId = urlParams.get('sellerId');
+      const productId = urlParams.get('productId');
+
+      if (tab === 'messages') {
+        setActiveTab('messages');
+      }
+
+      if (sellerId || productId) {
+        setChatParams({
+          sellerId: sellerId || undefined,
+          productId: productId || undefined
+        });
       }
     }
+  };
 
-    loadUserProfile()
-  }, [])
-
-  useEffect(() => {
-    // Load dashboard data after user is loaded
-    if (user) {
-      const loadDashboardData = async () => {
-        try {
-          // Simulate API calls with progressive loading
-          await new Promise((resolve) => setTimeout(resolve, 300))
-
-          setRecentListings([
-            {
-              _id: "1",
-              title: "iPhone 15 Pro",
-              price: 999,
-              status: "active",
-              createdAt: "2024-01-15",
-              views: 45,
-              featured: true,
-            },
-            { _id: "2", title: "MacBook Air M2", price: 1299, status: "active", createdAt: "2024-01-14", views: 32 },
-            { _id: "3", title: "AirPods Pro", price: 249, status: "sold", createdAt: "2024-01-13", views: 28 },
-          ])
-
-          setDashboardLoading(false)
-
-          // Load stats separately
-          await new Promise((resolve) => setTimeout(resolve, 200))
-          setTotalListings(12)
-          setUnreadMessages(3)
-          setStatsLoading(false)
-        } catch (err) {
-          console.error("Failed to load dashboard data:", err)
-          setDashboardLoading(false)
-          setStatsLoading(false)
+  const checkAuthentication = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Check if user is logged in by looking for tokens
+      if (typeof window !== 'undefined') {
+        const accessToken = localStorage.getItem('accessToken');
+        const refreshToken = localStorage.getItem('refreshToken');
+        
+        if (!accessToken && !refreshToken) {
+          throw new Error('No authentication tokens found');
         }
+
+        // Check if user data is already available in localStorage from auth provider
+        // Try different possible keys where user data might be stored
+        const possibleUserDataKeys = ['userData', 'user', 'currentUser', 'authUser'];
+        let storedUserData = null;
+        
+        for (const key of possibleUserDataKeys) {
+          const data = localStorage.getItem(key);
+          if (data) {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed && (parsed.fullName || parsed.username || parsed.email)) {
+                storedUserData = parsed;
+                console.log(`Found user data in localStorage.${key}:`, storedUserData);
+                break;
+              }
+            } catch (e) {
+              console.log(`Failed to parse ${key}:`, e);
+            }
+          }
+        }
+
+        if (storedUserData) {
+          // Use the stored user data from auth provider
+          setUser({
+            id: storedUserData._id,
+            firstName: storedUserData.fullName?.split(' ')[0] || storedUserData.username,
+            lastName: storedUserData.fullName?.split(' ').slice(1).join(' ') || '',
+            email: storedUserData.email,
+            profile: {
+              avatar: storedUserData.profile?.avatar || '/placeholder-user.jpg'
+            }
+          });
+          setIsAuthenticated(true);
+          return;
+        }
+
+        // If no stored user data, try to decode JWT token
+        let userData = null;
+        if (accessToken) {
+          userData = decodeJWT(accessToken);
+          console.log('Decoded access token:', userData);
+        } else if (refreshToken) {
+          userData = decodeJWT(refreshToken);
+          console.log('Decoded refresh token:', userData);
+        }
+
+        if (userData && userData.user) {
+          // Extract user data from JWT payload
+          console.log('Found user data in token:', userData.user);
+          setUser({
+            id: userData.user.id || userData.user._id,
+            firstName: userData.user.firstName || userData.user.fullName?.split(' ')[0] || userData.user.username,
+            lastName: userData.user.lastName || userData.user.fullName?.split(' ').slice(1).join(' ') || '',
+            email: userData.user.email,
+            profile: {
+              avatar: userData.user.profile?.avatar || '/placeholder-user.jpg'
+            }
+          });
+        } else if (userData && userData.userId) {
+          // JWT only contains userId, we need to get user data from somewhere else
+          console.log('JWT only contains userId, need user data from auth provider');
+          // Since we don't have user data, we'll use a generic approach
+          setUser({
+            id: userData.userId,
+            firstName: 'User',
+            lastName: 'Account',
+            email: 'user@example.com',
+            profile: {
+              avatar: '/placeholder-user.jpg'
+            }
+          });
+        } else {
+          // Fallback to mock data if JWT decoding fails
+          console.log('No user data found in token, using fallback');
+          setUser({
+            id: 'user123',
+            firstName: '',
+            lastName: 'Account',
+            email: 'user@example.com',
+            profile: {
+              avatar: '/placeholder-user.jpg'
+            }
+          });
+        }
+        
+        setIsAuthenticated(true);
       }
-
-      loadDashboardData()
+    } catch (error) {
+      console.error('Authentication check failed:', error);
+      setIsAuthenticated(false);
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to access the dashboard.",
+        variant: "destructive",
+      });
+      router.push('/');
+    } finally {
+      setIsLoading(false);
     }
-  }, [user])
+  };
 
-  const DashboardOverview = () => (
-    <div className="space-y-3">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Card className="p-2 sm:p-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-0">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Listings</CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-0">
-            {statsLoading ? (
-              <div className="space-y-1">
-                <div className="h-6 w-8 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-              </div>
-            ) : (
-              <>
-                <div className="text-lg sm:text-xl font-bold">{totalListings}</div>
-                <p className="text-xs text-muted-foreground">+2 from last month</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="p-2 sm:p-3">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-0">
-            <CardTitle className="text-xs sm:text-sm font-medium">Messages</CardTitle>
-            <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-0">
-            {statsLoading ? (
-              <div className="space-y-1">
-                <div className="h-6 w-8 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
-              </div>
-            ) : (
-              <>
-                <div className="text-lg sm:text-xl font-bold">{unreadMessages}</div>
-                <p className="text-xs text-muted-foreground">unread messages</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="p-2 sm:p-3 sm:col-span-2 lg:col-span-1">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="text-sm sm:text-base">Total Views</CardTitle>
-            <Eye className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-0">
-            {statsLoading ? (
-              <div className="space-y-1">
-                <div className="h-6 w-12 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-              </div>
-            ) : (
-              <>
-                <div className="text-lg sm:text-xl font-bold">1,234</div>
-                <p className="text-xs text-muted-foreground">across all listings</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Quick Actions */}
-      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
-        <Card>
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="text-sm sm:text-base">Quick Actions</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Manage your listings and messages</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 px-3 pb-3">
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
-              <Button
-                onClick={() => setTab("messages")}
-                variant="outline"
-                size="sm"
-                className="flex items-center justify-center gap-2 text-xs sm:text-sm w-full sm:w-auto"
-              >
-                <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                Messages
-                {!statsLoading && unreadMessages > 0 && (
-                  <Badge variant="destructive" className="ml-1 text-xs">
-                    {unreadMessages}
-                  </Badge>
-                )}
-              </Button>
-              <Button
-                size="sm"
-                className="flex items-center justify-center gap-2 text-xs sm:text-sm w-full sm:w-auto"
-                onClick={() => router.push("/sell")}
-              >
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                Create Listing
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex items-center justify-center gap-2 text-xs sm:text-sm w-full sm:w-auto"
-              >
-                <Star className="h-3 w-3 sm:h-4 sm:w-4" />
-                Featured Listing
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Featured Listing Section */}
-        <Card>
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
-              <Star className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-              Featured Listings
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Boost your listings visibility</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 px-3 pb-3">
-            <div className="space-y-2">
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Feature your listings to get more visibility and reach more potential buyers.
-              </p>
-              <div className="flex flex-col gap-2">
-                <Button size="sm" className="flex items-center justify-center gap-2 text-xs sm:text-sm">
-                  <Star className="h-3 w-3 sm:h-4 sm:w-4" />
-                  Apply for Featured
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs sm:text-sm bg-transparent">
-                  View Guidelines
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Shield className="h-16 w-16 text-muted-foreground mx-auto" />
+          <h1 className="text-2xl font-bold">Access Denied</h1>
+          <p className="text-muted-foreground">You must be logged in to access the dashboard.</p>
+          <Badge variant="outline" onClick={() => router.push('/')} className="cursor-pointer">
+            Go to Home
+          </Badge>
+        </div>
       </div>
-
-      {/* Recent Listings */}
-      <Card>
-        <CardHeader className="pb-2 px-3 pt-3">
-          <CardTitle className="text-sm sm:text-base">Recent Listings</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Your latest posted items</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-0 px-3 pb-3">
-          {dashboardLoading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
-                  <div className="flex-1 space-y-1">
-                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                    <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-                  </div>
-                  <div className="h-6 w-12 bg-muted animate-pulse rounded" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recentListings.map((listing) => (
-                <div key={listing._id} className="flex items-center justify-between p-2 sm:p-3 border rounded-lg">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap mb-1">
-                      <h3 className="font-medium text-xs sm:text-sm truncate">{listing.title}</h3>
-                      {listing.featured && (
-                        <Badge variant="secondary" className="flex items-center gap-1 text-xs px-1">
-                          <Star className="h-2 w-2 sm:h-3 sm:w-3" />
-                          <span className="hidden sm:inline">Featured</span>
-                        </Badge>
-                      )}
-                      <Badge variant={listing.status === "active" ? "default" : "secondary"} className="text-xs px-1">
-                        {listing.status}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground">
-                      <span className="font-medium">${listing.price}</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-2 w-2 sm:h-3 sm:w-3" />
-                        {listing.views || 0}
-                      </span>
-                      <span className="flex items-center gap-1 hidden sm:flex">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(listing.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-xs px-2 py-1">
-                    Edit
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTab("listings")}
-              className="w-full text-xs sm:text-sm"
-              disabled={dashboardLoading}
-            >
-              View All Listings
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    );
+  }
 
   return (
-    <div className="min-h-screen container mx-auto px-2 sm:px-4 py-3 sm:py-4">
-      <div className="mb-3 sm:mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-xs sm:text-sm">
-            Welcome back, {user?.fullName || "User"}! Manage your listings and messages.
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Shield className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold">Dashboard</h1>
+              </div>
+              <Badge variant="secondary" className="ml-2">
+                Welcome back{user?.firstName ? `, ${user.firstName}` : ''}!
+              </Badge>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid grid-cols-5 w-full mb-3 sm:mb-4 h-9 sm:h-10">
-          <TabsTrigger value="dashboard" className="text-xs sm:text-sm px-1">
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="listings" className="relative text-xs sm:text-sm px-1">
-            Listings
-            {!statsLoading && (
-              <Badge variant="secondary" className="ml-1 text-xs px-1">
-                {totalListings}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="messages" className="relative text-xs sm:text-sm px-1">
-            Messages
-            {!statsLoading && unreadMessages > 0 && (
-              <Badge variant="destructive" className="ml-1 text-xs px-1">
-                {unreadMessages}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="favourites" className="text-xs sm:text-sm px-1">
-            Favourites
-          </TabsTrigger>
-          <TabsTrigger value="profile" className="text-xs sm:text-sm px-1">
-            Profile
-          </TabsTrigger>
-        </TabsList>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="listings" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Listings
+            </TabsTrigger>
+            <TabsTrigger value="favourites" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              Favourites
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Messages
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="dashboard">
-          {loading ? (
-            <DashboardSkeleton />
-          ) : user ? (
-            <ErrorBoundary>
-              <DashboardOverview />
-            </ErrorBoundary>
-          ) : (
-            <p>Failed to load dashboard.</p>
-          )}
-        </TabsContent>
+          <TabsContent value="profile" className="space-y-6">
+            <ProfileTab />
+          </TabsContent>
 
-        <TabsContent value="listings">
-          <ErrorBoundary>
-            <Suspense fallback={<DashboardSkeleton />}>
-              {loading ? (
-                <DashboardSkeleton />
-              ) : user ? (
-                <UserListings userId={user._id} />
-              ) : (
-                <p>Failed to load user listings.</p>
-              )}
-            </Suspense>
-          </ErrorBoundary>
-        </TabsContent>
+          <TabsContent value="listings" className="space-y-6">
+            <ListingsTab />
+          </TabsContent>
 
-        <TabsContent value="messages">
-          <ErrorBoundary>
-            <Suspense fallback={<DashboardSkeleton />}>
-              {loading ? <DashboardSkeleton /> : user ? <Chats /> : <p>Failed to load messages.</p>}
-            </Suspense>
-          </ErrorBoundary>
-        </TabsContent>
+          <TabsContent value="favourites" className="space-y-6">
+            <FavouritesTab />
+          </TabsContent>
 
-        <TabsContent value="favourites">
-          <ErrorBoundary>
-            <Suspense fallback={<DashboardSkeleton />}>
-              {loading ? (
-                <DashboardSkeleton />
-              ) : user ? (
-                <FavouriteListings userId={user._id} />
-              ) : (
-                <p>Failed to load favourite listings.</p>
-              )}
-            </Suspense>
-          </ErrorBoundary>
-        </TabsContent>
-
-        <TabsContent value="profile">
-          <ErrorBoundary>
-            <Suspense fallback={<DashboardSkeleton />}>
-              {loading ? <DashboardSkeleton /> : user ? <ProfileForm user={user} /> : <p>Failed to load profile.</p>}
-            </Suspense>
-          </ErrorBoundary>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="messages" className="space-y-6">
+            <MessagesComponent sellerId={chatParams.sellerId} productId={chatParams.productId} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
-  )
+  );
 }
