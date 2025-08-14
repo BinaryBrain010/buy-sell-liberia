@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { socket } from '@/lib/socket';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MessageCircle } from 'lucide-react';
@@ -40,7 +41,8 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
     createOrUpdateChat,
     sendMessage,
     setCurrentChat,
-    clearError
+    clearError,
+    setChats
   } = useChats();
 
   const [messageInput, setMessageInput] = useState('');
@@ -51,6 +53,42 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  // For real-time updates
+  const chatsRef = useRef(chats);
+  useEffect(() => { chatsRef.current = chats; }, [chats]);
+  // Real-time: Listen for incoming messages
+  useEffect(() => {
+    function onSocketMessage(data: any) {
+      const currentUserId = getCurrentUserId();
+      if (!currentUserId) return;
+      const chatIdx = chatsRef.current.findIndex(chat =>
+        (chat.user1 === data.from && chat.user2 === data.to) ||
+        (chat.user1 === data.to && chat.user2 === data.from)
+      );
+      if (chatIdx !== -1 && typeof setChats === 'function') {
+        const updatedChats = [...chatsRef.current];
+        updatedChats[chatIdx] = {
+          ...updatedChats[chatIdx],
+          messages: [...updatedChats[chatIdx].messages, {
+            _id: data._id || Date.now().toString(),
+            sender: data.from,
+            content: data.message,
+            sentAt: new Date(),
+            readBy: [data.from]
+          }]
+        };
+        setChats(updatedChats);
+      } else {
+        // If chat not found, fetch all chats from server to get new ones
+        if (typeof getChats === 'function') {
+          getChats({ userId: currentUserId });
+        }
+      }
+    }
+    socket.on('message', onSocketMessage);
+    return () => { socket.off('message', onSocketMessage); };
+    // eslint-disable-next-line
+  }, []);
 
   // Helper functions
   const getOtherUserName = (chat: any) => {
@@ -479,6 +517,17 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
 
     setIsSending(true);
     try {
+      // Emit to socket for real-time
+      // Always send a string userId for 'to'
+      let toUser = (currentChat?.user1 === currentUserId ? currentChat?.user2 : currentChat?.user1);
+      if (typeof toUser === 'object' && toUser?._id) toUser = toUser._id;
+      if (typeof toUser !== 'string') toUser = '';
+      socket.emit('message', {
+        from: currentUserId,
+        message: messageInput.trim(),
+        to: toUser
+      });
+      // Also update via API for persistence
       await sendMessage(String(targetChatId), newMessage);
       setMessageInput('');
     } catch (error) {

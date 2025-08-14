@@ -20,6 +20,7 @@ interface UseChatsReturn {
   
   // Utility
   setCurrentChat: (chat: IChat | null) => void;
+  setChats: React.Dispatch<React.SetStateAction<IChat[]>>;
   clearError: () => void;
   refreshChats: () => Promise<void>;
 }
@@ -271,7 +272,8 @@ export const useChats = (): UseChatsReturn => {
     getUnreadCount,
     
     // Utility
-    setCurrentChat,
+  setCurrentChat,
+  setChats,
     clearError,
     refreshChats,
   };
