@@ -66,10 +66,12 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
     });
     
     // Check if user1 is the current user, then return user2's name
-    if (chat.user1._id === currentUserId) {
+    if (chat.user1._id === currentUserId || chat.user1 === currentUserId) {
       console.log('👤 User1 is current user, getting user2 name');
-      if (chat.user2 && typeof chat.user2 === 'object') {
-        console.log('📋 User2 object:', chat.user2);
+      
+      // Handle both populated and unpopulated user2
+      if (chat.user2 && typeof chat.user2 === 'object' && chat.user2._id) {
+        console.log('📋 User2 object (populated):', chat.user2);
         // If user2 is populated, use the actual name data
         if (chat.user2.firstName && chat.user2.lastName) {
           return `${chat.user2.firstName} ${chat.user2.lastName}`;
@@ -81,22 +83,25 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
           return chat.user2.email.split('@')[0];
         }
       }
-      // If we have a cached name for user2, use it
-      const userId = chat.user2._id?.toString();
-      if (userId && userNames[userId]) {
-        return userNames[userId];
-      }
-      // Fetch user data if not available
-      if (userId && !userNames[userId]) {
+      
+      // If user2 is just an ID string, try to get cached name or fetch
+      const userId = typeof chat.user2 === 'string' ? chat.user2 : chat.user2._id?.toString();
+      if (userId) {
+        if (userNames[userId]) {
+          return userNames[userId];
+        }
+        // Fetch user data if not available
         fetchUserDetails(userId);
+        return 'Loading...';
       }
-      // Show loading state while fetching
-      return 'Loading...';
+      
+      return 'Unknown User';
     } else {
       console.log('👤 User2 is current user, getting user1 name');
-      // user2 is the current user, return user1's name
-      if (chat.user1 && typeof chat.user1 === 'object') {
-        console.log('📋 User1 object:', chat.user1);
+      
+      // Handle both populated and unpopulated user1
+      if (chat.user1 && typeof chat.user1 === 'object' && chat.user1._id) {
+        console.log('📋 User1 object (populated):', chat.user1);
         // If user1 is populated, use the actual name data
         if (chat.user1.firstName && chat.user1.lastName) {
           return `${chat.user1.firstName} ${chat.user1.lastName}`;
@@ -108,17 +113,19 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
           return chat.user1.email.split('@')[0];
         }
       }
-      // If we have a cached name for user1, use it
-      const userId = chat.user1._id?.toString();
-      if (userId && userNames[userId]) {
-        return userNames[userId];
-      }
-      // Fetch user data if not available
-      if (userId && !userNames[userId]) {
+      
+      // If user1 is just an ID string, try to get cached name or fetch
+      const userId = typeof chat.user1 === 'string' ? chat.user1 : chat.user1._id?.toString();
+      if (userId) {
+        if (userNames[userId]) {
+          return userNames[userId];
+        }
+        // Fetch user data if not available
         fetchUserDetails(userId);
+        return 'Loading...';
       }
-      // Show loading state while fetching
-      return 'Loading...';
+      
+      return 'Unknown User';
     }
   };
 
@@ -359,6 +366,18 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
       const chatProductId = typeof chat.product === 'object' ? chat.product._id : chat.product;
       const user1Id = typeof chat.user1 === 'object' ? chat.user1._id : chat.user1;
       const user2Id = typeof chat.user2 === 'object' ? chat.user2._id : chat.user2;
+      
+      console.log('🔍 Checking chat for match:', {
+        chatProductId,
+        user1Id,
+        user2Id,
+        targetProductId: productId,
+        currentUserId,
+        sellerId,
+        isMatch: chatProductId === productId && 
+                ((user1Id === currentUserId && user2Id === sellerId) ||
+                 (user1Id === sellerId && user2Id === currentUserId))
+      });
       
       return chatProductId === productId && 
              ((user1Id === currentUserId && user2Id === sellerId) ||
@@ -617,25 +636,7 @@ export const MessagesComponent = ({ sellerId, productId }: MessagesComponentProp
             <MessageCircle className="h-5 w-5" />
             Messages
           </CardTitle>
-          {sellerId && productId && (
-            <p className="text-sm text-muted-foreground">
-              Chat about: <span className="font-medium">
-                {isLoadingProduct ? (
-                  <span className="inline-flex items-center gap-1">
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
-                    Loading...
-                  </span>
-                ) : (
-                  productTitle || 'Unknown Product'
-                )}
-              </span>
-            </p>
-          )}
-          {sellerId && productId && (
-            <p className="text-xs text-muted-foreground">
-              Seller ID: {sellerId} | Product: {productTitle || 'Loading...'} | Product ID: {productId}
-            </p>
-          )}
+
           {sellerId && productId && !isValidObjectId(productId) && (
             <div className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200">
               <div className="flex items-center gap-2 mb-1">

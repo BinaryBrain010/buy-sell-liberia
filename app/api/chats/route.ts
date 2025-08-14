@@ -39,6 +39,9 @@ export async function GET(req: NextRequest) {
     .populate("product", "title images")
     .sort({ lastMessageAt: -1 });
 
+  // Debug logging to see what's actually being returned
+  console.log('🔍 Chat API - Raw chats data:', JSON.stringify(chats, null, 2));
+
   return NextResponse.json(chats);
 }
 
@@ -130,6 +133,9 @@ export async function POST(req: NextRequest) {
   await updatedChat.populate("user1", "firstName lastName profile.avatar");
   await updatedChat.populate("user2", "firstName lastName profile.avatar");
   await updatedChat.populate("product", "title images");
+
+  // Debug logging for created/updated chat
+  console.log('🔍 Chat API - Updated chat data:', JSON.stringify(updatedChat, null, 2));
 
   return NextResponse.json(updatedChat);
 }

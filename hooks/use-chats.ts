@@ -188,7 +188,29 @@ export const useChats = (): UseChatsReturn => {
   const sendMessage = useCallback(async (chatId: string, message: IMessage): Promise<IChat | null> => {
     try {
       setError(null);
-      const updatedChat = await ChatService.sendMessage(chatId, message);
+      
+      // Find the existing chat in our local state
+      const existingChat = chats.find(chat => chat._id === chatId);
+      if (!existingChat) {
+        throw new Error('Chat not found in local state');
+      }
+
+      // Prepare the chat data for the API
+      const chatData = {
+        product: typeof existingChat.product === 'object' ? existingChat.product._id : existingChat.product,
+        user1: typeof existingChat.user1 === 'object' ? existingChat.user1._id : existingChat.user1,
+        user2: typeof existingChat.user2 === 'object' ? existingChat.user2._id : existingChat.user2,
+        message: {
+          _id: message._id,
+          sender: message.sender,
+          content: message.content,
+          sentAt: message.sentAt,
+          readBy: message.readBy
+        }
+      };
+
+      // Send to the main chats endpoint (which handles both creation and updates)
+      const updatedChat = await ChatService.createOrUpdateChat(chatData);
       
       if (updatedChat) {
         // Update chats list
@@ -211,7 +233,7 @@ export const useChats = (): UseChatsReturn => {
       console.error('Error sending message:', err);
       return null;
     }
-  }, [currentChat]);
+  }, [currentChat, chats]);
 
   const getUnreadCount = useCallback(async (userId: string): Promise<number> => {
     try {
