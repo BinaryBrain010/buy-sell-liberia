@@ -569,8 +569,8 @@ export default function UserListings({ userId }: UserListingsProps) {
             onClick={() => router.push('/sell')}
           >
             <Plus className="h-4 w-4" />
-            Create New Listing
-          </Button>
+          Create New Listing
+        </Button>
         </div>
       </div>
 
@@ -1045,18 +1045,18 @@ export default function UserListings({ userId }: UserListingsProps) {
                       className="flex-1 bg-transparent"
                       onClick={() => handleStartEdit(listing)}
                     >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit
-                    </Button>
+                  <Edit className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
                     <Button 
                       variant="outline" 
                       size="sm" 
                       className="flex-1 bg-transparent text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => handleDeleteListing(listing._id)}
                     >
-                      <Trash2 className="h-3 w-3 mr-1" />
-                      Delete
-                    </Button>
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Delete
+                </Button>
                   </>
                 )}
               </div>

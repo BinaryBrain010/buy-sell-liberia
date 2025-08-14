@@ -15,6 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { MessagesComponent } from '@/components/dashboard/MessagesComponent';
 import UserListings from '@/components/dashboard/userListings';
+import ProfileForm from '@/components/dashboard/profileForm';
 
 // JWT Decode function (no external dependencies needed)
 const decodeJWT = (token: string) => {
@@ -32,20 +33,8 @@ const decodeJWT = (token: string) => {
 };
 
 // Child Components
-const ProfileTab = () => (
-  <div className="space-y-4">
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Profile Information
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Profile component will be implemented here.</p>
-      </CardContent>
-    </Card>
-  </div>
+const ProfileTab = ({ userId }: { userId: string }) => (
+  <ProfileForm userId={userId} />
 );
 
 const ListingsTab = ({ userId }: { userId: string }) => (
@@ -290,7 +279,15 @@ export default function DashboardPage() {
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
-            <ProfileTab />
+            {user?.id || user?._id ? (
+              <ProfileTab userId={user?.id || user?._id} />
+            ) : (
+              <div className="text-center py-12">
+                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">User ID Not Found</h3>
+                <p className="text-muted-foreground">Unable to load profile: User ID is missing</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="listings" className="space-y-6">
