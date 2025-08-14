@@ -52,6 +52,10 @@ export function ProductCard({
   const isDark = theme === "dark";
 
   const getLocationString = () => {
+    if (!product.location || typeof product.location !== 'object') {
+      return "Unknown location";
+    }
+    
     const { city, state, country } = product.location;
     return (
       [city, state, country].filter(Boolean).join(", ") || "Unknown location"
@@ -100,19 +104,22 @@ export function ProductCard({
       
           <div className="relative">
             {/* Featured badge */}
-      {product.featured && (
-        <Badge
-          className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 cursor-default select-none"
-          title="Featured Product"
-        >
-          <Star className="h-4 w-4 mr-1" />
-          Featured
-        </Badge>
-      )}
+            {product.featured === true && (
+              <Badge
+                className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 cursor-default select-none"
+                title="Featured Product"
+              >
+                <Star className="h-4 w-4 mr-1" />
+                Featured
+              </Badge>
+            )}
             <div className="relative w-full h-48 mb-4">
               <Image
                 src={
-                  product.images?.length > 0 &&
+                  product.images && 
+                  Array.isArray(product.images) &&
+                  product.images.length > 0 &&
+                  product.titleImageIndex !== undefined &&
                   product.images[product.titleImageIndex]?.url
                     ? product.images[product.titleImageIndex].url
                     : "/placeholder.jpg"
@@ -131,7 +138,7 @@ export function ProductCard({
                   isDark ? "text-gray-100" : "text-gray-900"
                 }`}
               >
-                {product.title}
+                {product.title || "Untitled Product"}
               </h3>
               <Button
                 variant="ghost"
@@ -148,7 +155,7 @@ export function ProductCard({
             </div>
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
-              {product.category && (
+              {product.category && typeof product.category === 'string' && (
                 <span
                   className={`text-xs px-2 py-1 rounded ${
                     isDark
@@ -159,7 +166,7 @@ export function ProductCard({
                   {product.category}
                 </span>
               )}
-              {product.subCategory && (
+              {product.subCategory && typeof product.subCategory === 'string' && (
                 <span
                   className={`text-xs px-2 py-1 rounded ${
                     isDark
@@ -192,7 +199,7 @@ export function ProductCard({
               {formatDaysAgo(product.createdAt)}
               <span className="flex items-center ml-2">
                 <Eye className="h-4 w-4 mr-1" />
-                {product.views} views
+                {typeof product.views === 'number' ? product.views : 0} views
               </span>
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -201,9 +208,9 @@ export function ProductCard({
                   isDark ? "text-blue-400" : "text-blue-600"
                 }`}
               >
-                {product.price ? `$${product.price.amount}` : "-"}
+                {product.price && typeof product.price === 'object' && product.price.amount ? `$${product.price.amount}` : "-"}
               </span>
-              {product.price.negotiable && (
+              {product.price && typeof product.price === 'object' && product.price.negotiable === true && (
                 <span
                   className={`text-xs font-semibold ${
                     isDark ? "text-green-400" : "text-green-600"
