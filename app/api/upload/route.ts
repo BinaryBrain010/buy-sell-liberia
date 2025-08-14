@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { verifyToken } from "../modules/auth/middlewares/next-auth-middleware"
+import path from "path"
+import fs from "fs"
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
+
+// File upload configuration
+const uploadDir = path.join(process.cwd(), 'public', 'uploads')
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,50 +32,81 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Upload type is required" }, { status: 400 })
     }
 
-    // Validate files
-    const validFiles: File[] = []
+    console.log(`[UPLOAD API] Processing ${files.length} files for upload`)
+
+    // Process and store files
+    const uploadedFiles: Array<{ name: string; path: string; url: string; size: number }> = []
     const errors: string[] = []
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       
-      // Check file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        errors.push(`File ${file.name} is too large (max 5MB)`)
-        continue
-      }
+      try {
+        // Check file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+          errors.push(`File ${file.name} is too large (max 5MB)`)
+          continue
+        }
 
-      // Check file type
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
-      if (!allowedTypes.includes(file.type)) {
-        errors.push(`File ${file.name} has unsupported format`)
-        continue
-      }
+        // Check file type
+        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+        if (!allowedTypes.includes(file.type)) {
+          errors.push(`File ${file.name} has unsupported format`)
+          continue
+        }
 
-      validFiles.push(file)
+        // Convert File to Buffer for storage
+        const buffer = Buffer.from(await file.arrayBuffer())
+        
+        // Generate unique filename
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+        const ext = file.name.split('.').pop()
+        const filename = `file-${uniqueSuffix}.${ext}`
+        
+        // Ensure uploads directory exists
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true })
+        }
+        
+        // Save file to disk
+        const filePath = path.join(uploadDir, filename)
+        fs.writeFileSync(filePath, buffer)
+        
+        // Create URL for the uploaded file
+        const fileUrl = `/uploads/${filename}`
+        
+        uploadedFiles.push({
+          name: file.name,
+          path: filePath,
+          url: fileUrl,
+          size: file.size
+        })
+        
+        console.log(`[UPLOAD API] Successfully uploaded: ${filename}`)
+        
+      } catch (fileError: any) {
+        console.error(`[UPLOAD API] Error processing file ${file.name}:`, fileError)
+        errors.push(`Failed to process ${file.name}: ${fileError.message}`)
+      }
     }
 
-    if (validFiles.length === 0) {
+    if (uploadedFiles.length === 0) {
       return NextResponse.json({ 
-        error: "No valid files to upload", 
+        error: "No files were successfully uploaded", 
         details: errors 
       }, { status: 400 })
     }
 
-    // Note: Since we can't use Firebase Storage directly in API routes due to client-side nature,
-    // we'll return the file information for client-side upload
-    const fileInfos = validFiles.map(file => ({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified
-    }))
-
-    console.log(`[UPLOAD API] Validated ${validFiles.length} files for upload`)
+    console.log(`[UPLOAD API] Successfully uploaded ${uploadedFiles.length} files`)
 
     return NextResponse.json({
-      message: "Files validated successfully",
-      files: fileInfos,
+      message: "Files uploaded successfully",
+      files: uploadedFiles.map(file => ({
+        name: file.name,
+        url: file.url,
+        size: file.size
+      })),
       errors: errors.length > 0 ? errors : undefined,
       uploadInfo: {
         userId: authResult.userId,

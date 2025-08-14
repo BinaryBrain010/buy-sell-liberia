@@ -127,8 +127,9 @@ export function Navbar() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onOpenChange={handleModalClose}
-        initialMode={authMode}
-      />
+        initialMode={authMode} onLoginSuccess={function (): void {
+          throw new Error("Function not implemented.");
+        } }      />
     </>
   );
 }

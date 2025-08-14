@@ -55,7 +55,13 @@ export async function POST(request: NextRequest) {
     } = formData;
 
     // Validate required fields
-    if (!title || !description || amount == null || !category_id || !location?.city) {
+    if (
+      !title ||
+      !description ||
+      amount == null ||
+      !category_id ||
+      !location?.city
+    ) {
       return NextResponse.json(
         {
           error:
@@ -180,7 +186,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-
 export async function GET(request: NextRequest) {
   try {
     console.log("[PRODUCTS API] Getting products");
@@ -189,8 +194,22 @@ export async function GET(request: NextRequest) {
 
     // Parse filters
     const filters: any = {};
-    if (searchParams.get("category_id"))
-      filters.category_id = searchParams.get("category_id");
+    const categoryIdParam = searchParams.get("category_id");
+    if (categoryIdParam) {
+      if (!mongoose.Types.ObjectId.isValid(categoryIdParam)) {
+        return NextResponse.json(
+          {
+            message: "Invalid category_id",
+            products: [],
+            total: 0,
+            page: 1,
+            totalPages: 0,
+          },
+          { status: 200 }
+        );
+      }
+      filters.category_id = new mongoose.Types.ObjectId(categoryIdParam);
+    }
     if (searchParams.get("subcategory_id"))
       filters.subcategory_id = searchParams.get("subcategory_id");
     if (searchParams.get("minPrice"))

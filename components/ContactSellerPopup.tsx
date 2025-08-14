@@ -1,6 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/app/services/Auth.Service";
+import { userClient } from "@/app/services/User.Service";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +16,7 @@ import { toast } from "sonner";
 
 interface ContactSellerButtonProps {
   sellerId: string;
+  productId?: string; // Add productId prop
   productTitle: string;
   showPhoneNumber: boolean;
   sellerName: string;
@@ -23,6 +27,7 @@ interface ContactSellerButtonProps {
 
 export function ContactSellerButton({
   sellerId,
+  productId,
   productTitle,
   showPhoneNumber,
   sellerName,
@@ -44,8 +49,8 @@ export function ContactSellerButton({
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("/api/auth/me");
-      setIsAuthenticated(response.ok);
+      await authClient.getProfile();
+      setIsAuthenticated(true);
     } catch (error) {
       setIsAuthenticated(false);
     } finally {
@@ -57,10 +62,7 @@ export function ContactSellerButton({
     if (sellerPhone) return; // Already fetched
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/users/${sellerId}/contact`);
-      if (!response.ok) throw new Error("Failed to fetch contact info");
-
-      const data = await response.json();
+      const data = await userClient.getUserContact(sellerId);
       setSellerPhone(data.phone);
     } catch (error) {
       console.error("Error fetching seller phone:", error);
@@ -70,7 +72,9 @@ export function ContactSellerButton({
     }
   };
 
-  const handleContactAction = async (action: "phone" | "whatsapp") => {
+  const router = useRouter();
+
+  const handleContactAction = async (action: "phone" | "chat") => {
     if (!isAuthenticated) {
       setIsLoginDialogOpen(true);
       return;
@@ -84,18 +88,13 @@ export function ContactSellerButton({
     if (action === "phone") {
       await fetchSellerPhone();
       setIsDialogOpen(true);
-    } else if (action === "whatsapp") {
-      if (!sellerPhone) {
-        await fetchSellerPhone();
-      }
-      if (sellerPhone) {
-        const message = encodeURIComponent(
-          `Hi! I'm interested in your product: ${productTitle}`
-        );
-        const cleanPhone = sellerPhone.replace(/[^0-9]/g, "");
-        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
-        window.open(whatsappUrl, "_blank");
-      }
+    } else if (action === "chat") {
+      // Route to dashboard/messages with sellerId, productId, and productTitle
+      router.push(
+        `/dashboard?tab=messages&sellerId=${sellerId}&productId=${encodeURIComponent(
+          productId || productTitle
+        )}&productTitle=${encodeURIComponent(productTitle)}`
+      );
     }
   };
 
@@ -198,6 +197,10 @@ export function ContactSellerButton({
               <p className="text-center text-muted-foreground">
                 You need to be logged in to view seller contact information.
               </p>
+              <Button onClick={handleLogin} className="w-full">
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -212,11 +215,11 @@ export function ContactSellerButton({
           size="sm"
           variant="outline"
           className={`${getButtonSize()} ${className}`}
-          onClick={() => handleContactAction("whatsapp")}
-          disabled={!showPhoneNumber || isCheckingAuth}
+          onClick={() => handleContactAction("chat")}
+          disabled={isCheckingAuth}
         >
           <MessageCircle className="h-3 w-3" />
-          {size === "lg" && <span className="ml-2">WhatsApp</span>}
+          {size === "lg" && <span className="ml-2">Chat</span>}
         </Button>
 
         {/* Login Required Dialog */}
@@ -227,8 +230,12 @@ export function ContactSellerButton({
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-center text-muted-foreground">
-                You need to be logged in to contact the seller via WhatsApp.
+                You need to be logged in to chat with the seller.
               </p>
+              <Button onClick={handleLogin} className="w-full">
+                <LogIn className="h-4 w-4 mr-2" />
+                Login
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -253,8 +260,8 @@ export function ContactSellerButton({
         size="sm"
         variant="outline"
         className={`${getButtonSize()} ${className}`}
-        onClick={() => handleContactAction("whatsapp")}
-        disabled={!showPhoneNumber || isCheckingAuth}
+        onClick={() => handleContactAction("chat")}
+        disabled={isCheckingAuth}
       >
         <MessageCircle className="h-3 w-3" />
       </Button>
@@ -291,7 +298,7 @@ export function ContactSellerButton({
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => handleContactAction("whatsapp")}
+                    onClick={() => handleContactAction("chat")}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
                     <MessageCircle className="h-4 w-4 mr-2" />
@@ -302,7 +309,7 @@ export function ContactSellerButton({
                 <Button
                   variant="outline"
                   onClick={copyPhoneNumber}
-                  className="w-full"
+                  className="w-full bg-transparent"
                 >
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Number
@@ -327,7 +334,10 @@ export function ContactSellerButton({
             <p className="text-center text-muted-foreground">
               You need to be logged in to view seller contact information.
             </p>
-
+            <Button onClick={handleLogin} className="w-full">
+              <LogIn className="h-4 w-4 mr-2" />
+              Login
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
