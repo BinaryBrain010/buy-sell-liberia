@@ -628,74 +628,81 @@ export default function UserListings({ userId }: UserListingsProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">My Listings</h2>
-          <p className="text-muted-foreground">Manage your posted items</p>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="shrink-0">
+          <h2 className="text-xl font-semibold">My Listings</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your posted items
+          </p>
         </div>
-        <div className="flex gap-2">
+        {listings.length > 0 && (
+          <div className="w-full sm:flex-1 min-w-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-muted/50 rounded-lg">
+              <div className="text-center">
+                <div className="text-lg font-bold text-primary">
+                  {listings.length}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Total Listings
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-600">
+                  {listings.filter((l) => l.status === "active").length}
+                </div>
+                <div className="text-xs text-muted-foreground">Active</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-600">
+                  {listings.filter((l) => l.status === "sold").length}
+                </div>
+                <div className="text-xs text-muted-foreground">Sold</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-orange-600">
+                  {listings.filter((l) => l.featured).length}
+                </div>
+                <div className="text-xs text-muted-foreground">Featured</div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
           <Button
             variant="outline"
+            size="sm"
             onClick={refreshListings}
             disabled={loading}
+            className="flex-1 sm:flex-none"
           >
             <Package className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           <Button
-            className="flex items-center gap-2"
+            size="sm"
+            className="flex items-center gap-2 flex-1 sm:flex-none"
             onClick={() => router.push("/sell")}
           >
             <Plus className="h-4 w-4" />
-            Create New Listing
+            New Listing
           </Button>
         </div>
       </div>
 
-      {/* Summary Stats */}
-      {listings.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-primary">
-              {listings.length}
-            </div>
-            <div className="text-sm text-muted-foreground">Total Listings</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {listings.filter((l) => l.status === "active").length}
-            </div>
-            <div className="text-sm text-muted-foreground">Active</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {listings.filter((l) => l.status === "sold").length}
-            </div>
-            <div className="text-sm text-muted-foreground">Sold</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {listings.filter((l) => l.featured).length}
-            </div>
-            <div className="text-sm text-muted-foreground">Featured</div>
-          </div>
-        </div>
-      )}
-
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search listings..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-9"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full sm:w-44 h-9">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -709,16 +716,32 @@ export default function UserListings({ userId }: UserListingsProps) {
       </div>
 
       {/* Listings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredListings.map((listing) => (
           <Card key={listing._id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+            {/* Thumbnail */}
+            {listing.images &&
+              Array.isArray(listing.images) &&
+              listing.images[0]?.url && (
+                <div className="w-full overflow-hidden rounded-t-lg">
+                  <img
+                    src={listing.images[0].url}
+                    alt={listing.images[0].alt || listing.title}
+                    className="w-full h-40 sm:h-36 object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        "/placeholder.jpg";
+                    }}
+                  />
+                </div>
+              )}
+            <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg line-clamp-1">
+                  <CardTitle className="text-base line-clamp-1">
                     {listing.title}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2 mt-1">
+                  <CardDescription className="line-clamp-2 mt-1 text-sm">
                     {listing.description}
                   </CardDescription>
                 </div>
@@ -727,9 +750,9 @@ export default function UserListings({ userId }: UserListingsProps) {
                 )}
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold">
+                <span className="text-xl font-semibold">
                   ${listing.price?.amount || 0}
                   {listing.price?.negotiable && (
                     <span className="text-xs font-normal text-muted-foreground ml-1">
@@ -737,12 +760,15 @@ export default function UserListings({ userId }: UserListingsProps) {
                     </span>
                   )}
                 </span>
-                <Badge variant={getStatusColor(listing.status) as any}>
+                <Badge
+                  className="text-[11px]"
+                  variant={getStatusColor(listing.status) as any}
+                >
                   {listing.status}
                 </Badge>
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 gap-y-1 text-xs text-muted-foreground justify-start sm:justify-between">
                 <span className="flex items-center gap-1">
                   <Eye className="h-3 w-3" />
                   {listing.views} views
@@ -755,9 +781,9 @@ export default function UserListings({ userId }: UserListingsProps) {
 
               {/* Edit Form Fields */}
               {editingListing === listing._id && (
-                <div className="space-y-4 p-4 bg-muted/50 rounded-lg border">
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg border">
                   {/* Basic Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
                         Title *
@@ -768,7 +794,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           setEditForm({ ...editForm, title: e.target.value })
                         }
                         placeholder="Product title"
-                        className="mt-1"
+                        className="mt-1 h-9"
                       />
                     </div>
                     <div>
@@ -781,7 +807,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           setEditForm({ ...editForm, condition: value })
                         }
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -797,7 +823,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                   </div>
 
                   {/* Category and Subcategory */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
                         Category *
@@ -813,7 +839,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           }
                         }}
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue
                             placeholder={
                               isLoadingCategories
@@ -859,7 +885,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           !editForm.category || subcategories.length === 0
                         }
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue
                             placeholder={
                               !editForm.category
@@ -904,13 +930,13 @@ export default function UserListings({ userId }: UserListingsProps) {
                         })
                       }
                       placeholder="Describe your product in detail..."
-                      className="mt-1 w-full px-3 py-2 border border-input rounded-md text-sm resize-none"
-                      rows={4}
+                      className="mt-1 w-full px-3 py-2 border border-input rounded-md text-sm resize-none h-24"
+                      rows={3}
                     />
                   </div>
 
                   {/* Price and Status */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
                         Price ($) *
@@ -931,7 +957,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           })
                         }
                         placeholder="0.00"
-                        className="mt-1"
+                        className="mt-1 h-9"
                       />
                       <div className="flex items-center gap-2 mt-2">
                         <input
@@ -967,7 +993,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           setEditForm({ ...editForm, status: value as any })
                         }
                       >
-                        <SelectTrigger className="mt-1">
+                        <SelectTrigger className="mt-1 h-9">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1008,7 +1034,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                   </div>
 
                   {/* Location */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground">
                         City *
@@ -1036,7 +1062,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           })
                         }
                         placeholder="City"
-                        className="mt-1"
+                        className="mt-1 h-9"
                       />
                     </div>
                     <div>
@@ -1066,7 +1092,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           })
                         }
                         placeholder="State"
-                        className="mt-1"
+                        className="mt-1 h-9"
                       />
                     </div>
                     <div>
@@ -1096,7 +1122,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           })
                         }
                         placeholder="Country"
-                        className="mt-1"
+                        className="mt-1 h-9"
                       />
                     </div>
                   </div>
@@ -1122,7 +1148,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                         })
                       }
                       placeholder="Enter tags separated by commas (e.g., vintage, classic, rare)"
-                      className="mt-1"
+                      className="mt-1 h-9"
                     />
                   </div>
 
@@ -1146,7 +1172,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                             <img
                               src={image.url || "/placeholder.jpg"}
                               alt={image.alt || `Image ${index + 1}`}
-                              className="w-full h-20 object-cover rounded border"
+                              className="w-full h-16 object-cover rounded border"
                               onError={(e) => {
                                 console.error(
                                   "❌ Image failed to load:",
@@ -1159,7 +1185,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                className="text-xs"
+                                className="text-xs h-7 px-2"
                                 onClick={() =>
                                   handleRemoveImage(listing._id, index)
                                 }
@@ -1188,7 +1214,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                           console.log("📁 File input change:", e.target.files);
                           handleAddImages(listing._id, e.target.files);
                         }}
-                        className="mt-1"
+                        className="mt-1 h-9"
                         disabled={isImageLoading}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
@@ -1258,12 +1284,12 @@ export default function UserListings({ userId }: UserListingsProps) {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 sm:flex sm:flex-row gap-2">
                 {editingListing === listing._id ? (
                   <>
                     <Button
                       size="sm"
-                      className="flex-1"
+                      className="w-full sm:flex-1"
                       onClick={() => handleUpdateListing(listing._id)}
                       disabled={isUpdating}
                     >
@@ -1282,7 +1308,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 bg-transparent"
+                      className="w-full sm:flex-1 bg-transparent"
                       onClick={handleCancelEdit}
                       disabled={isUpdating}
                     >
@@ -1294,7 +1320,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 bg-transparent"
+                      className="w-full sm:flex-1 bg-transparent"
                       onClick={() => handleStartEdit(listing)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
@@ -1303,7 +1329,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 bg-transparent text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="w-full sm:flex-1 bg-transparent text-red-600 hover:text-red-700 hover:bg-red-50"
                       onClick={() => handleDeleteListing(listing._id)}
                     >
                       <Trash2 className="h-3 w-3 mr-1" />
