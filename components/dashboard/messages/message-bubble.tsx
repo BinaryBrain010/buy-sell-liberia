@@ -1,10 +1,14 @@
 interface MessageBubbleProps {
-  message: any
-  isOwn: boolean
-  formatDate: (date: Date) => string
+  message: any;
+  isOwn: boolean;
+  formatDate: (date: Date) => string;
 }
 
-export const MessageBubble = ({ message, isOwn, formatDate }: MessageBubbleProps) => {
+export const MessageBubble = ({
+  message,
+  isOwn,
+  formatDate,
+}: MessageBubbleProps) => {
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div
@@ -15,10 +19,14 @@ export const MessageBubble = ({ message, isOwn, formatDate }: MessageBubbleProps
         }`}
       >
         <p className="text-[13px] leading-relaxed">{message.content}</p>
-        <p className={`text-[10px] mt-1 ${isOwn ? "text-blue-100/90" : "text-gray-500 dark:text-gray-400"}`}>
+        <p
+          className={`text-[10px] mt-1 ${
+            isOwn ? "text-blue-100/90" : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
           {formatDate(message.sentAt)}
         </p>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -1,33 +1,32 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Package, 
-  Heart, 
-  MessageCircle, 
-  Shield
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { MessagesComponent } from '@/components/dashboard/MessagesComponent';
-import UserListings from '@/components/dashboard/userListings';
-import ProfileForm from '@/components/dashboard/profileForm';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { User, Package, Heart, MessageCircle, Shield } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { MessagesComponent } from "@/components/dashboard/MessagesComponent";
+import UserListings from "@/components/dashboard/userListings";
+import ProfileForm from "@/components/dashboard/profileForm";
 
 // JWT Decode function (no external dependencies needed)
 const decodeJWT = (token: string) => {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map(function (c) {
+          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+        })
+        .join("")
+    );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decoding JWT:', error);
+    console.error("Error decoding JWT:", error);
     return null;
   }
 };
@@ -51,7 +50,9 @@ const FavouritesTab = () => (
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground">Favourites component will be implemented here.</p>
+        <p className="text-muted-foreground">
+          Favourites component will be implemented here.
+        </p>
       </CardContent>
     </Card>
   </div>
@@ -61,8 +62,11 @@ export default function DashboardPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('profile');
-  const [chatParams, setChatParams] = useState<{ sellerId?: string; productId?: string }>({});
+  const [activeTab, setActiveTab] = useState("profile");
+  const [chatParams, setChatParams] = useState<{
+    sellerId?: string;
+    productId?: string;
+  }>({});
   const router = useRouter();
   const { toast } = useToast();
 
@@ -72,20 +76,20 @@ export default function DashboardPage() {
   }, []);
 
   const checkUrlParams = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      const tab = urlParams.get('tab');
-      const sellerId = urlParams.get('sellerId');
-      const productId = urlParams.get('productId');
+      const tab = urlParams.get("tab");
+      const sellerId = urlParams.get("sellerId");
+      const productId = urlParams.get("productId");
 
-      if (tab === 'messages') {
-        setActiveTab('messages');
+      if (tab === "messages") {
+        setActiveTab("messages");
       }
 
       if (sellerId || productId) {
         setChatParams({
           sellerId: sellerId || undefined,
-          productId: productId || undefined
+          productId: productId || undefined,
         });
       }
     }
@@ -94,29 +98,40 @@ export default function DashboardPage() {
   const checkAuthentication = async () => {
     try {
       setIsLoading(true);
-      
+
       // Check if user is logged in by looking for tokens
-      if (typeof window !== 'undefined') {
-        const accessToken = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
-        
+      if (typeof window !== "undefined") {
+        const accessToken = localStorage.getItem("accessToken");
+        const refreshToken = localStorage.getItem("refreshToken");
+
         if (!accessToken && !refreshToken) {
-          throw new Error('No authentication tokens found');
+          throw new Error("No authentication tokens found");
         }
 
         // Check if user data is already available in localStorage from auth provider
         // Try different possible keys where user data might be stored
-        const possibleUserDataKeys = ['userData', 'user', 'currentUser', 'authUser'];
+        const possibleUserDataKeys = [
+          "userData",
+          "user",
+          "currentUser",
+          "authUser",
+        ];
         let storedUserData = null;
-        
+
         for (const key of possibleUserDataKeys) {
           const data = localStorage.getItem(key);
           if (data) {
             try {
               const parsed = JSON.parse(data);
-              if (parsed && (parsed.fullName || parsed.username || parsed.email)) {
+              if (
+                parsed &&
+                (parsed.fullName || parsed.username || parsed.email)
+              ) {
                 storedUserData = parsed;
-                console.log(`Found user data in localStorage.${key}:`, storedUserData);
+                console.log(
+                  `Found user data in localStorage.${key}:`,
+                  storedUserData
+                );
                 break;
               }
             } catch (e) {
@@ -129,14 +144,16 @@ export default function DashboardPage() {
           // Use the stored user data from auth provider
           const userData = {
             id: storedUserData._id,
-            firstName: storedUserData.fullName?.split(' ')[0] || storedUserData.username,
-            lastName: storedUserData.fullName?.split(' ').slice(1).join(' ') || '',
+            firstName:
+              storedUserData.fullName?.split(" ")[0] || storedUserData.username,
+            lastName:
+              storedUserData.fullName?.split(" ").slice(1).join(" ") || "",
             email: storedUserData.email,
             profile: {
-              avatar: storedUserData.profile?.avatar || '/placeholder-user.jpg'
-            }
+              avatar: storedUserData.profile?.avatar || "/placeholder-user.jpg",
+            },
           };
-          console.log('🔐 Setting user from stored data:', userData);
+          console.log("🔐 Setting user from stored data:", userData);
           setUser(userData);
           setIsAuthenticated(true);
           return;
@@ -146,66 +163,72 @@ export default function DashboardPage() {
         let userData = null;
         if (accessToken) {
           userData = decodeJWT(accessToken);
-          console.log('Decoded access token:', userData);
+          console.log("Decoded access token:", userData);
         } else if (refreshToken) {
           userData = decodeJWT(refreshToken);
-          console.log('Decoded refresh token:', userData);
+          console.log("Decoded refresh token:", userData);
         }
 
         if (userData && userData.user) {
           // Extract user data from JWT payload
-          console.log('🔐 Found user data in token:', userData.user);
+          console.log("🔐 Found user data in token:", userData.user);
           const userDataObj = {
             id: userData.user.id || userData.user._id,
-            firstName: userData.user.firstName || userData.user.fullName?.split(' ')[0] || userData.user.username,
-            lastName: userData.user.lastName || userData.user.fullName?.split(' ').slice(1).join(' ') || '',
+            firstName:
+              userData.user.firstName ||
+              userData.user.fullName?.split(" ")[0] ||
+              userData.user.username,
+            lastName:
+              userData.user.lastName ||
+              userData.user.fullName?.split(" ").slice(1).join(" ") ||
+              "",
             email: userData.user.email,
             profile: {
-              avatar: userData.user.profile?.avatar || '/placeholder-user.jpg'
-            }
+              avatar: userData.user.profile?.avatar || "/placeholder-user.jpg",
+            },
           };
-          console.log('🔐 Setting user from JWT user data:', userDataObj);
+          console.log("🔐 Setting user from JWT user data:", userDataObj);
           setUser(userDataObj);
         } else if (userData && userData.userId) {
           // JWT only contains userId, we need to get user data from somewhere else
-          console.log('🔐 JWT only contains userId:', userData.userId);
+          console.log("🔐 JWT only contains userId:", userData.userId);
           // Since we don't have user data, we'll use a generic approach
           const userDataObj = {
             id: userData.userId,
-            firstName: 'User',
-            lastName: 'Account',
-            email: 'user@example.com',
+            firstName: "User",
+            lastName: "Account",
+            email: "user@example.com",
             profile: {
-              avatar: '/placeholder-user.jpg'
-            }
+              avatar: "/placeholder-user.jpg",
+            },
           };
-          console.log('🔐 Setting user from JWT userId:', userDataObj);
+          console.log("🔐 Setting user from JWT userId:", userDataObj);
           setUser(userDataObj);
         } else {
           // Fallback to mock data if JWT decoding fails
-          console.log('No user data found in token, using fallback');
+          console.log("No user data found in token, using fallback");
           setUser({
-            id: 'user123',
-            firstName: '',
-            lastName: 'Account',
-            email: 'user@example.com',
+            id: "user123",
+            firstName: "",
+            lastName: "Account",
+            email: "user@example.com",
             profile: {
-              avatar: '/placeholder-user.jpg'
-            }
+              avatar: "/placeholder-user.jpg",
+            },
           });
         }
-        
+
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error('Authentication check failed:', error);
+      console.error("Authentication check failed:", error);
       setIsAuthenticated(false);
       toast({
         title: "Authentication Required",
         description: "Please log in to access the dashboard.",
         variant: "destructive",
       });
-      router.push('/');
+      router.push("/");
     } finally {
       setIsLoading(false);
     }
@@ -228,8 +251,14 @@ export default function DashboardPage() {
         <div className="text-center space-y-4">
           <Shield className="h-16 w-16 text-muted-foreground mx-auto" />
           <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">You must be logged in to access the dashboard.</p>
-          <Badge variant="outline" onClick={() => router.push('/')} className="cursor-pointer">
+          <p className="text-muted-foreground">
+            You must be logged in to access the dashboard.
+          </p>
+          <Badge
+            variant="outline"
+            onClick={() => router.push("/")}
+            className="cursor-pointer"
+          >
             Go to Home
           </Badge>
         </div>
@@ -239,78 +268,96 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Shield className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {/* Header */}
+        <div className="border-b bg-card">
+          <div className="container mx-auto px-4 py-2.5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <h1 className="text-xl font-semibold">Dashboard</h1>
+                </div>
+                <Badge variant="secondary" className="ml-1 h-6 px-2 text-xs">
+                  Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
+                </Badge>
               </div>
-              <Badge variant="secondary" className="ml-2">
-                Welcome back{user?.firstName ? `, ${user.firstName}` : ''}!
-              </Badge>
+              <TabsList className="flex items-center gap-1">
+                <TabsTrigger
+                  value="profile"
+                  className="h-8 px-2 text-sm flex items-center gap-1.5"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  <span>Profile</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="listings"
+                  className="h-8 px-2 text-sm flex items-center gap-1.5"
+                >
+                  <Package className="h-3.5 w-3.5" />
+                  <span>Listings</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="favourites"
+                  className="h-8 px-2 text-sm flex items-center gap-1.5"
+                >
+                  <Heart className="h-3.5 w-3.5" />
+                  <span>Favourites</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="messages"
+                  className="h-8 px-2 text-sm flex items-center gap-1.5"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  <span>Messages</span>
+                </TabsTrigger>
+              </TabsList>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="listings" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Listings
-            </TabsTrigger>
-            <TabsTrigger value="favourites" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Favourites
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Messages
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile" className="space-y-6">
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-4">
+          <TabsContent value="profile" className="space-y-4">
             {user?.id || user?._id ? (
               <ProfileTab userId={user?.id || user?._id} />
             ) : (
               <div className="text-center py-12">
                 <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">User ID Not Found</h3>
-                <p className="text-muted-foreground">Unable to load profile: User ID is missing</p>
+                <p className="text-muted-foreground">
+                  Unable to load profile: User ID is missing
+                </p>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="listings" className="space-y-6">
+          <TabsContent value="listings" className="space-y-4">
             {user?.id || user?._id ? (
               <ListingsTab userId={user?.id || user?._id} />
             ) : (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">User ID Not Found</h3>
-                <p className="text-muted-foreground">Unable to load listings: User ID is missing</p>
+                <p className="text-muted-foreground">
+                  Unable to load listings: User ID is missing
+                </p>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="favourites" className="space-y-6">
+          <TabsContent value="favourites" className="space-y-4">
             <FavouritesTab />
           </TabsContent>
 
-          <TabsContent value="messages" className="space-y-6">
-            <MessagesComponent sellerId={chatParams.sellerId} productId={chatParams.productId} />
+          <TabsContent value="messages" className="space-y-4">
+            <MessagesComponent
+              sellerId={chatParams.sellerId}
+              productId={chatParams.productId}
+            />
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 }
