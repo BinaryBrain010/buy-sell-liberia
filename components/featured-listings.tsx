@@ -5,19 +5,36 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
+import { ProductService } from "@/app/services/Product.Service";
+
+// Cache the in-flight fetch to avoid duplicate requests in React Strict Mode (dev)
+let featuredProductsPromise: Promise<{ products?: any[] }> | null = null;
+
+const fetchFeaturedProducts = (svc: ProductService) => {
+  if (!featuredProductsPromise) {
+    featuredProductsPromise = svc
+      .getProducts({}, { featured: -1 }, { page: 1, limit: 10 })
+      .catch((err) => {
+        // Reset cache on failure to allow retries
+        featuredProductsPromise = null;
+        throw err;
+      });
+  }
+  return featuredProductsPromise;
+};
 
 export function FeaturedListings() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const productService = new ProductService();
 
   useEffect(() => {
     async function fetchProducts() {
       setLoading(true);
       try {
-        const res = await fetch("/api/products?limit=6");
-        const data = await res.json();
-        setProducts(data.products || []);
+        const data = await fetchFeaturedProducts(productService);
+        setProducts(data.products ?? []);
       } catch (error) {
         console.error("Failed to fetch products:", error);
         setProducts([]);

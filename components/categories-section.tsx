@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useCategories } from "@/hooks/useCategories";
 import Link from "next/link";
 import React from "react";
+import { CategoryService } from "@/app/services/Category.Service";
 
 // Color mappings for categories
 const categoryColors: { [key: string]: string } = {
@@ -31,16 +32,18 @@ export function CategoriesSection() {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    fetch("/api/categories?includeProducts=false")
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || "Failed to fetch categories");
-        }
-        return res.json();
-      })
+    const service = new CategoryService();
+    service
+      .getCategories({ includeProducts: false })
       .then((data) => {
-        setCategories(data.categories || []);
+        const mapped = (data.categories || []).map((c: any) => ({
+          _id: c._id ?? c.slug,
+          name: c.name,
+          slug: c.slug,
+          icon: c.icon,
+          description: c.description ?? "",
+        }))
+        setCategories(mapped);
         setLoading(false);
       })
       .catch(() => {

@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard, type Product } from "@/components/product-card";
+import { CategoryService } from "@/app/services/Category.Service";
 
 // Color mappings for categories (matching existing design)
 const categoryColors: { [key: string]: string } = {
@@ -195,17 +196,22 @@ export default function CategoriesPage() {
   const itemsPerPage = 20;
   const subcategoriesSectionRef = useRef<HTMLDivElement>(null);
   const productsSectionRef = useRef<HTMLDivElement>(null);
+  const hasFetchedCategories = useRef(false);
 
   // Fetch all categories on initial load
   useEffect(() => {
+    if (hasFetchedCategories.current) return;
+    hasFetchedCategories.current = true;
+    const service = new CategoryService();
     setLoadingCategories(true);
-    fetch("/api/categories?includeProducts=false&limit=100")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Failed to fetch categories");
-        return res.json();
-      })
+    service
+      .getCategories({ includeProducts: false, limit: 100 })
       .then((data) => {
-        setCategories(data.categories || []);
+        const mapped = (data.categories || []).map((c: any) => ({
+          ...c,
+          _id: c._id ?? c.slug,
+        }));
+        setCategories(mapped);
       })
       .catch((error) => {
         console.error("Error fetching categories:", error);

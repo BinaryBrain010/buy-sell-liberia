@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/app/services/Auth.Service";
+import { clearStoredTokens, getLocalAuthStatus } from "@/lib/jwt";
 import { userClient } from "@/app/services/User.Service";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,14 +48,10 @@ export function ContactSellerButton({
   }, []);
 
   const checkAuthStatus = async () => {
-    try {
-      await authClient.getProfile();
-      setIsAuthenticated(true);
-    } catch (error) {
-      setIsAuthenticated(false);
-    } finally {
-      setIsCheckingAuth(false);
-    }
+    const { isLoggedIn } = getLocalAuthStatus();
+    setIsAuthenticated(isLoggedIn);
+    if (!isLoggedIn) clearStoredTokens();
+    setIsCheckingAuth(false);
   };
 
   const fetchSellerPhone = async () => {

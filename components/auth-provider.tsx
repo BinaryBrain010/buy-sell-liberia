@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { authClient } from "@/app/services/Auth.Service";
+import { getLocalAuthStatus } from "@/lib/jwt";
 
 interface User {
   id: string;
@@ -51,10 +52,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    // Fast path: set user state based on presence of valid JWT to avoid blocking UI
+    const { isLoggedIn, payload } = getLocalAuthStatus();
+    if (isLoggedIn) {
+      // We only know userId from JWT; set a minimal placeholder and hydrate with profile in background
+      setUser(
+        (prev) =>
+          prev ?? {
+            id: payload?.userId || "",
+            name: "",
+            email: "",
+            username: "",
+            isEmailVerified: false,
+          }
+      );
+      setLoading(false);
+      // Background fetch to get full profile (non-blocking)
+      checkAuth(true);
+    } else {
+      checkAuth();
+    }
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = async (background = false) => {
     try {
       const userData = await authClient.getProfile();
       setUser(userData);
@@ -63,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[AUTH PROVIDER] No authenticated user");
       setUser(null);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   };
 
