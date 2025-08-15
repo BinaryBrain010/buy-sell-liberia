@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MessageCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
 import { useChats } from "@/hooks/use-chats";
+import { userClient } from "@/app/services/User.Service";
 import { socket } from "@/lib/socket";
+import { ChatItem } from "./messages/chat-item";
+import { MessageThread } from "./messages/message-thread";
+import { LoadingState } from "./messages/loading-state";
+import { ErrorState } from "./messages/error-state";
 
 interface MessagesComponentProps {
   sellerId?: string;
@@ -16,45 +21,15 @@ export const MessagesComponent = ({
   sellerId,
   productId,
 }: MessagesComponentProps) => {
-  console.log("MessagesComponent rendered with props:", {
-    sellerId,
-    productId,
-  });
-
-  // Check if productId looks like a valid MongoDB ObjectId
-  const isValidObjectId = (id: string) => {
-    return /^[0-9a-fA-F]{24}$/.test(id);
-  };
-
-  if (productId && !isValidObjectId(productId)) {
-    console.warn(
-      "ProductId does not look like a valid MongoDB ObjectId:",
-      productId
-    );
-    console.warn(
-      "Expected format: 24 character hex string (e.g., 507f1f77bcf86cd799439011)"
-    );
-    console.warn("Received format:", typeof productId, productId);
-  }
-
-  if (sellerId && !isValidObjectId(sellerId)) {
-    console.warn(
-      "SellerId does not look like a valid MongoDB ObjectId:",
-      sellerId
-    );
-    console.warn(
-      "Expected format: 24 character hex string (e.g., 507f1f77bcf86cd799439011)"
-    );
-    console.warn("Received format:", typeof sellerId, sellerId);
-  }
+  const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
 
   const {
     chats,
     currentChat,
     isLoading,
     error,
-  getChats,
-  getChatsLight,
+    getChats,
+    getChatsLight,
     createOrUpdateChat,
     sendMessage,
     setCurrentChat,
@@ -65,134 +40,74 @@ export const MessagesComponent = ({
   const [isSending, setIsSending] = useState(false);
   const [hasAttemptedNewChat, setHasAttemptedNewChat] = useState(false);
   const [productTitle, setProductTitle] = useState<string>("");
-  const [isLoadingProduct, setIsLoadingProduct] = useState(false);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<Record<string, boolean>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
-  const prevChatIdRef = useRef<string | null>(null);
-  const prevMsgCountRef = useRef<number>(0);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const [showChatList, setShowChatList] = useState(true);
 
-  const scrollMessagesToBottom = (smooth = true) => {
-    // Use rAF to wait for DOM paint after messages render
-    requestAnimationFrame(() => {
-  const el = messagesContainerRef.current as HTMLDivElement | null;
-      if (el) {
-        const top = el.scrollHeight;
-        if ('scrollTo' in el) {
-          try {
-            el.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' as ScrollBehavior });
-          } catch {
-            // Fallback for browsers that don't support smooth
-    (el as HTMLDivElement).scrollTop = top;
+  const getCurrentUserId = () => {
+    if (typeof window !== "undefined") {
+      const accessToken = localStorage.getItem("accessToken");
+      if (accessToken) {
+        try {
+          const base64Url = accessToken.split(".")[1];
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+          const decoded = JSON.parse(jsonPayload);
+          if (decoded && decoded.userId) {
+            return decoded.userId;
           }
-        } else {
-      (el as HTMLDivElement).scrollTop = top;
+        } catch (error) {
+          console.error("Error decoding JWT:", error);
         }
       }
-    });
+    }
+    return null;
   };
 
-  const isNearBottom = (threshold = 120) => {
-  const el = messagesContainerRef.current as HTMLDivElement | null;
-    if (!el) return true; // default to true to avoid missing scrolls
-    const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
-    return distanceFromBottom <= threshold;
-  };
-
-  // Resolve current user once on mount
-  useEffect(() => {
-    setCurrentUserId(getCurrentUserId());
-  }, []);
-
-  // Helper functions
   const getOtherUserName = (chat: any) => {
     const currentUserId = getCurrentUserId();
 
-    // Debug logging to see what we're working with
-    console.log("🔍 getOtherUserName - Chat data:", {
-      chatId: chat._id,
-      user1: chat.user1,
-      user2: chat.user2,
-      currentUserId,
-      userNames,
-    });
-
-    // Check if user1 is the current user, then return user2's name
     if (chat.user1._id === currentUserId || chat.user1 === currentUserId) {
-      console.log("👤 User1 is current user, getting user2 name");
-
-      // Handle both populated and unpopulated user2
       if (chat.user2 && typeof chat.user2 === "object" && chat.user2._id) {
-        console.log("📋 User2 object (populated):", chat.user2);
-        // If user2 is populated, use the actual name data
         if (chat.user2.firstName && chat.user2.lastName) {
           return `${chat.user2.firstName} ${chat.user2.lastName}`;
         } else if (chat.user2.firstName) {
           return chat.user2.firstName;
-        } else if (chat.user2.username) {
-          return chat.user2.username;
-        } else if (chat.user2.email) {
-          return chat.user2.email.split("@")[0];
         }
       }
-
-      // If user2 is just an ID string, try to get cached name or fetch
       const userId =
         typeof chat.user2 === "string"
           ? chat.user2
           : chat.user2._id?.toString();
-      if (userId) {
-        if (userNames[userId]) {
-          return userNames[userId];
-        }
-        // Fetch user data if not available
-        fetchUserDetails(userId);
-        return "Loading...";
+      if (userId && userNames[userId]) {
+        return userNames[userId];
       }
-
-      return "Unknown User";
+      return "Loading...";
     } else {
-      console.log("👤 User2 is current user, getting user1 name");
-
-      // Handle both populated and unpopulated user1
       if (chat.user1 && typeof chat.user1 === "object" && chat.user1._id) {
-        console.log("📋 User1 object (populated):", chat.user1);
-        // If user1 is populated, use the actual name data
         if (chat.user1.firstName && chat.user1.lastName) {
           return `${chat.user1.firstName} ${chat.user1.lastName}`;
         } else if (chat.user1.firstName) {
           return chat.user1.firstName;
-        } else if (chat.user1.username) {
-          return chat.user1.username;
-        } else if (chat.user1.email) {
-          return chat.user1.email.split("@")[0];
         }
       }
-
-      // If user1 is just an ID string, try to get cached name or fetch
       const userId =
         typeof chat.user1 === "string"
           ? chat.user1
           : chat.user1._id?.toString();
-      if (userId) {
-        if (userNames[userId]) {
-          return userNames[userId];
-        }
-        // Fetch user data if not available
-        fetchUserDetails(userId);
-        return "Loading...";
+      if (userId && userNames[userId]) {
+        return userNames[userId];
       }
-
-      return "Unknown User";
+      return "Loading...";
     }
-  };
-
-  const getCurrentUserName = (chat: any) => {
-    // For current user, always return "You"
-    return "You";
   };
 
   const getProductTitle = (chat: any) => {
@@ -206,506 +121,6 @@ export const MessagesComponent = ({
     return "Unknown Product";
   };
 
-  // Get current user ID from localStorage
-  const getCurrentUserId = () => {
-    if (typeof window !== "undefined") {
-      console.log("🔍 Searching for user ID...");
-
-      // First priority: try to get userId from JWT tokens (this is what the user's system provides)
-      const accessToken = localStorage.getItem("accessToken");
-      const refreshToken = localStorage.getItem("refreshToken");
-
-      console.log("📋 Available tokens:", {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        accessTokenLength: accessToken?.length,
-        refreshTokenLength: refreshToken?.length,
-      });
-
-      if (accessToken) {
-        try {
-          const base64Url = accessToken.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split("")
-              .map(function (c) {
-                return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-              })
-              .join("")
-          );
-          const decoded = JSON.parse(jsonPayload);
-          console.log("🔐 Decoded access token payload:", decoded);
-          if (decoded && decoded.userId) {
-            console.log(
-              "✅ Found user ID in JWT access token:",
-              decoded.userId
-            );
-            return decoded.userId;
-          }
-        } catch (error) {
-          console.error("❌ Error decoding JWT access token:", error);
-        }
-      }
-
-      if (refreshToken) {
-        try {
-          const base64Url = refreshToken.split(".")[1];
-          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split("")
-              .map(function (c) {
-                return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-              })
-              .join("")
-          );
-          const decoded = JSON.parse(jsonPayload);
-          console.log("🔐 Decoded refresh token payload:", decoded);
-          if (decoded && decoded.userId) {
-            console.log(
-              "✅ Found user ID in JWT refresh token:",
-              decoded.userId
-            );
-            return decoded.userId;
-          }
-        } catch (error) {
-          console.error("❌ Error decoding JWT refresh token:", error);
-        }
-      }
-
-      // Fallback: try different possible keys where user data might be stored
-      const possibleUserDataKeys = [
-        "userData",
-        "user",
-        "currentUser",
-        "authUser",
-      ];
-      console.log("🔍 Checking localStorage keys:", possibleUserDataKeys);
-
-      for (const key of possibleUserDataKeys) {
-        const data = localStorage.getItem(key);
-        if (data) {
-          try {
-            const parsed = JSON.parse(data);
-            console.log(`📦 Parsed ${key}:`, parsed);
-            if (parsed && parsed._id) {
-              console.log(
-                `✅ Found user ID in localStorage.${key}:`,
-                parsed._id
-              );
-              return parsed._id;
-            }
-          } catch (e) {
-            console.log(`❌ Failed to parse ${key}:`, e);
-          }
-        }
-      }
-    }
-    console.log("❌ No user ID found in JWT tokens or localStorage");
-    return null;
-  };
-
-  // Load chats on component mount
-  useEffect(() => {
-    const uid = currentUserId || getCurrentUserId();
-    if (uid) {
-      getChats({ userId: uid });
-    }
-  }, [getChats, currentUserId]);
-
-  // When opening a chat, jump to the latest message (smooth)
-  useEffect(() => {
-    if (currentChat?._id) {
-      scrollMessagesToBottom(true);
-      prevChatIdRef.current = String(currentChat._id);
-      // set baseline message count for this chat
-      const opened = chats.find((c) => c._id === currentChat._id);
-      prevMsgCountRef.current = opened?.messages?.length || 0;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChat?._id]);
-
-  // When chats update (e.g., new message), keep scrolled to bottom if user is near bottom
-  useEffect(() => {
-    if (!currentChat?._id) return;
-
-    const openChat = chats.find((c) => c._id === currentChat._id);
-    const currentCount = openChat?.messages?.length || 0;
-    const prevCount = prevMsgCountRef.current;
-    const chatChanged = prevChatIdRef.current !== String(currentChat._id);
-
-    // Only auto-scroll if:
-    // - chat just changed (open) OR
-    // - messages increased and user is near bottom
-    if (chatChanged) {
-      scrollMessagesToBottom(true);
-    } else if (currentCount > prevCount && isNearBottom()) {
-      scrollMessagesToBottom(true);
-    }
-
-    prevChatIdRef.current = String(currentChat._id);
-    prevMsgCountRef.current = currentCount;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chats]);
-
-  // Socket presence + message listeners (re-uses server's simple "message" broadcast)
-  useEffect(() => {
-  const userId = currentUserId || getCurrentUserId();
-    if (!userId) return;
-
-    // Announce presence and request current list
-    socket.emit("user:online", { userId });
-    socket.emit("presence:subscribe");
-
-    const onPresenceList = (data: { online: string[] }) => {
-      const map: Record<string, boolean> = {};
-      data.online.forEach((id) => (map[id] = true));
-      setOnlineUsers(map);
-    };
-
-    const onPresenceUpdate = (data: { userId: string; status: "online" | "offline" }) => {
-      setOnlineUsers((prev) => ({ ...prev, [data.userId]: data.status === "online" }));
-    };
-
-    const onSocketMessage = (data: { from: string; message: string; to: string }) => {
-      // Only refresh if current user involved
-      if (data.from !== userId && data.to !== userId) return;
-      // Lightweight refresh to avoid flicker or page refresh sensations
-      getChatsLight({ userId });
-    };
-
-    socket.on("presence:list", onPresenceList);
-    socket.on("presence:update", onPresenceUpdate);
-    socket.on("message", onSocketMessage);
-
-    return () => {
-      socket.off("presence:list", onPresenceList);
-      socket.off("presence:update", onPresenceUpdate);
-      socket.off("message", onSocketMessage);
-    };
-  }, [getChatsLight, currentUserId]);
-
-  // Fetch user details for all chats when chats are loaded
-  useEffect(() => {
-    if (chats.length > 0) {
-      console.log("📱 Chats loaded, checking user data:", chats);
-
-      chats.forEach((chat) => {
-        console.log("🔍 Processing chat:", {
-          chatId: chat._id,
-          user1: chat.user1,
-          user2: chat.user2,
-          user1Type: typeof chat.user1,
-          user2Type: typeof chat.user2,
-        });
-
-        // Get the other user's ID (not the current user)
-        const currentUserId = getCurrentUserId();
-        let otherUserId = "";
-
-        // Check if user1 is populated and has an _id
-        if (
-          typeof chat.user1 === "object" &&
-          chat.user1._id === currentUserId
-        ) {
-          // user1 is current user, so user2 is the other user
-          if (typeof chat.user2 === "object" && chat.user2._id) {
-            otherUserId = chat.user2._id.toString();
-          } else if (typeof chat.user2 === "string") {
-            otherUserId = chat.user2;
-          }
-        } else {
-          // user2 is current user, so user1 is the other user
-          if (typeof chat.user1 === "object" && chat.user1._id) {
-            otherUserId = chat.user1._id.toString();
-          } else if (typeof chat.user1 === "string") {
-            otherUserId = chat.user1;
-          }
-        }
-
-        console.log("👤 Other user ID:", otherUserId);
-
-        // Fetch user details if we don't have them and they're not populated
-        if (otherUserId && !userNames[otherUserId]) {
-          // Check if we need to fetch (only if not already populated)
-          const needsFetch =
-            (typeof chat.user1 === "string" || !chat.user1.firstName) &&
-            (typeof chat.user2 === "string" || !chat.user2.firstName);
-
-          console.log("🔄 Needs fetch:", needsFetch);
-
-          if (needsFetch) {
-            console.log("🚀 Fetching user details for:", otherUserId);
-            fetchUserDetails(otherUserId);
-          }
-        }
-      });
-    }
-  }, [chats, userNames]);
-
-  // Fetch product title when productId is available
-  useEffect(() => {
-    if (productId && isValidObjectId(productId)) {
-      // Try to get product title from URL parameters first
-      const urlParams = new URLSearchParams(window.location.search);
-      const titleFromUrl = urlParams.get("productTitle");
-      if (titleFromUrl) {
-        setProductTitle(decodeURIComponent(titleFromUrl));
-      } else {
-        // Fetch the actual product details from the API
-        fetchProductDetails(productId);
-      }
-    }
-  }, [productId]);
-
-  // Create new chat if sellerId and productId are provided
-  useEffect(() => {
-    console.log("🔄 useEffect triggered with:", {
-      sellerId,
-      productId,
-      hasAttemptedNewChat,
-      chatsLength: chats.length,
-    });
-
-    if (sellerId && productId && !hasAttemptedNewChat && chats.length > 0) {
-      const currentUserId = getCurrentUserId();
-      console.log("👤 Current user ID:", currentUserId);
-      console.log("🏪 Seller ID:", sellerId);
-      console.log("📦 Product ID:", productId);
-      console.log("🔍 ObjectId validation:", {
-        sellerIdValid: isValidObjectId(sellerId),
-        productIdValid: isValidObjectId(productId),
-        currentUserIdValid: currentUserId
-          ? isValidObjectId(currentUserId)
-          : false,
-      });
-
-      if (currentUserId && currentUserId !== sellerId) {
-        console.log("✅ All conditions met, checking for existing chat...");
-        handleCheckOrCreateChat();
-        setHasAttemptedNewChat(true);
-      } else {
-        console.log("❌ Cannot create chat:", {
-          hasCurrentUserId: !!currentUserId,
-          currentUserId,
-          sellerId,
-          isSameUser: currentUserId === sellerId,
-        });
-      }
-    } else {
-      console.log("❌ Conditions not met for new chat:", {
-        hasSellerId: !!sellerId,
-        hasProductId: !!productId,
-        hasAttemptedNewChat,
-        chatsLength: chats.length,
-      });
-    }
-  }, [sellerId, productId, hasAttemptedNewChat, chats.length]);
-
-  const handleCheckOrCreateChat = async () => {
-    console.log(
-      "🔍 handleCheckOrCreateChat called - checking for existing chat"
-    );
-
-    // Prevent multiple simultaneous chat creation attempts
-    if (isCreatingChat) {
-      console.log("⏭️ Chat creation already in progress, skipping...");
-      return;
-    }
-
-    const currentUserId = getCurrentUserId();
-
-    if (!currentUserId || !sellerId || !productId) {
-      console.log("❌ Missing required data for chat check:", {
-        currentUserId,
-        sellerId,
-        productId,
-      });
-      return;
-    }
-
-    // Check if productId is a valid MongoDB ObjectId
-    if (!isValidObjectId(productId)) {
-      console.error(
-        "❌ Cannot check chat: productId is not a valid MongoDB ObjectId:",
-        productId
-      );
-      return;
-    }
-
-    if (!isValidObjectId(sellerId)) {
-      console.error(
-        "❌ Cannot check chat: sellerId is not a valid MongoDB ObjectId:",
-        sellerId
-      );
-      return;
-    }
-
-    console.log("✅ All validations passed, checking for existing chat...");
-
-    // First, check if a chat already exists between these users for this product
-    const existingChat = chats.find((chat) => {
-      // Check if this chat is between the current user and seller for the same product
-      const chatProductId =
-        typeof chat.product === "object" ? chat.product._id : chat.product;
-      const user1Id =
-        typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
-      const user2Id =
-        typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
-
-      console.log("🔍 Checking chat for match:", {
-        chatProductId,
-        user1Id,
-        user2Id,
-        targetProductId: productId,
-        currentUserId,
-        sellerId,
-        isMatch:
-          chatProductId === productId &&
-          ((user1Id === currentUserId && user2Id === sellerId) ||
-            (user1Id === sellerId && user2Id === currentUserId)),
-      });
-
-      return (
-        chatProductId === productId &&
-        ((user1Id === currentUserId && user2Id === sellerId) ||
-          (user1Id === sellerId && user2Id === currentUserId))
-      );
-    });
-
-    if (existingChat) {
-      console.log("✅ Existing chat found:", existingChat);
-      // Open the existing chat instead of creating a new one
-      setCurrentChat(existingChat);
-      return;
-    }
-
-    console.log("❌ No existing chat found, creating new one...");
-    // If no existing chat, create a new one
-    await handleCreateNewChat();
-  };
-
-  const handleCreateNewChat = async () => {
-    console.log("🚀 handleCreateNewChat called");
-
-    // Set loading state to prevent multiple calls
-    setIsCreatingChat(true);
-
-    try {
-      const currentUserId = getCurrentUserId();
-      console.log("👤 Current user ID from function:", currentUserId);
-
-      if (!currentUserId || !sellerId || !productId) {
-        console.log("❌ Missing required data for new chat:", {
-          currentUserId,
-          sellerId,
-          productId,
-        });
-        return;
-      }
-
-      // Check if productId is a valid MongoDB ObjectId
-      if (!isValidObjectId(productId)) {
-        console.error(
-          "❌ Cannot create chat: productId is not a valid MongoDB ObjectId:",
-          productId
-        );
-        console.error(
-          "This usually means the ContactSellerButton is not receiving the actual product ID"
-        );
-        return;
-      }
-
-      if (!isValidObjectId(sellerId)) {
-        console.error(
-          "❌ Cannot create chat: sellerId is not a valid MongoDB ObjectId:",
-          sellerId
-        );
-        return;
-      }
-
-      console.log("✅ All validations passed, creating new chat...");
-      console.log("📤 Data being sent:", {
-        currentUserId,
-        sellerId,
-        productId,
-      });
-
-      const newMessage = {
-        _id: Date.now().toString(),
-        sender: currentUserId,
-        content: `Hi! I'm interested in your product: ${
-          productTitle || `Product ${productId.slice(-6)}`
-        }`,
-        sentAt: new Date(),
-        readBy: [currentUserId],
-      };
-
-      console.log("💬 New message object:", newMessage);
-
-      const chatRequest = {
-        product: productId,
-        user1: currentUserId,
-        user2: sellerId,
-        message: newMessage,
-      };
-
-      console.log("📨 Chat request being sent to API:", chatRequest);
-
-      const newChat = await createOrUpdateChat(chatRequest);
-
-      if (newChat) {
-        console.log("✅ New chat created successfully:", newChat);
-        setCurrentChat(newChat);
-        setMessageInput("");
-      } else {
-        console.log("❌ createOrUpdateChat returned null");
-      }
-    } catch (error) {
-      console.error("❌ Failed to create new chat:", error);
-    } finally {
-      // Always reset loading state
-      setIsCreatingChat(false);
-    }
-  };
-
-  const handleSendMessage = async (chatId?: string) => {
-    const targetChatId = chatId || currentChat?._id;
-    if (!messageInput.trim() || !targetChatId) return;
-
-  const uid = currentUserId || getCurrentUserId();
-  if (!uid) return;
-
-    const newMessage = {
-      _id: Date.now().toString(),
-      sender: currentUserId as string,
-      content: messageInput.trim(),
-      sentAt: new Date(),
-      readBy: [currentUserId as string],
-    };
-
-    setIsSending(true);
-    try {
-      await sendMessage(String(targetChatId), newMessage);
-      setMessageInput("");
-      // Determine the other user and emit socket message so they refresh instantly
-      const chat = chats.find((c) => c._id === targetChatId) || currentChat;
-      if (chat) {
-        const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
-        const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
-        const otherUserId = u1 === uid ? u2 : u1;
-        if (otherUserId) {
-          socket.emit("message", { from: String(uid), to: String(otherUserId), message: newMessage.content });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to send message:", error);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("en-US", {
       month: "short",
@@ -713,87 +128,6 @@ export const MessagesComponent = ({
       hour: "2-digit",
       minute: "2-digit",
     });
-  };
-
-  const fetchProductDetails = async (productId: string) => {
-    if (!productId || !isValidObjectId(productId)) return;
-
-    setIsLoadingProduct(true);
-    try {
-      const response = await fetch(`/api/products/${productId}`);
-      if (response.ok) {
-        const product = await response.json();
-        if (product.title) {
-          setProductTitle(product.title);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch product details:", error);
-    } finally {
-      setIsLoadingProduct(false);
-    }
-  };
-
-  const fetchUserDetails = async (userId: string) => {
-    if (!userId || !isValidObjectId(userId)) return;
-
-    console.log("🚀 fetchUserDetails called for userId:", userId);
-
-    // Don't fetch if we already have the name or are currently fetching
-    if (userNames[userId] || isLoadingUsers) {
-      console.log("⏭️ Skipping fetch - already have name or currently loading");
-      return;
-    }
-
-    setIsLoadingUsers(true);
-    try {
-      console.log("📡 Fetching from API:", `/api/users/${userId}`);
-
-      // Try to fetch user details from a general users endpoint
-      // For now, we'll use a fallback approach since the users API might not exist
-      const response = await fetch(`/api/users/${userId}`);
-      console.log("📥 API response status:", response.status);
-
-      if (response.ok) {
-        const user = await response.json();
-        console.log("📋 User data received:", user);
-
-        if (user) {
-          // Create a display name from available fields
-          let displayName = "";
-          if (user.firstName && user.lastName) {
-            displayName = `${user.firstName} ${user.lastName}`;
-          } else if (user.firstName) {
-            displayName = user.firstName;
-          } else if (user.username) {
-            displayName = user.username;
-          } else if (user.email) {
-            displayName = user.email.split("@")[0]; // Use part before @ as name
-          } else {
-            displayName = `User ${userId.slice(-6)}`; // Last resort fallback
-          }
-
-          console.log("🏷️ Setting display name:", displayName);
-          setUserNames((prev) => ({ ...prev, [userId]: displayName }));
-        }
-      } else {
-        console.log("❌ API response not ok, using fallback");
-        // If the endpoint doesn't exist or fails, use a fallback
-        setUserNames((prev) => ({
-          ...prev,
-          [userId]: `User ${userId.slice(-6)}`,
-        }));
-      }
-    } catch (error) {
-      console.error("❌ Failed to fetch user details:", error);
-      // Set a fallback name if fetch fails
-      setUserNames((prev) => ({
-        ...prev,
-        [userId]: `User ${userId.slice(-6)}`,
-      }));
-    } finally {
-      setIsLoadingUsers(false);
-    }
   };
 
   const getLastMessage = (chat: any) => {
@@ -808,346 +142,366 @@ export const MessagesComponent = ({
     return null;
   };
 
-  const getLastMessageTimestamp = (chat: any) => {
-    if (chat.messages && chat.messages.length > 0) {
-      const lastMsg = chat.messages[chat.messages.length - 1];
-      return new Date(lastMsg.sentAt).getTime();
-    }
-    return 0;
-  };
-
-  const sortedChats = useMemo(() => {
-    return [...chats].sort((a, b) => getLastMessageTimestamp(b) - getLastMessageTimestamp(a));
-  }, [chats]);
-
   const isOtherUserOnline = (chat: { user1: any; user2: any }) => {
-    const uid2 = currentUserId || getCurrentUserId();
+    const uid = currentUserId || getCurrentUserId();
     const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
     const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
-    const otherId = u1 === uid2 ? u2 : u1;
+    const otherId = u1 === uid ? u2 : u1;
     return !!(otherId && onlineUsers[String(otherId)]);
   };
 
+  const handleSendMessage = async (chatId?: string) => {
+    const targetChatId = chatId || currentChat?._id;
+    if (!messageInput.trim() || !targetChatId) return;
+
+    const uid = currentUserId || getCurrentUserId();
+    if (!uid) return;
+
+    const newMessage = {
+      _id: Date.now().toString(),
+      sender: uid,
+      content: messageInput.trim(),
+      sentAt: new Date(),
+      readBy: [uid],
+    };
+
+    setIsSending(true);
+    try {
+      await sendMessage(String(targetChatId), newMessage);
+      setMessageInput("");
+
+      const chat = chats.find((c) => c._id === targetChatId) || currentChat;
+      if (chat) {
+        const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+        const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+        const otherUserId = u1 === uid ? u2 : u1;
+        if (otherUserId) {
+          socket.emit("message", {
+            from: String(uid),
+            to: String(otherUserId),
+            message: newMessage.content,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCreateNewChat = async () => {
+    setIsCreatingChat(true);
+    try {
+      const currentUserId = getCurrentUserId();
+      if (!currentUserId || !sellerId || !productId) return;
+
+      const newMessage = {
+        _id: Date.now().toString(),
+        sender: currentUserId,
+        content: `Hi! I'm interested in your product: ${
+          productTitle || `Product ${productId.slice(-6)}`
+        }`,
+        sentAt: new Date(),
+        readBy: [currentUserId],
+      };
+
+      const chatRequest = {
+        product: productId,
+        user1: currentUserId,
+        user2: sellerId,
+        message: newMessage,
+      };
+
+      const newChat = await createOrUpdateChat(chatRequest);
+      if (newChat) {
+        setCurrentChat(newChat);
+        setMessageInput("");
+      }
+    } catch (error) {
+      console.error("Failed to create new chat:", error);
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
+
+  const handleChatSelect = (chat: any) => {
+    setCurrentChat(currentChat?._id === chat._id ? null : chat);
+    if (isMobileView && chat) {
+      setShowChatList(false);
+    }
+  };
+
+  const handleBackToChats = () => {
+    setShowChatList(true);
+    setCurrentChat(null);
+  };
+
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId());
+  }, []);
+
+  useEffect(() => {
+    const uid = currentUserId || getCurrentUserId();
+    if (uid) {
+      getChats({ userId: uid });
+    }
+  }, [getChats, currentUserId]);
+
+  // Resolve and cache display names for the other participant in each chat
+  useEffect(() => {
+    const uid = currentUserId || getCurrentUserId();
+    if (!uid || !chats?.length) return;
+
+    // Collect other user IDs that we don't have names for yet
+    const missingIds = new Set<string>();
+
+    chats.forEach((chat) => {
+      const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+      const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+
+      // If the other user is already populated with a name object, skip
+      const otherObj =
+        typeof chat.user1 === "object" && u2 === uid
+          ? chat.user1
+          : typeof chat.user2 === "object" && u1 === uid
+          ? chat.user2
+          : null;
+      if (otherObj && (otherObj.firstName || otherObj.lastName)) return;
+
+      const otherId = u1 === uid ? u2 : u1;
+      const key = otherId ? String(otherId) : "";
+      if (key && !userNames[key]) missingIds.add(key);
+    });
+
+    if (missingIds.size === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        Array.from(missingIds).map(async (id) => {
+          try {
+            const contact = await userClient.getUserContact(id);
+            const name = contact?.name?.trim();
+            return [
+              id,
+              name && name.length > 0 ? name : "Unknown User",
+            ] as const;
+          } catch {
+            return [id, "Unknown User"] as const;
+          }
+        })
+      );
+
+      if (cancelled) return;
+      setUserNames((prev) => {
+        const next = { ...prev };
+        entries.forEach(([id, name]) => {
+          next[id] = name;
+        });
+        return next;
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chats, currentUserId, userNames]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setShowChatList(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Socket listeners
+  useEffect(() => {
+    const userId = currentUserId || getCurrentUserId();
+    if (!userId) return;
+
+    socket.emit("user:online", { userId });
+    socket.emit("presence:subscribe");
+
+    const onPresenceList = (data: { online: string[] }) => {
+      const map: Record<string, boolean> = {};
+      data.online.forEach((id) => (map[id] = true));
+      setOnlineUsers(map);
+    };
+
+    const onPresenceUpdate = (data: {
+      userId: string;
+      status: "online" | "offline";
+    }) => {
+      setOnlineUsers((prev) => ({
+        ...prev,
+        [data.userId]: data.status === "online",
+      }));
+    };
+
+    const onSocketMessage = (data: {
+      from: string;
+      message: string;
+      to: string;
+    }) => {
+      if (data.from !== userId && data.to !== userId) return;
+      getChatsLight({ userId });
+    };
+
+    socket.on("presence:list", onPresenceList);
+    socket.on("presence:update", onPresenceUpdate);
+    socket.on("message", onSocketMessage);
+
+    return () => {
+      socket.off("presence:list", onPresenceList);
+      socket.off("presence:update", onPresenceUpdate);
+      socket.off("message", onSocketMessage);
+    };
+  }, [getChatsLight, currentUserId]);
+
+  const sortedChats = useMemo(() => {
+    return [...chats].sort((a, b) => {
+      const getTimestamp = (chat: any) => {
+        if (chat.messages && chat.messages.length > 0) {
+          return new Date(
+            chat.messages[chat.messages.length - 1].sentAt
+          ).getTime();
+        }
+        return 0;
+      };
+      return getTimestamp(b) - getTimestamp(a);
+    });
+  }, [chats]);
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Messages
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Loading messages...
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+            Messages
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LoadingState />
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Messages
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-4">
-              <p className="text-red-500 mb-2">{error}</p>
-              <Button onClick={clearError} variant="outline" size="sm">
-                Try Again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+            <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+            Messages
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ErrorState error={error} onRetry={clearError} />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Messages
-          </CardTitle>
-
-          {sellerId && productId && !isValidObjectId(productId) && (
-            <div className="text-xs text-red-500 bg-red-50 p-2 rounded border border-red-200">
-              <div className="flex items-center gap-2 mb-1">
-                <span>⚠️</span>
-                <span className="font-medium">Invalid Product ID</span>
-              </div>
-              <p className="text-red-600">
-                The product ID "{productId}" is not in the correct format. Chat
-                creation may fail. Please ensure you're accessing this page from
-                a valid product listing.
-              </p>
-            </div>
+    <Card className="shadow-sm h-[600px] flex flex-col dark:bg-gray-800 dark:border-gray-700">
+      <CardHeader className="pb-4 flex-shrink-0">
+        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+          {isMobileView && !showChatList && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToChats}
+              className="mr-2 p-1 h-8 w-8"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
           )}
-        </CardHeader>
-        <CardContent>
-          {chats.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">No messages yet</p>
-              {sellerId && productId && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-center">
-                    {productTitle
-                      ? `Start chatting about "${productTitle}"`
-                      : "Start New Chat"}
-                  </p>
-                  <Button
-                    onClick={handleCheckOrCreateChat}
-                    className="mx-auto"
-                    disabled={
-                      !isValidObjectId(productId) ||
-                      !isValidObjectId(sellerId) ||
-                      isCreatingChat
-                    }
-                  >
-                    {isCreatingChat ? (
-                      <span className="inline-flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Creating Chat...
-                      </span>
-                    ) : (
-                      "Start New Chat"
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground">
-                    {isCreatingChat
-                      ? "Setting up your chat..."
-                      : "Click to start chatting about this product"}
-                  </p>
-                  {(!isValidObjectId(productId) ||
-                    !isValidObjectId(sellerId)) && (
-                    <p className="text-xs text-red-500">
-                      Cannot start chat: Invalid ID format
-                    </p>
-                  )}
-                </div>
-              )}
+          <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
+          Messages
+        </CardTitle>
+
+        {sellerId && productId && !isValidObjectId(productId) && (
+          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 mb-1">
+              <span>⚠️</span>
+              <span className="font-medium">Invalid Product ID</span>
             </div>
+            <p>
+              The product ID "{productId}" is not in the correct format. Chat
+              creation may fail.
+            </p>
+          </div>
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-1 flex overflow-hidden p-0">
+        {/* Left Column - Chat List */}
+        <div
+          className={`${
+            isMobileView ? (showChatList ? "w-full" : "hidden") : "w-80"
+          } border-r border-gray-200 dark:border-gray-700 flex flex-col`}
+        >
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-3 space-y-2">
+              {sortedChats.map((chat) => (
+                <ChatItem
+                  key={chat._id?.toString() || Date.now().toString()}
+                  chat={chat}
+                  isActive={currentChat?._id === chat._id}
+                  otherUserName={getOtherUserName(chat)}
+                  productTitle={getProductTitle(chat)}
+                  isOtherUserOnline={isOtherUserOnline(chat)}
+                  lastMessage={getLastMessage(chat)}
+                  onClick={() => handleChatSelect(chat)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Message Thread */}
+        <div
+          className={`${
+            isMobileView ? (showChatList ? "hidden" : "w-full") : "flex-1"
+          } flex flex-col`}
+        >
+          {currentChat ? (
+            <MessageThread
+              chat={currentChat}
+              otherUserName={getOtherUserName(currentChat)}
+              productTitle={getProductTitle(currentChat)}
+              isOtherUserOnline={isOtherUserOnline(currentChat)}
+              messageInput={messageInput}
+              setMessageInput={setMessageInput}
+              onSendMessage={handleSendMessage}
+              isSending={isSending}
+              formatDate={formatDate}
+              getCurrentUserId={getCurrentUserId}
+            />
           ) : (
-            <div className="space-y-4">
-              {/* Chat List */}
-              <div className="space-y-2">
-                {sortedChats.map((chat) => (
-                  <div key={chat._id?.toString() || Date.now().toString()}>
-                    {/* Chat Item */}
-                    <div
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                        currentChat?._id === chat._id
-                          ? "bg-primary/10 border-primary"
-                          : "hover:bg-muted/50"
-                      }`}
-                      onClick={() =>
-                        setCurrentChat(
-                          currentChat?._id === chat._id ? null : chat
-                        )
-                      }
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Product Image Thumbnail */}
-                        <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
-                          {chat.product &&
-                          typeof chat.product === "object" &&
-                          chat.product.images &&
-                          chat.product.images.length > 0 ? (
-                            <img
-                              src={chat.product.images[0]}
-                              alt={getProductTitle(chat)}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                                <span className="text-xs">📦</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate flex items-center gap-2">
-                                {getOtherUserName(chat)}
-                                <span
-                                  title={isOtherUserOnline(chat) ? "Online" : "Offline"}
-                                  className={`inline-block w-2.5 h-2.5 rounded-full ${
-                                    isOtherUserOnline(chat) ? "bg-green-500" : "bg-gray-400"
-                                  }`}
-                                />
-                                {getOtherUserName(chat) === "Loading..." && (
-                                  <span className="inline-flex items-center gap-1 ml-2">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                Chat with {getOtherUserName(chat)} • You:{" "}
-                                {getCurrentUserName(chat)}
-                              </p>
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="text-xs text-primary font-medium truncate">
-                                  {getProductTitle(chat)}
-                                </p>
-                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                                  {chat.messages?.length || 0} messages
-                                </span>
-                              </div>
-                              {getLastMessage(chat) && (
-                                <p className="text-sm text-muted-foreground truncate">
-                                  {getLastMessage(chat)?.isOwn ? "You: " : ""}
-                                  {getLastMessage(chat)?.content}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {getLastMessage(chat) && (
-                                <span className="text-xs text-muted-foreground">
-                                  {getLastMessage(chat)?.time}
-                                </span>
-                              )}
-                              <div
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                  currentChat?._id === chat._id
-                                    ? "rotate-90"
-                                    : "rotate-0"
-                                }`}
-                              >
-                                <svg
-                                  className="w-4 h-4 text-muted-foreground"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M9 5l7 7-7 7"
-                                  />
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Inline Messages for this chat */}
-                    {currentChat?._id === chat._id && (
-                      <div className="mt-3 ml-12 border-l-2 border-primary/20 pl-4 animate-in slide-in-from-top-2 duration-200">
-                        {/* Chat Info */}
-                        <div className="bg-gray-50 dark:bg-gray-800 p-2 rounded-lg mb-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs text-muted-foreground">
-                                Chatting about:
-                              </p>
-                              <p className="text-sm font-medium text-primary">
-                                {getProductTitle(chat)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-xs text-muted-foreground">
-                                Between:
-                              </p>
-                              <p className="text-sm font-medium flex items-center gap-2">
-                                {getCurrentUserName(chat)} ↔ {getOtherUserName(chat)}
-                                <span
-                                  title={isOtherUserOnline(chat) ? "Online" : "Offline"}
-                                  className={`inline-block w-2.5 h-2.5 rounded-full ${
-                                    isOtherUserOnline(chat) ? "bg-green-500" : "bg-gray-400"
-                                  }`}
-                                />
-                                {getOtherUserName(chat) === "Loading..." && (
-                                  <span className="inline-flex items-center gap-1 ml-1">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
-                                  </span>
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Messages */}
-                        <div ref={messagesContainerRef} className="space-y-3 max-h-64 overflow-y-auto mb-3">
-                          {chat.messages.map((message: any) => {
-                            const isOwn = message.sender === getCurrentUserId();
-                            return (
-                              <div
-                                key={
-                                  message._id?.toString() ||
-                                  Date.now().toString()
-                                }
-                                className={`flex ${
-                                  isOwn ? "justify-end" : "justify-start"
-                                }`}
-                              >
-                                <div
-                                  className={`max-w-xs px-3 py-2 rounded-lg ${
-                                    isOwn
-                                      ? "bg-primary text-primary-foreground"
-                                      : "bg-muted"
-                                  }`}
-                                >
-                                  <p className="text-sm">{message.content}</p>
-                                  <p className="text-xs opacity-70 mt-1">
-                                    {formatDate(message.sentAt)}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* Message Input */}
-                        <div className="flex gap-2 bg-white dark:bg-gray-900 p-2 rounded-lg border">
-                          <input
-                            type="text"
-                            value={messageInput}
-                            onChange={(e) => setMessageInput(e.target.value)}
-                            onKeyPress={(e) =>
-                              e.key === "Enter" && handleSendMessage(chat._id)
-                            }
-                            placeholder="Type your message..."
-                            className="flex-1 px-2 py-1 border-0 bg-transparent focus:outline-none focus:ring-0 text-sm"
-                            disabled={isSending}
-                          />
-                          <Button
-                            onClick={() => handleSendMessage(chat._id)}
-                            disabled={!messageInput.trim() || isSending}
-                            size="sm"
-                            className="h-7 px-2 text-xs"
-                          >
-                            {isSending ? "..." : "Send"}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+            <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="text-center">
+                <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                <p className="text-lg font-medium mb-2">
+                  Select a conversation
+                </p>
+                <p className="text-sm">
+                  Choose a chat from the list to start messaging
+                </p>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
