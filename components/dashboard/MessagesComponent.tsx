@@ -412,8 +412,8 @@ export const MessagesComponent = ({
   }
 
   return (
-    <Card className="shadow-sm h-[600px] flex flex-col dark:bg-gray-800 dark:border-gray-700">
-      <CardHeader className="pb-4 flex-shrink-0">
+    <Card className="shadow-sm h-[520px] flex flex-col dark:bg-gray-800 dark:border-gray-700">
+      <CardHeader className="pb-2 flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
           {isMobileView && !showChatList && (
             <Button
@@ -447,11 +447,11 @@ export const MessagesComponent = ({
         {/* Left Column - Chat List */}
         <div
           className={`${
-            isMobileView ? (showChatList ? "w-full" : "hidden") : "w-80"
+            isMobileView ? (showChatList ? "w-full" : "hidden") : "w-64"
           } border-r border-gray-200 dark:border-gray-700 flex flex-col`}
         >
           <div className="flex-1 overflow-y-auto">
-            <div className="p-3 space-y-2">
+            <div className="p-2 space-y-1.5">
               {sortedChats.map((chat) => (
                 <ChatItem
                   key={chat._id?.toString() || Date.now().toString()}

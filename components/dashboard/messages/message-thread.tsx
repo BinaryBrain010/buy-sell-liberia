@@ -46,7 +46,7 @@ export const MessageThread = ({
   }, [chat.messages])
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900/60 rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+  <div className="h-full flex flex-col bg-gray-50 dark:bg-gray-900/60 rounded-lg p-2.5 sm:p-3 border border-gray-200 dark:border-gray-700">
       {/* <ChatHeader
         chat={chat}
         otherUserName={otherUserName}
@@ -57,7 +57,7 @@ export const MessageThread = ({
 
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto space-y-2 sm:space-y-3 mb-3 sm:mb-4 pr-1 sm:pr-2"
+  className="flex-1 overflow-y-auto space-y-1.5 sm:space-y-2.5 mb-2.5 sm:mb-3 pr-1 sm:pr-2"
         style={{ scrollbarWidth: "thin" }}
       >
         {chat.messages.map((message: any) => {
