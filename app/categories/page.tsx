@@ -1,13 +1,19 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Loader2, X, ChevronLeft, ChevronRight } from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
-import { ProductCard, type Product } from "@/components/product-card"
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowRight,
+  Loader2,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { ProductCard, type Product } from "@/components/product-card";
 
 // Color mappings for categories (matching existing design)
 const categoryColors: { [key: string]: string } = {
@@ -28,109 +34,127 @@ const categoryColors: { [key: string]: string } = {
   "health-wellness": "from-teal-500 to-green-500",
   "pets-animals": "from-pink-600 to-red-500",
   "entertainment-hobbies": "from-blue-600 to-indigo-500",
-}
+};
 
 // Subcategory image mappings - you can replace these with actual images from your API
 const getSubcategoryImage = (subcategoryName: string, categorySlug: string) => {
-  const name = subcategoryName.toLowerCase()
-  const category = categorySlug.toLowerCase()
+  const name = subcategoryName.toLowerCase();
+  const category = categorySlug.toLowerCase();
 
   // Electronics subcategories
   if (category === "electronics") {
-    if (name.includes("phone") || name.includes("mobile")) return "/placeholder.svg?height=128&width=200&text=📱+Phones"
+    if (name.includes("phone") || name.includes("mobile"))
+      return "/placeholder.svg?height=128&width=200&text=📱+Phones";
     if (name.includes("laptop") || name.includes("computer"))
-      return "/placeholder.svg?height=128&width=200&text=💻+Laptops"
-    if (name.includes("tv") || name.includes("television")) return "/placeholder.svg?height=128&width=200&text=📺+TVs"
-    if (name.includes("camera")) return "/placeholder.svg?height=128&width=200&text=📷+Cameras"
+      return "/placeholder.svg?height=128&width=200&text=💻+Laptops";
+    if (name.includes("tv") || name.includes("television"))
+      return "/placeholder.svg?height=128&width=200&text=📺+TVs";
+    if (name.includes("camera"))
+      return "/placeholder.svg?height=128&width=200&text=📷+Cameras";
     if (name.includes("headphone") || name.includes("audio"))
-      return "/placeholder.svg?height=128&width=200&text=🎧+Audio"
+      return "/placeholder.svg?height=128&width=200&text=🎧+Audio";
     if (name.includes("gaming") || name.includes("console"))
-      return "/placeholder.svg?height=128&width=200&text=🎮+Gaming"
-    if (name.includes("tablet")) return "/placeholder.svg?height=128&width=200&text=📱+Tablets"
+      return "/placeholder.svg?height=128&width=200&text=🎮+Gaming";
+    if (name.includes("tablet"))
+      return "/placeholder.svg?height=128&width=200&text=📱+Tablets";
     if (name.includes("watch") || name.includes("wearable"))
-      return "/placeholder.svg?height=128&width=200&text=⌚+Wearables"
+      return "/placeholder.svg?height=128&width=200&text=⌚+Wearables";
   }
 
   // Vehicles subcategories
   if (category === "vehicles") {
     if (name.includes("car") || name.includes("sedan") || name.includes("suv"))
-      return "/placeholder.svg?height=128&width=200&text=🚗+Cars"
+      return "/placeholder.svg?height=128&width=200&text=🚗+Cars";
     if (name.includes("motorcycle") || name.includes("bike"))
-      return "/placeholder.svg?height=128&width=200&text=🏍️+Motorcycles"
-    if (name.includes("truck")) return "/placeholder.svg?height=128&width=200&text=🚛+Trucks"
-    if (name.includes("boat") || name.includes("marine")) return "/placeholder.svg?height=128&width=200&text=⛵+Boats"
-    if (name.includes("rv") || name.includes("camper")) return "/placeholder.svg?height=128&width=200&text=🚐+RVs"
+      return "/placeholder.svg?height=128&width=200&text=🏍️+Motorcycles";
+    if (name.includes("truck"))
+      return "/placeholder.svg?height=128&width=200&text=🚛+Trucks";
+    if (name.includes("boat") || name.includes("marine"))
+      return "/placeholder.svg?height=128&width=200&text=⛵+Boats";
+    if (name.includes("rv") || name.includes("camper"))
+      return "/placeholder.svg?height=128&width=200&text=🚐+RVs";
     if (name.includes("part") || name.includes("accessory"))
-      return "/placeholder.svg?height=128&width=200&text=🔧+Parts"
+      return "/placeholder.svg?height=128&width=200&text=🔧+Parts";
   }
 
   // Real Estate subcategories
   if (category === "real-estate") {
-    if (name.includes("house") || name.includes("home")) return "/placeholder.svg?height=128&width=200&text=🏠+Houses"
+    if (name.includes("house") || name.includes("home"))
+      return "/placeholder.svg?height=128&width=200&text=🏠+Houses";
     if (name.includes("apartment") || name.includes("condo"))
-      return "/placeholder.svg?height=128&width=200&text=🏢+Apartments"
+      return "/placeholder.svg?height=128&width=200&text=🏢+Apartments";
     if (name.includes("commercial") || name.includes("office"))
-      return "/placeholder.svg?height=128&width=200&text=🏢+Commercial"
-    if (name.includes("land") || name.includes("lot")) return "/placeholder.svg?height=128&width=200&text=🌳+Land"
-    if (name.includes("rental") || name.includes("rent")) return "/placeholder.svg?height=128&width=200&text=🏠+Rentals"
+      return "/placeholder.svg?height=128&width=200&text=🏢+Commercial";
+    if (name.includes("land") || name.includes("lot"))
+      return "/placeholder.svg?height=128&width=200&text=🌳+Land";
+    if (name.includes("rental") || name.includes("rent"))
+      return "/placeholder.svg?height=128&width=200&text=🏠+Rentals";
   }
 
   // Home & Furniture subcategories
   if (category === "home-furniture") {
-    if (name.includes("sofa") || name.includes("couch")) return "/placeholder.svg?height=128&width=200&text=🛋️+Sofas"
-    if (name.includes("bed") || name.includes("mattress")) return "/placeholder.svg?height=128&width=200&text=🛏️+Beds"
-    if (name.includes("table") || name.includes("desk")) return "/placeholder.svg?height=128&width=200&text=🪑+Tables"
-    if (name.includes("chair")) return "/placeholder.svg?height=128&width=200&text=🪑+Chairs"
-    if (name.includes("kitchen")) return "/placeholder.svg?height=128&width=200&text=🍽️+Kitchen"
+    if (name.includes("sofa") || name.includes("couch"))
+      return "/placeholder.svg?height=128&width=200&text=🛋️+Sofas";
+    if (name.includes("bed") || name.includes("mattress"))
+      return "/placeholder.svg?height=128&width=200&text=🛏️+Beds";
+    if (name.includes("table") || name.includes("desk"))
+      return "/placeholder.svg?height=128&width=200&text=🪑+Tables";
+    if (name.includes("chair"))
+      return "/placeholder.svg?height=128&width=200&text=🪑+Chairs";
+    if (name.includes("kitchen"))
+      return "/placeholder.svg?height=128&width=200&text=🍽️+Kitchen";
     if (name.includes("decor") || name.includes("decoration"))
-      return "/placeholder.svg?height=128&width=200&text=🖼️+Decor"
+      return "/placeholder.svg?height=128&width=200&text=🖼️+Decor";
     if (name.includes("storage") || name.includes("cabinet"))
-      return "/placeholder.svg?height=128&width=200&text=🗄️+Storage"
+      return "/placeholder.svg?height=128&width=200&text=🗄️+Storage";
   }
 
   // Fashion & Beauty subcategories
   if (category === "fashion-beauty") {
     if (name.includes("clothing") || name.includes("apparel"))
-      return "/placeholder.svg?height=128&width=200&text=👕+Clothing"
+      return "/placeholder.svg?height=128&width=200&text=👕+Clothing";
     if (name.includes("shoes") || name.includes("footwear"))
-      return "/placeholder.svg?height=128&width=200&text=👟+Shoes"
-    if (name.includes("bag") || name.includes("handbag")) return "/placeholder.svg?height=128&width=200&text=👜+Bags"
+      return "/placeholder.svg?height=128&width=200&text=👟+Shoes";
+    if (name.includes("bag") || name.includes("handbag"))
+      return "/placeholder.svg?height=128&width=200&text=👜+Bags";
     if (name.includes("jewelry") || name.includes("accessory"))
-      return "/placeholder.svg?height=128&width=200&text=💍+Jewelry"
+      return "/placeholder.svg?height=128&width=200&text=💍+Jewelry";
     if (name.includes("makeup") || name.includes("cosmetic"))
-      return "/placeholder.svg?height=128&width=200&text=💄+Makeup"
+      return "/placeholder.svg?height=128&width=200&text=💄+Makeup";
     if (name.includes("skincare") || name.includes("beauty"))
-      return "/placeholder.svg?height=128&width=200&text=🧴+Skincare"
+      return "/placeholder.svg?height=128&width=200&text=🧴+Skincare";
     if (name.includes("fragrance") || name.includes("perfume"))
-      return "/placeholder.svg?height=128&width=200&text=🌸+Fragrance"
+      return "/placeholder.svg?height=128&width=200&text=🌸+Fragrance";
   }
 
   // Sports & Outdoors subcategories
   if (category === "sports-outdoors") {
-    if (name.includes("fitness") || name.includes("gym")) return "/placeholder.svg?height=128&width=200&text=🏋️+Fitness"
+    if (name.includes("fitness") || name.includes("gym"))
+      return "/placeholder.svg?height=128&width=200&text=🏋️+Fitness";
     if (name.includes("camping") || name.includes("outdoor"))
-      return "/placeholder.svg?height=128&width=200&text=⛺+Camping"
+      return "/placeholder.svg?height=128&width=200&text=⛺+Camping";
     if (name.includes("cycling") || name.includes("bike"))
-      return "/placeholder.svg?height=128&width=200&text=🚴+Cycling"
+      return "/placeholder.svg?height=128&width=200&text=🚴+Cycling";
     if (name.includes("water") || name.includes("swimming"))
-      return "/placeholder.svg?height=128&width=200&text=🏊+Water+Sports"
+      return "/placeholder.svg?height=128&width=200&text=🏊+Water+Sports";
     if (name.includes("team") || name.includes("ball"))
-      return "/placeholder.svg?height=128&width=200&text=⚽+Team+Sports"
+      return "/placeholder.svg?height=128&width=200&text=⚽+Team+Sports";
     if (name.includes("hunting") || name.includes("fishing"))
-      return "/placeholder.svg?height=128&width=200&text=🎣+Hunting"
+      return "/placeholder.svg?height=128&width=200&text=🎣+Hunting";
   }
 
   // Babies & Kids subcategories
   if (category === "babies-kids") {
-    if (name.includes("toy") || name.includes("game")) return "/placeholder.svg?height=128&width=200&text=🧸+Toys"
+    if (name.includes("toy") || name.includes("game"))
+      return "/placeholder.svg?height=128&width=200&text=🧸+Toys";
     if (name.includes("clothing") || name.includes("apparel"))
-      return "/placeholder.svg?height=128&width=200&text=👶+Clothing"
+      return "/placeholder.svg?height=128&width=200&text=👶+Clothing";
     if (name.includes("stroller") || name.includes("gear"))
-      return "/placeholder.svg?height=128&width=200&text=🍼+Baby+Gear"
+      return "/placeholder.svg?height=128&width=200&text=🍼+Baby+Gear";
     if (name.includes("furniture") || name.includes("crib"))
-      return "/placeholder.svg?height=128&width=200&text=🛏️+Furniture"
+      return "/placeholder.svg?height=128&width=200&text=🛏️+Furniture";
     if (name.includes("book") || name.includes("educational"))
-      return "/placeholder.svg?height=128&width=200&text=📚+Books"
+      return "/placeholder.svg?height=128&width=200&text=📚+Books";
   }
 
   // Default fallback with category-specific emoji
@@ -152,74 +176,85 @@ const getSubcategoryImage = (subcategoryName: string, categorySlug: string) => {
     "health-wellness": "💊",
     "pets-animals": "🐕",
     "entertainment-hobbies": "🎭",
-  }
+  };
 
-  const emoji = categoryEmojis[category] || "📦"
-  return `/placeholder.svg?height=128&width=200&text=${emoji}+${encodeURIComponent(subcategoryName)}`
-}
+  const emoji = categoryEmojis[category] || "📦";
+  return `/placeholder.svg?height=128&width=200&text=${emoji}+${encodeURIComponent(
+    subcategoryName
+  )}`;
+};
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<any[]>([])
-  const [loadingCategories, setLoadingCategories] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<any>(null)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loadingProducts, setLoadingProducts] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const itemsPerPage = 20
-  const subcategoriesSectionRef = useRef<HTMLDivElement>(null)
-  const productsSectionRef = useRef<HTMLDivElement>(null)
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const itemsPerPage = 20;
+  const subcategoriesSectionRef = useRef<HTMLDivElement>(null);
+  const productsSectionRef = useRef<HTMLDivElement>(null);
 
   // Fetch all categories on initial load
   useEffect(() => {
-    setLoadingCategories(true)
+    setLoadingCategories(true);
     fetch("/api/categories?includeProducts=false&limit=100")
       .then(async (res) => {
-        if (!res.ok) throw new Error("Failed to fetch categories")
-        return res.json()
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        return res.json();
       })
       .then((data) => {
-        setCategories(data.categories || [])
+        setCategories(data.categories || []);
       })
       .catch((error) => {
-        console.error("Error fetching categories:", error)
-        setCategories([])
+        console.error("Error fetching categories:", error);
+        setCategories([]);
       })
-      .finally(() => setLoadingCategories(false))
-  }, [])
+      .finally(() => setLoadingCategories(false));
+  }, []);
 
   // Fetch products when selectedCategory or currentPage changes
   useEffect(() => {
     if (!selectedCategory?._id) {
-      setProducts([])
-      setTotalProducts(0)
-      setCurrentPage(1)
-      return
+      setProducts([]);
+      setTotalProducts(0);
+      setCurrentPage(1);
+      return;
     }
 
-    setLoadingProducts(true)
+    setLoadingProducts(true);
     const fetchCategoryProducts = async () => {
       try {
-        const url = `/api/products?category_id=${encodeURIComponent(selectedCategory._id)}&limit=${itemsPerPage}&page=${currentPage}`
-        console.log(`[CategoriesPage] Fetching products for category ID: ${selectedCategory._id}, Page: ${currentPage}`)
-        const res = await fetch(url)
+        const url = `/api/products?category_id=${encodeURIComponent(
+          selectedCategory._id
+        )}&limit=${itemsPerPage}&page=${currentPage}`;
+        console.log(
+          `[CategoriesPage] Fetching products for category ID: ${selectedCategory._id}, Page: ${currentPage}`
+        );
+        const res = await fetch(url);
         if (!res.ok) {
-          throw new Error(`Failed to fetch products: ${res.status} ${res.statusText}`)
+          throw new Error(
+            `Failed to fetch products: ${res.status} ${res.statusText}`
+          );
         }
-        const data = await res.json()
-        setProducts(data.products || [])
-        setTotalProducts(data.total || 0)
+        const data = await res.json();
+        setProducts(data.products || []);
+        setTotalProducts(data.total || 0);
       } catch (error) {
-        console.error(`Error fetching products for category ${selectedCategory._id}:`, error)
-        setProducts([])
-        setTotalProducts(0)
+        console.error(
+          `Error fetching products for category ${selectedCategory._id}:`,
+          error
+        );
+        setProducts([]);
+        setTotalProducts(0);
       } finally {
-        setLoadingProducts(false)
+        setLoadingProducts(false);
       }
-    }
+    };
 
-    fetchCategoryProducts()
-  }, [selectedCategory?._id, currentPage])
+    fetchCategoryProducts();
+  }, [selectedCategory?._id, currentPage]);
 
   // Scroll to subcategories section when a category is selected
   useEffect(() => {
@@ -229,68 +264,74 @@ export default function CategoriesPage() {
         subcategoriesSectionRef.current?.scrollIntoView({
           behavior: "smooth",
           block: "start",
-        })
-      }, 100)
+        });
+      }, 100);
     }
-  }, [selectedCategory])
+  }, [selectedCategory]);
 
   // Handle category card click
   const handleCategoryClick = (category: any) => {
-    setSelectedCategory(category)
-    setCurrentPage(1) // Reset to first page when selecting a new category
-  }
+    setSelectedCategory(category);
+    setCurrentPage(1); // Reset to first page when selecting a new category
+  };
 
   // Handle subcategory click - pass both category and subcategory IDs
   const handleSubcategoryClick = (subcategory: any) => {
     // Navigate to the category page with both category and subcategory IDs
-    const url = `/categories/${selectedCategory.slug}?category_id=${encodeURIComponent(selectedCategory._id)}&subcategory_id=${encodeURIComponent(subcategory._id)}`
-    window.location.href = url
-  }
+    const url = `/categories/${
+      selectedCategory.slug
+    }?category_id=${encodeURIComponent(
+      selectedCategory._id
+    )}&subcategory_id=${encodeURIComponent(subcategory._id)}`;
+    window.location.href = url;
+  };
 
   // Handle pagination
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   // Handle like functionality
   const handleLike = (productId: string) => {
-    console.log("Liked product:", productId)
+    console.log("Liked product:", productId);
     // Implement actual like logic here
-  }
+  };
 
   // Calculate total pages
-  const totalPages = Math.ceil(totalProducts / itemsPerPage)
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
   // Generate pagination numbers
   const getPaginationNumbers = () => {
-    const pages = []
-    const maxVisible = 5
+    const pages = [];
+    const maxVisible = 5;
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i)
+        pages.push(i);
       }
     } else {
-      const start = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-      const end = Math.min(totalPages, start + maxVisible - 1)
+      const start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      const end = Math.min(totalPages, start + maxVisible - 1);
       if (start > 1) {
-        pages.push(1)
-        if (start > 2) pages.push("...")
+        pages.push(1);
+        if (start > 2) pages.push("...");
       }
       for (let i = start; i <= end; i++) {
-        pages.push(i)
+        pages.push(i);
       }
       if (end < totalPages) {
-        if (end < totalPages - 1) pages.push("...")
-        pages.push(totalPages)
+        if (end < totalPages - 1) pages.push("...");
+        pages.push(totalPages);
       }
     }
-    return pages
-  }
+    return pages;
+  };
 
   // Generate URL for "View All Products" with category ID
   const getViewAllProductsUrl = () => {
-    return `/categories/${selectedCategory.slug}?category_id=${encodeURIComponent(selectedCategory._id)}`
-  }
+    return `/categories/${
+      selectedCategory.slug
+    }?category_id=${encodeURIComponent(selectedCategory._id)}`;
+  };
 
   if (loadingCategories) {
     return (
@@ -300,7 +341,7 @@ export default function CategoriesPage() {
           <p className="text-muted-foreground">Loading categories...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -308,7 +349,9 @@ export default function CategoriesPage() {
       <div className="container mx-auto px-4 py-10">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">All Categories</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            All Categories
+          </h1>
           <p className="text-xl text-muted-foreground">
             {selectedCategory
               ? `Explore ${selectedCategory.name} products and subcategories`
@@ -323,7 +366,11 @@ export default function CategoriesPage() {
               key={category._id}
               onClick={() => handleCategoryClick(category)}
               className={`bg-background/50 rounded-xl p-3 border border-border/50 card-shadow hover:scale-105 transition-transform cursor-pointer h-full flex flex-col items-center justify-center text-center
-                ${selectedCategory?._id === category._id ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                ${
+                  selectedCategory?._id === category._id
+                    ? "ring-2 ring-primary ring-offset-2"
+                    : ""
+                }`}
             >
               <CardContent className="flex flex-col items-center justify-center p-0">
                 <div
@@ -333,8 +380,12 @@ export default function CategoriesPage() {
                 >
                   {category.icon}
                 </div>
-                <h2 className="text-base font-bold mb-1 line-clamp-1">{category.name}</h2>
-                <p className="text-muted-foreground text-xs line-clamp-2">{category.description}</p>
+                <h2 className="text-base font-bold mb-1 line-clamp-1">
+                  {category.name}
+                </h2>
+                <p className="text-muted-foreground text-xs line-clamp-2">
+                  {category.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -342,12 +393,18 @@ export default function CategoriesPage() {
 
         {/* Subcategories Section */}
         {selectedCategory && (
-          <div ref={subcategoriesSectionRef} className="mt-16 pt-8 border-t border-border/50">
+          <div
+            ref={subcategoriesSectionRef}
+            className="mt-16 pt-8 border-t border-border/50"
+          >
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-bold mb-2">{selectedCategory.name} Subcategories</h2>
+                <h2 className="text-3xl font-bold mb-2">
+                  {selectedCategory.name} Subcategories
+                </h2>
                 <p className="text-muted-foreground">
-                  Choose a specific subcategory or view all products in {selectedCategory.name}
+                  Choose a specific subcategory or view all products in{" "}
+                  {selectedCategory.name}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -361,10 +418,10 @@ export default function CategoriesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setSelectedCategory(null)
-                    setProducts([])
-                    setTotalProducts(0)
-                    setCurrentPage(1)
+                    setSelectedCategory(null);
+                    setProducts([]);
+                    setTotalProducts(0);
+                    setCurrentPage(1);
                   }}
                   aria-label="Clear category selection"
                   className="flex items-center"
@@ -375,7 +432,8 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 ? (
+            {selectedCategory.subcategories &&
+            selectedCategory.subcategories.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {selectedCategory.subcategories.map((subcategory: any) => (
                   <Card
@@ -389,7 +447,10 @@ export default function CategoriesPage() {
                         <Image
                           src={
                             subcategory.image?.url ||
-                            getSubcategoryImage(subcategory.name, selectedCategory.slug) ||
+                            getSubcategoryImage(
+                              subcategory.name,
+                              selectedCategory.slug
+                            ) ||
                             "/placeholder.svg" ||
                             "/placeholder.svg"
                           }
@@ -397,7 +458,10 @@ export default function CategoriesPage() {
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-300"
                           onError={(e) => {
-                            e.currentTarget.src = getSubcategoryImage(subcategory.name, selectedCategory.slug)
+                            e.currentTarget.src = getSubcategoryImage(
+                              subcategory.name,
+                              selectedCategory.slug
+                            );
                           }}
                         />
                         {/* Overlay gradient for better text readability */}
@@ -407,7 +471,8 @@ export default function CategoriesPage() {
                         <div className="absolute top-2 right-2">
                           <div
                             className={`w-8 h-8 rounded-full bg-gradient-to-br ${
-                              categoryColors[selectedCategory.slug] || "from-gray-500 to-gray-600"
+                              categoryColors[selectedCategory.slug] ||
+                              "from-gray-500 to-gray-600"
                             } flex items-center justify-center text-sm shadow-lg text-white opacity-90 backdrop-blur-sm`}
                           >
                             {subcategory.icon || selectedCategory.icon}
@@ -446,7 +511,8 @@ export default function CategoriesPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Subcategories</h3>
                 <p className="text-muted-foreground mb-6">
-                  This category doesn't have any subcategories. View all products directly.
+                  This category doesn't have any subcategories. View all
+                  products directly.
                 </p>
                 <Link href={getViewAllProductsUrl()}>
                   <Button>
@@ -458,30 +524,37 @@ export default function CategoriesPage() {
             )}
 
             {/* Quick Stats */}
-            {selectedCategory.subcategories && selectedCategory.subcategories.length > 0 && (
-              <div className="mt-8 p-6 bg-muted/30 rounded-xl border border-border/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold mb-1">Category Overview</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedCategory.subcategories.length} subcategories available in {selectedCategory.name}
-                    </p>
+            {selectedCategory.subcategories &&
+              selectedCategory.subcategories.length > 0 && (
+                <div className="mt-8 p-6 bg-muted/30 rounded-xl border border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold mb-1">Category Overview</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedCategory.subcategories.length} subcategories
+                        available in {selectedCategory.name}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="text-sm">
+                      {selectedCategory.subcategories.length} subcategories
+                    </Badge>
                   </div>
-                  <Badge variant="secondary" className="text-sm">
-                    {selectedCategory.subcategories.length} subcategories
-                  </Badge>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         )}
 
         {/* Products Section */}
         {selectedCategory && (
-          <div ref={productsSectionRef} className="mt-16 pt-8 border-t border-border/50">
+          <div
+            ref={productsSectionRef}
+            className="mt-16 pt-8 border-t border-border/50"
+          >
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-bold mb-2">Latest Products in {selectedCategory.name}</h2>
+                <h2 className="text-3xl font-bold mb-2">
+                  Latest Products in {selectedCategory.name}
+                </h2>
                 <p className="text-muted-foreground">
                   Showing {products.length} of {totalProducts} products
                 </p>
@@ -503,9 +576,12 @@ export default function CategoriesPage() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                   {products.map((product) => (
-                    <Link key={product._id} href={`/products/${product._id}`} passHref>
-                      <ProductCard product={product} variant="compact" onLike={handleLike} />
-                    </Link>
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      variant="compact"
+                      onLike={handleLike}
+                    />
                   ))}
                 </div>
 
@@ -513,7 +589,8 @@ export default function CategoriesPage() {
                 {totalPages > 1 && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
                     <div className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages} • {totalProducts} total products
+                      Page {currentPage} of {totalPages} • {totalProducts} total
+                      products
                     </div>
                     <div className="flex items-center space-x-2">
                       {/* Previous Button */}
@@ -532,9 +609,15 @@ export default function CategoriesPage() {
                         {getPaginationNumbers().map((page, index) => (
                           <Button
                             key={index}
-                            variant={page === currentPage ? "default" : "outline"}
+                            variant={
+                              page === currentPage ? "default" : "outline"
+                            }
                             size="sm"
-                            onClick={() => (typeof page === "number" ? handlePageChange(page) : null)}
+                            onClick={() =>
+                              typeof page === "number"
+                                ? handlePageChange(page)
+                                : null
+                            }
                             disabled={page === "..." || loadingProducts}
                             className="min-w-[40px]"
                           >
@@ -566,9 +649,12 @@ export default function CategoriesPage() {
 
                 {/* View More Products Call-to-Action */}
                 <div className="mt-12 text-center p-8 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border/50">
-                  <h3 className="text-xl font-semibold mb-2">Want to see more products?</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    Want to see more products?
+                  </h3>
                   <p className="text-muted-foreground mb-4">
-                    Explore all {totalProducts} products in {selectedCategory.name} with advanced filters and sorting
+                    Explore all {totalProducts} products in{" "}
+                    {selectedCategory.name} with advanced filters and sorting
                     options.
                   </p>
                   <Link href={getViewAllProductsUrl()}>
@@ -586,9 +672,12 @@ export default function CategoriesPage() {
                     <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">{selectedCategory.icon}</span>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      No Products Found
+                    </h3>
                     <p className="text-muted-foreground mb-4">
-                      There are no products listed in {selectedCategory.name} yet.
+                      There are no products listed in {selectedCategory.name}{" "}
+                      yet.
                     </p>
                     <div className="space-y-2">
                       <Link href="/sell">
@@ -597,10 +686,10 @@ export default function CategoriesPage() {
                       <Button
                         variant="outline"
                         onClick={() => {
-                          setSelectedCategory(null)
-                          setProducts([])
-                          setTotalProducts(0)
-                          setCurrentPage(1)
+                          setSelectedCategory(null);
+                          setProducts([]);
+                          setTotalProducts(0);
+                          setCurrentPage(1);
                         }}
                         className="w-full"
                       >
@@ -615,5 +704,5 @@ export default function CategoriesPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

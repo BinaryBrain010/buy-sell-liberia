@@ -1,3 +1,4 @@
+"use client";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
+import Link from "next/link";
 
 export interface Product {
   _id: string;
@@ -36,7 +38,7 @@ export interface Product {
 }
 
 interface ProductCardProps {
-  product: Product;
+  product?: Product;
   variant?: "compact" | "list";
   onLike?: (productId: string) => void;
 }
@@ -46,16 +48,17 @@ export function ProductCard({
   variant = "compact",
   onLike,
 }: ProductCardProps) {
-
-
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
+  // Guard against undefined product during loading states
+  if (!product) return null;
+
   const getLocationString = () => {
-    if (!product.location || typeof product.location !== 'object') {
+    if (!product.location || typeof product.location !== "object") {
       return "Unknown location";
     }
-    
+
     const { city, state, country } = product.location;
     return (
       [city, state, country].filter(Boolean).join(", ") || "Unknown location"
@@ -100,8 +103,171 @@ export function ProductCard({
           : "bg-white hover:bg-gray-50"
       } ${variant === "list" ? "w-full" : ""}`}
     >
-      <CardContent className={variant === "list" ? "p-4 flex gap-4" : "p-4"}>
-      
+      {variant === "list" ? (
+        <CardContent className="p-4 md:p-5 flex gap-4 md:gap-6 items-start">
+          {/* Thumbnail */}
+          <Link
+            href={product._id ? `/products/${product._id}` : "#"}
+            className="relative block shrink-0 rounded-md overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={product.title || "View product"}
+          >
+            {/* Featured badge */}
+            {product.featured === true && (
+              <Badge
+                className="absolute top-2 left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 cursor-default select-none"
+                title="Featured Product"
+              >
+                <Star className="h-4 w-4 mr-1" />
+                Featured
+              </Badge>
+            )}
+            <div className="relative w-28 h-28 md:w-40 md:h-40">
+              <Image
+                src={
+                  product.images &&
+                  Array.isArray(product.images) &&
+                  product.images.length > 0 &&
+                  product.titleImageIndex !== undefined &&
+                  product.images[product.titleImageIndex]?.url
+                    ? product.images[product.titleImageIndex].url
+                    : "/placeholder.jpg"
+                }
+                alt={product.title || "Product image"}
+                fill
+                className="object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.jpg";
+                }}
+                sizes="(max-width: 768px) 7rem, 10rem"
+                priority={false}
+              />
+            </div>
+          </Link>
+
+          {/* Details */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <Link
+                href={product._id ? `/products/${product._id}` : "#"}
+                className={`font-semibold text-base md:text-lg line-clamp-1 hover:underline ${
+                  isDark ? "text-gray-100" : "text-gray-900"
+                }`}
+              >
+                {product.title || "Untitled Product"}
+              </Link>
+              <Button
+                aria-label="Like product"
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  product._id && onLike?.(product._id);
+                }}
+                className={`${
+                  isDark
+                    ? "text-gray-400 hover:text-red-400"
+                    : "text-gray-600 hover:text-red-500"
+                }`}
+              >
+                <Heart className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Price + Negotiable */}
+            <div className="mt-1 mb-2 flex items-center gap-3">
+              <span
+                className={`text-lg md:text-xl font-bold ${
+                  isDark ? "text-blue-400" : "text-blue-600"
+                }`}
+              >
+                {product.price &&
+                typeof product.price === "object" &&
+                product.price.amount
+                  ? `$${product.price.amount}`
+                  : "-"}
+              </span>
+              {product.price &&
+                typeof product.price === "object" &&
+                product.price.negotiable === true && (
+                  <Badge
+                    className={`${
+                      isDark
+                        ? "bg-green-500/15 text-green-300"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    Negotiable
+                  </Badge>
+                )}
+            </div>
+
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2 mb-2">
+              {product.category && typeof product.category === "string" && (
+                <span
+                  className={`text-xs px-2 py-1 rounded ${
+                    isDark
+                      ? "bg-zinc-700 text-gray-300"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {product.category}
+                </span>
+              )}
+              {product.subCategory &&
+                typeof product.subCategory === "string" && (
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      isDark
+                        ? "bg-zinc-700 text-gray-300"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {product.subCategory}
+                  </span>
+                )}
+            </div>
+
+            {/* Description */}
+            <div
+              className={`text-sm mb-2 line-clamp-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {product.description || (
+                <span className="italic text-gray-400">
+                  No description available
+                </span>
+              )}
+            </div>
+
+            {/* Meta */}
+            <div
+              className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-xs ${
+                isDark ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              <span className="inline-flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                {product.createdAt
+                  ? formatDaysAgo(product.createdAt)
+                  : "Unknown date"}
+              </span>
+              <span className="inline-flex items-center">
+                <Eye className="h-4 w-4 mr-1" />
+                {typeof product.views === "number" ? product.views : 0} views
+              </span>
+              <span className="inline-flex items-center">
+                <MapPin className="h-4 w-4 mr-1" />
+                <span className="line-clamp-1 max-w-[22rem]">
+                  {getLocationString()}
+                </span>
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      ) : (
+        <CardContent className="p-4">
           <div className="relative">
             {/* Featured badge */}
             {product.featured === true && (
@@ -113,10 +279,14 @@ export function ProductCard({
                 Featured
               </Badge>
             )}
-            <div className="relative w-full h-48 mb-4">
+            <Link
+              href={product._id ? `/products/${product._id}` : "#"}
+              className="relative block w-full h-48 mb-4 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label={product.title || "View product"}
+            >
               <Image
                 src={
-                  product.images && 
+                  product.images &&
                   Array.isArray(product.images) &&
                   product.images.length > 0 &&
                   product.titleImageIndex !== undefined &&
@@ -126,36 +296,43 @@ export function ProductCard({
                 }
                 alt={product.title || "Product image"}
                 fill
-                className="object-cover rounded-lg"
+                className="object-cover"
                 onError={(e) => {
                   e.currentTarget.src = "/placeholder.jpg";
                 }}
+                sizes="100vw"
+                priority={false}
               />
-            </div>
+            </Link>
             <div className="flex items-center justify-between mb-2">
-              <h3
-                className={`font-semibold text-lg line-clamp-1 ${
+              <Link
+                href={product._id ? `/products/${product._id}` : "#"}
+                className={`font-semibold text-lg line-clamp-1 hover:underline ${
                   isDark ? "text-gray-100" : "text-gray-900"
                 }`}
               >
                 {product.title || "Untitled Product"}
-              </h3>
+              </Link>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => product._id && onLike?.(product._id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  product._id && onLike?.(product._id);
+                }}
                 className={`${
                   isDark
                     ? "text-gray-400 hover:text-red-400"
                     : "text-gray-600 hover:text-red-500"
                 }`}
+                aria-label="Like product"
               >
                 <Heart className="h-5 w-5" />
               </Button>
             </div>
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
-              {product.category && typeof product.category === 'string' && (
+              {product.category && typeof product.category === "string" && (
                 <span
                   className={`text-xs px-2 py-1 rounded ${
                     isDark
@@ -166,17 +343,18 @@ export function ProductCard({
                   {product.category}
                 </span>
               )}
-              {product.subCategory && typeof product.subCategory === 'string' && (
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    isDark
-                      ? "bg-zinc-700 text-gray-300"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {product.subCategory}
-                </span>
-              )}
+              {product.subCategory &&
+                typeof product.subCategory === "string" && (
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      isDark
+                        ? "bg-zinc-700 text-gray-300"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    {product.subCategory}
+                  </span>
+                )}
             </div>
             <div
               className={`text-sm mb-2 line-clamp-1 ${
@@ -189,17 +367,19 @@ export function ProductCard({
                 </span>
               )}
             </div>
-            {/* Days ago and views for compact view */}
+            {/* Days ago and views */}
             <div
               className={`flex items-center gap-3 text-xs mb-2 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}
             >
               <Clock className="h-4 w-4 mr-1" />
-              {product.createdAt ? formatDaysAgo(product.createdAt) : "Unknown date"}
+              {product.createdAt
+                ? formatDaysAgo(product.createdAt)
+                : "Unknown date"}
               <span className="flex items-center ml-2">
                 <Eye className="h-4 w-4 mr-1" />
-                {typeof product.views === 'number' ? product.views : 0} views
+                {typeof product.views === "number" ? product.views : 0} views
               </span>
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -208,17 +388,23 @@ export function ProductCard({
                   isDark ? "text-blue-400" : "text-blue-600"
                 }`}
               >
-                {product.price && typeof product.price === 'object' && product.price.amount ? `$${product.price.amount}` : "-"}
+                {product.price &&
+                typeof product.price === "object" &&
+                product.price.amount
+                  ? `$${product.price.amount}`
+                  : "-"}
               </span>
-              {product.price && typeof product.price === 'object' && product.price.negotiable === true && (
-                <span
-                  className={`text-xs font-semibold ${
-                    isDark ? "text-green-400" : "text-green-600"
-                  }`}
-                >
-                  Negotiable
-                </span>
-              )}
+              {product.price &&
+                typeof product.price === "object" &&
+                product.price.negotiable === true && (
+                  <span
+                    className={`text-xs font-semibold ${
+                      isDark ? "text-green-400" : "text-green-600"
+                    }`}
+                  >
+                    Negotiable
+                  </span>
+                )}
             </div>
             <div
               className={`flex items-center gap-2 text-sm mb-2 ${
@@ -228,9 +414,9 @@ export function ProductCard({
               <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">{getLocationString()}</span>
             </div>
-            
           </div>
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 }

@@ -1,97 +1,105 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react"
-import { motion } from "framer-motion"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ProductCard } from "@/components/product-card"
-import { Loader2, Search, ChevronLeft, ChevronRight, X } from "lucide-react"
-import { FiltersSection } from "@/components/filters/filter-section"
-import { useRouter } from "next/navigation"
-import { useDebounce } from "@/hooks/use-debounce"
-import { usePagination } from "@/hooks/use-pagination"
-import { useProductsApi } from "@/hooks/use-product-api"
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ProductCard } from "@/components/product-card";
+import { Loader2, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { FiltersSection } from "@/components/filters/filter-section";
+import { useRouter } from "next/navigation";
+import { useDebounce } from "@/hooks/use-debounce";
+import { usePagination } from "@/hooks/use-pagination";
+import { useProductsApi } from "@/hooks/use-product-api";
 
-const ITEMS_PER_PAGE = 30
+const ITEMS_PER_PAGE = 30;
 
 export default function ProductsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("newest")
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [showFilters, setShowFilters] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const router = useRouter()
+  const router = useRouter();
 
   // Debounce search query to avoid excessive API calls
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Custom hook for API calls with better error handling and caching
-  const { products, totalResults, totalPages, isLoading, isSearching, error, fetchProducts, clearError } =
-    useProductsApi()
+  const {
+    products,
+    totalResults,
+    totalPages,
+    isLoading,
+    isSearching,
+    error,
+    fetchProducts,
+    clearError,
+  } = useProductsApi();
 
   // Custom hook for pagination logic
   const paginationNumbers = usePagination({
     currentPage,
     totalPages,
     maxVisible: 5,
-  })
+  });
 
   const handleFiltersChange = useCallback(() => {
-    setCurrentPage(1)
-    setShowFilters(false)
+    setCurrentPage(1);
+    setShowFilters(false);
     fetchProducts({
       filters: { sortBy },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
-    })
-  }, [sortBy, debouncedSearchQuery, fetchProducts])
+    });
+  }, [sortBy, debouncedSearchQuery, fetchProducts]);
 
   // Optimized page change handler with smooth scrolling
   const handlePageChange = useCallback(
     (page: number) => {
-      setCurrentPage(page)
+      setCurrentPage(page);
       fetchProducts({
         filters: { sortBy },
         page,
         search: debouncedSearchQuery,
         itemsPerPage: ITEMS_PER_PAGE,
-      })
+      });
 
       // Smooth scroll to products section
       requestAnimationFrame(() => {
         document.getElementById("products-section")?.scrollIntoView({
           behavior: "smooth",
           block: "start",
-        })
-      })
+        });
+      });
     },
-    [sortBy, debouncedSearchQuery, fetchProducts],
-  )
+    [sortBy, debouncedSearchQuery, fetchProducts]
+  );
 
   // Clear all filters handler
   const handleClearFilters = useCallback(() => {
-    setSortBy("newest")
-    setSearchQuery("")
-    setCurrentPage(1)
-    clearError()
+    setSortBy("newest");
+    setSearchQuery("");
+    setCurrentPage(1);
+    clearError();
     fetchProducts({
       filters: {},
       page: 1,
       search: "",
       itemsPerPage: ITEMS_PER_PAGE,
-    })
-  }, [fetchProducts, clearError])
+    });
+  }, [fetchProducts, clearError]);
 
   // Product click handler
   const handleProductClick = useCallback(
     (productId: string) => {
-      router.push(`/products/${productId}`)
+      router.push(`/products/${productId}`);
     },
-    [router],
-  )
+    [router]
+  );
 
   // Initial load
   useEffect(() => {
@@ -100,28 +108,28 @@ export default function ProductsPage() {
       page: 1,
       search: "",
       itemsPerPage: ITEMS_PER_PAGE,
-    })
-  }, [fetchProducts])
+    });
+  }, [fetchProducts]);
 
   // Auto-search when debounced query changes
   useEffect(() => {
-    if (debouncedSearchQuery !== searchQuery) return // Only trigger when debounce is complete
+    if (debouncedSearchQuery !== searchQuery) return; // Only trigger when debounce is complete
 
-    setCurrentPage(1)
+    setCurrentPage(1);
     fetchProducts({
       filters: { sortBy },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
-    })
-  }, [debouncedSearchQuery, sortBy, fetchProducts])
+    });
+  }, [debouncedSearchQuery, sortBy, fetchProducts]);
 
   // Memoized results info to prevent unnecessary recalculations
   const resultsInfo = useMemo(() => {
-    if (totalResults === 0) return null
+    if (totalResults === 0) return null;
 
-    const start = (currentPage - 1) * ITEMS_PER_PAGE + 1
-    const end = Math.min(currentPage * ITEMS_PER_PAGE, totalResults)
+    const start = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const end = Math.min(currentPage * ITEMS_PER_PAGE, totalResults);
 
     return {
       start,
@@ -129,8 +137,8 @@ export default function ProductsPage() {
       total: totalResults,
       currentPage,
       totalPages,
-    }
-  }, [currentPage, totalResults, totalPages])
+    };
+  }, [currentPage, totalResults, totalPages]);
 
   return (
     <div className="min-h-screen">
@@ -138,7 +146,9 @@ export default function ProductsPage() {
         {/* Header */}
         <header className="text-center mb-12">
           <h1 className="text-3xl md:text-4xl font-bold mb-4">All Products</h1>
-          <p className="text-xl text-muted-foreground">Discover amazing products from our marketplace</p>
+          <p className="text-xl text-muted-foreground">
+            Discover amazing products from our marketplace
+          </p>
         </header>
 
         {/* Filters Section */}
@@ -173,7 +183,8 @@ export default function ProductsPage() {
           {resultsInfo && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
               <p className="text-muted-foreground">
-                Showing {resultsInfo.start} to {resultsInfo.end} of {resultsInfo.total.toLocaleString()} products
+                Showing {resultsInfo.start} to {resultsInfo.end} of{" "}
+                {resultsInfo.total.toLocaleString()} products
                 {resultsInfo.totalPages > 1 && (
                   <span className="ml-2">
                     (Page {resultsInfo.currentPage} of {resultsInfo.totalPages})
@@ -194,7 +205,9 @@ export default function ProductsPage() {
               {/* Products Grid/List */}
               <div
                 className={`gap-6 mb-8 ${
-                  viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col space-y-4"
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                    : "flex flex-col space-y-4"
                 }`}
               >
                 {products.map((product: any, index) => (
@@ -202,14 +215,18 @@ export default function ProductsPage() {
                     key={product._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.5) }}
+                    transition={{
+                      duration: 0.3,
+                      delay: Math.min(index * 0.05, 0.5),
+                    }}
                     onClick={() => handleProductClick(product._id)}
                     className="cursor-pointer"
                   >
                     <ProductCard
                       product={product}
+                      variant={viewMode === "list" ? "list" : "compact"}
                       onLike={(productId: any) => {
-                        console.log("Liked product:", productId)
+                        console.log("Liked product:", productId);
                       }}
                     />
                   </motion.div>
@@ -218,7 +235,10 @@ export default function ProductsPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <nav className="flex flex-col sm:flex-row items-center justify-between gap-4" aria-label="Pagination">
+                <nav
+                  className="flex flex-col sm:flex-row items-center justify-between gap-4"
+                  aria-label="Pagination"
+                >
                   <div className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </div>
@@ -244,10 +264,18 @@ export default function ProductsPage() {
                           key={index}
                           variant={page === currentPage ? "default" : "outline"}
                           size="sm"
-                          onClick={() => (typeof page === "number" ? handlePageChange(page) : undefined)}
+                          onClick={() =>
+                            typeof page === "number"
+                              ? handlePageChange(page)
+                              : undefined
+                          }
                           disabled={page === "..." || isLoading}
                           className="min-w-[40px]"
-                          aria-label={typeof page === "number" ? `Go to page ${page}` : undefined}
+                          aria-label={
+                            typeof page === "number"
+                              ? `Go to page ${page}`
+                              : undefined
+                          }
                         >
                           {page}
                         </Button>
@@ -271,7 +299,10 @@ export default function ProductsPage() {
                   {/* Jump to Page */}
                   {totalPages > 10 && (
                     <div className="flex items-center space-x-2 text-sm">
-                      <label htmlFor="page-jump" className="text-muted-foreground">
+                      <label
+                        htmlFor="page-jump"
+                        className="text-muted-foreground"
+                      >
                         Go to:
                       </label>
                       <Input
@@ -283,9 +314,11 @@ export default function ProductsPage() {
                         className="w-20 h-8 text-center"
                         onKeyPress={(e) => {
                           if (e.key === "Enter") {
-                            const page = Number.parseInt((e.target as HTMLInputElement).value)
+                            const page = Number.parseInt(
+                              (e.target as HTMLInputElement).value
+                            );
                             if (page >= 1 && page <= totalPages) {
-                              handlePageChange(page)
+                              handlePageChange(page);
                             }
                           }
                         }}
@@ -303,9 +336,12 @@ export default function ProductsPage() {
                   <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="h-8 w-8 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+                  <h3 className="text-lg font-semibold mb-2">
+                    No Products Found
+                  </h3>
                   <p className="text-muted-foreground mb-4">
-                    Try adjusting your filters or search terms to find what you're looking for.
+                    Try adjusting your filters or search terms to find what
+                    you're looking for.
                   </p>
                   <Button onClick={handleClearFilters} variant="outline">
                     Clear All Filters
@@ -317,5 +353,5 @@ export default function ProductsPage() {
         </section>
       </div>
     </div>
-  )
+  );
 }

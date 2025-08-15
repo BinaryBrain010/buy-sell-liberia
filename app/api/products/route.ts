@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
           images: product.images,
           status: product.status,
           createdAt: product.createdAt,
+          featured: (product as any).featured ?? false,
         },
       },
       { status: 201 }
@@ -218,7 +219,13 @@ export async function GET(request: NextRequest) {
       filters.maxPrice = Number(searchParams.get("maxPrice"));
     if (searchParams.get("condition"))
       filters.condition = searchParams.get("condition")?.split(",");
-    if (searchParams.get("search")) filters.search = searchParams.get("search");
+    if (searchParams.get("search")) {
+      const search = searchParams.get("search") as string;
+      filters.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
     if (searchParams.get("seller")) filters.seller = searchParams.get("seller");
     if (searchParams.get("status")) filters.status = searchParams.get("status");
     if (searchParams.get("tags"))

@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowLeft,
   Search,
@@ -16,10 +22,10 @@ import {
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
-} from "lucide-react"
-import Link from "next/link"
-import Image from "next/image"
-import { ProductCard, type Product } from "@/components/product-card"
+} from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
+import { ProductCard, type Product } from "@/components/product-card";
 
 // Color mappings for categories
 const categoryColors: { [key: string]: string } = {
@@ -33,92 +39,96 @@ const categoryColors: { [key: string]: string } = {
   services: "from-indigo-500 to-purple-500",
   jobs: "from-emerald-500 to-teal-500",
   "sports-outdoors": "from-red-500 to-pink-500",
-}
+};
 
 export default function CategoryPage() {
-  const params = useParams()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const slug = params?.slug as string
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const slug = params?.slug as string;
 
   // Get IDs from URL parameters
-  const categoryIdFromUrl = searchParams?.get("category_id")
-  const subcategoryIdFromUrl = searchParams?.get("subcategory_id")
+  const categoryIdFromUrl = searchParams?.get("category_id");
+  const subcategoryIdFromUrl = searchParams?.get("subcategory_id");
 
-  const [currentCategory, setCurrentCategory] = useState<any>(null)
-  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadingProducts, setLoadingProducts] = useState(false)
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [sortBy, setSortBy] = useState("newest")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [showFilters, setShowFilters] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalProducts, setTotalProducts] = useState(0)
-  const itemsPerPage = 20
+  const [currentCategory, setCurrentCategory] = useState<any>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("newest");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const itemsPerPage = 20;
 
-  const totalPages = Math.ceil(totalProducts / itemsPerPage)
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
   const handleLike = (productId: string) => {
     // Placeholder for like functionality
-    console.log(`Product ${productId} liked`)
-  }
+    console.log(`Product ${productId} liked`);
+  };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage < 1 || newPage > totalPages) return
-    setCurrentPage(newPage)
-  }
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+  };
 
   const getPaginationNumbers = () => {
-    const paginationNumbers: (number | string)[] = []
-    const maxPagesToShow = 5
-    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2))
-    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1)
+    const paginationNumbers: (number | string)[] = [];
+    const maxPagesToShow = 5;
+    const startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
 
     for (let i = startPage; i <= endPage; i++) {
-      paginationNumbers.push(i)
+      paginationNumbers.push(i);
     }
 
     if (startPage > 1) {
-      paginationNumbers.unshift("...")
+      paginationNumbers.unshift("...");
     }
 
     if (endPage < totalPages) {
-      paginationNumbers.push("...")
+      paginationNumbers.push("...");
     }
 
-    return paginationNumbers
-  }
+    return paginationNumbers;
+  };
 
   // Fetch category details
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const res = await fetch(`/api/categories?slug=${slug}`)
-        if (!res.ok) throw new Error("Failed to fetch category")
-        const data = await res.json()
+        const res = await fetch(`/api/categories?slug=${slug}`);
+        if (!res.ok) throw new Error("Failed to fetch category");
+        const data = await res.json();
         // The API returns either { category } or { categories: [...] }
-        const category = data.category || (data.categories?.find((cat: any) => cat.slug === slug))
-        setCurrentCategory(category)
+        const category =
+          data.category ||
+          data.categories?.find((cat: any) => cat.slug === slug);
+        setCurrentCategory(category);
 
         // Find subcategory if specified in URL
         if (subcategoryIdFromUrl && category?.subcategories) {
           // subcategoryIdFromUrl may be an ObjectId string
-          const subcategory = category.subcategories.find((sub: any) => sub._id?.toString() === subcategoryIdFromUrl)
-          setSelectedSubcategory(subcategory)
+          const subcategory = category.subcategories.find(
+            (sub: any) => sub._id?.toString() === subcategoryIdFromUrl
+          );
+          setSelectedSubcategory(subcategory);
         }
       } catch (error) {
-        console.error("Error fetching category:", error)
+        console.error("Error fetching category:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     if (slug) {
-      fetchCategory()
+      fetchCategory();
     }
-  }, [slug, subcategoryIdFromUrl])
+  }, [slug, subcategoryIdFromUrl]);
 
   // Fetch products for this category/subcategory
   useEffect(() => {
@@ -129,7 +139,9 @@ export default function CategoryPage() {
 
       setLoadingProducts(true);
       try {
-        let url = `/api/products?category_id=${encodeURIComponent(categoryId)}&limit=${itemsPerPage}&page=${currentPage}`;
+        let url = `/api/products?category_id=${encodeURIComponent(
+          categoryId
+        )}&limit=${itemsPerPage}&page=${currentPage}`;
 
         // Add subcategory filter if selected (either from URL or user selection)
         const subcategoryId = subcategoryIdFromUrl || selectedSubcategory?._id;
@@ -165,21 +177,23 @@ export default function CategoryPage() {
     selectedSubcategory?._id,
     currentPage,
     searchQuery,
-  ])
+  ]);
 
   // Add function to handle subcategory selection
   const handleSubcategorySelect = (subcategory: any) => {
-    setSelectedSubcategory(subcategory)
-    setCurrentPage(1)
+    setSelectedSubcategory(subcategory);
+    setCurrentPage(1);
 
     // Update URL with both category and subcategory IDs
-    const categoryId = categoryIdFromUrl || currentCategory?._id
+    const categoryId = categoryIdFromUrl || currentCategory?._id;
     const newUrl = subcategory
-      ? `/categories/${slug}?category_id=${encodeURIComponent(categoryId)}&subcategory_id=${encodeURIComponent(subcategory._id)}`
-      : `/categories/${slug}?category_id=${encodeURIComponent(categoryId)}`
+      ? `/categories/${slug}?category_id=${encodeURIComponent(
+          categoryId
+        )}&subcategory_id=${encodeURIComponent(subcategory._id)}`
+      : `/categories/${slug}?category_id=${encodeURIComponent(categoryId)}`;
 
-    window.history.pushState({}, "", newUrl)
-  }
+    window.history.pushState({}, "", newUrl);
+  };
 
   if (loading) {
     return (
@@ -191,7 +205,7 @@ export default function CategoryPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!currentCategory) {
@@ -200,7 +214,9 @@ export default function CategoryPage() {
         <div className="container mx-auto px-4 py-20">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Category Not Found</h1>
-            <p className="text-muted-foreground mb-8">The category you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-8">
+              The category you're looking for doesn't exist.
+            </p>
             <Link href="/categories">
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -210,7 +226,7 @@ export default function CategoryPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -226,11 +242,15 @@ export default function CategoryPage() {
             Categories
           </Link>
           <span>/</span>
-          <span className="text-foreground font-medium">{currentCategory?.name}</span>
+          <span className="text-foreground font-medium">
+            {currentCategory?.name}
+          </span>
           {selectedSubcategory && (
             <>
               <span>/</span>
-              <span className="text-foreground font-medium">{selectedSubcategory.name}</span>
+              <span className="text-foreground font-medium">
+                {selectedSubcategory.name}
+              </span>
             </>
           )}
         </nav>
@@ -245,24 +265,35 @@ export default function CategoryPage() {
             <div className="flex items-center space-x-6">
               <div
                 className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
-                  categoryColors[currentCategory?.slug] || "from-gray-500 to-gray-600"
+                  categoryColors[currentCategory?.slug] ||
+                  "from-gray-500 to-gray-600"
                 } flex items-center justify-center text-4xl shadow-lg text-white`}
               >
                 {selectedSubcategory?.icon || currentCategory?.icon}
               </div>
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {selectedSubcategory ? selectedSubcategory.name : currentCategory?.name}
+                  {selectedSubcategory
+                    ? selectedSubcategory.name
+                    : currentCategory?.name}
                 </h1>
-                <p className="text-muted-foreground text-lg">{totalProducts} products available</p>
+                <p className="text-muted-foreground text-lg">
+                  {totalProducts} products available
+                </p>
 
                 {/* Subcategory Selection */}
                 {currentCategory?.subcategories?.length > 0 && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium mb-3">Filter by subcategory:</p>
+                    <p className="text-sm font-medium mb-3">
+                      Filter by subcategory:
+                    </p>
                     <div className="flex flex-wrap gap-2">
                       <Button
-                        variant={!selectedSubcategory && !subcategoryIdFromUrl ? "default" : "outline"}
+                        variant={
+                          !selectedSubcategory && !subcategoryIdFromUrl
+                            ? "default"
+                            : "outline"
+                        }
                         size="sm"
                         onClick={() => handleSubcategorySelect(null)}
                         className="text-xs h-8"
@@ -273,7 +304,8 @@ export default function CategoryPage() {
                         <Button
                           key={sub._id}
                           variant={
-                            selectedSubcategory?._id === sub._id || subcategoryIdFromUrl === sub._id
+                            selectedSubcategory?._id === sub._id ||
+                            subcategoryIdFromUrl === sub._id
                               ? "default"
                               : "outline"
                           }
@@ -286,13 +318,18 @@ export default function CategoryPage() {
                             <Image
                               src={
                                 sub.image?.url ||
-                                `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0)) || "/placeholder.svg"}`
+                                `/placeholder.svg?height=20&width=20&text=${
+                                  encodeURIComponent(sub.name.charAt(0)) ||
+                                  "/placeholder.svg"
+                                }`
                               }
                               alt={sub.name}
                               fill
                               className="object-cover"
                               onError={(e) => {
-                                e.currentTarget.src = `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(sub.name.charAt(0))}`
+                                e.currentTarget.src = `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(
+                                  sub.name.charAt(0)
+                                )}`;
                               }}
                             />
                           </div>
@@ -326,7 +363,9 @@ export default function CategoryPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder={`Search in ${selectedSubcategory?.name || currentCategory?.name}...`}
+                  placeholder={`Search in ${
+                    selectedSubcategory?.name || currentCategory?.name
+                  }...`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 input-shadow"
@@ -368,10 +407,18 @@ export default function CategoryPage() {
             </div>
 
             {/* Filters Button */}
-            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="btn-shadow">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="btn-shadow"
+            >
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filters
-              <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`h-4 w-4 ml-2 transition-transform ${
+                  showFilters ? "rotate-180" : ""
+                }`}
+              />
             </Button>
           </div>
 
@@ -386,24 +433,37 @@ export default function CategoryPage() {
               <div className="space-y-4">
                 {/* Condition Filter */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Condition</label>
+                  <label className="text-sm font-medium mb-2 block">
+                    Condition
+                  </label>
                   <div className="flex flex-wrap gap-2">
-                    {["Brand New", "Like New", "Good", "Fair", "Poor"].map((condition) => (
-                      <Button key={condition} variant="outline" size="sm" className="btn-shadow bg-transparent">
-                        {condition}
-                      </Button>
-                    ))}
+                    {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
+                      (condition) => (
+                        <Button
+                          key={condition}
+                          variant="outline"
+                          size="sm"
+                          className="btn-shadow bg-transparent"
+                        >
+                          {condition}
+                        </Button>
+                      )
+                    )}
                   </div>
                 </div>
 
                 {/* Price Range */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Min Price</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      Min Price
+                    </label>
                     <Input placeholder="$0" className="input-shadow" />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Max Price</label>
+                    <label className="text-sm font-medium mb-2 block">
+                      Max Price
+                    </label>
                     <Input placeholder="$10,000" className="input-shadow" />
                   </div>
                 </div>
@@ -418,7 +478,11 @@ export default function CategoryPage() {
         </motion.div>
 
         {/* Products Grid/List */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
           {loadingProducts ? (
             <div className="text-center py-12">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -427,13 +491,17 @@ export default function CategoryPage() {
           ) : products.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">{selectedSubcategory?.icon || currentCategory?.icon}</span>
+                <span className="text-4xl">
+                  {selectedSubcategory?.icon || currentCategory?.icon}
+                </span>
               </div>
               <h3 className="text-xl font-semibold mb-2">No products found</h3>
               <p className="text-muted-foreground mb-6">
                 {searchQuery
                   ? "Try adjusting your search terms."
-                  : `Be the first to list a product in ${selectedSubcategory?.name || currentCategory?.name}.`}
+                  : `Be the first to list a product in ${
+                      selectedSubcategory?.name || currentCategory?.name
+                    }.`}
               </p>
               <div className="space-x-4">
                 {searchQuery && (
@@ -463,9 +531,11 @@ export default function CategoryPage() {
                     transition={{ delay: index * 0.05 }}
                     className={viewMode === "list" ? "w-full" : ""}
                   >
-                    <Link href={`/products/${product._id}`} passHref>
-                      <ProductCard product={product} onLike={handleLike} />
-                    </Link>
+                    <ProductCard
+                      product={product}
+                      variant={viewMode === "list" ? "list" : "compact"}
+                      onLike={handleLike}
+                    />
                   </motion.div>
                 ))}
               </div>
@@ -495,7 +565,11 @@ export default function CategoryPage() {
                           key={index}
                           variant={page === currentPage ? "default" : "outline"}
                           size="sm"
-                          onClick={() => (typeof page === "number" ? handlePageChange(page) : null)}
+                          onClick={() =>
+                            typeof page === "number"
+                              ? handlePageChange(page)
+                              : null
+                          }
                           disabled={page === "..." || loadingProducts}
                           className="min-w-[40px]"
                         >
@@ -522,5 +596,5 @@ export default function CategoryPage() {
         </motion.div>
       </div>
     </div>
-  )
+  );
 }
