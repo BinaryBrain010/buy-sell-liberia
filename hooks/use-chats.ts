@@ -1,6 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
-import ChatService from '@/app/services/Chat.Service';
-import { IChat, IMessage, CreateChatRequest, MarkMessageReadRequest, ChatFilters } from '@/types/chat';
+import { useState, useCallback, useEffect } from "react";
+import ChatService from "@/app/services/Chat.Service";
+import {
+  IChat,
+  IMessage,
+  CreateChatRequest,
+  MarkMessageReadRequest,
+  ChatFilters,
+} from "@/types/chat";
 
 interface UseChatsReturn {
   // State
@@ -8,16 +14,17 @@ interface UseChatsReturn {
   currentChat: IChat | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   getChats: (filters: ChatFilters) => Promise<void>;
+  getChatsLight: (filters: ChatFilters) => Promise<void>;
   createOrUpdateChat: (chatData: CreateChatRequest) => Promise<IChat | null>;
   markMessageAsRead: (readData: MarkMessageReadRequest) => Promise<boolean>;
   deleteChatsByProduct: (productId: string) => Promise<boolean>;
   getChatById: (chatId: string) => Promise<IChat | null>;
   sendMessage: (chatId: string, message: IMessage) => Promise<IChat | null>;
   getUnreadCount: (userId: string) => Promise<number>;
-  
+
   // Utility
   setCurrentChat: (chat: IChat | null) => void;
   clearError: () => void;
@@ -41,212 +48,255 @@ export const useChats = (): UseChatsReturn => {
       const fetchedChats = await ChatService.getChats(filters);
       setChats(fetchedChats);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch chats';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch chats";
       setError(errorMessage);
-      console.error('Error fetching chats:', err);
+      console.error("Error fetching chats:", err);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const createOrUpdateChat = useCallback(async (chatData: CreateChatRequest): Promise<IChat | null> => {
+  // Lightweight refresh without flipping global isLoading, to avoid UI flicker on socket updates
+  const getChatsLight = useCallback(async (filters: ChatFilters) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      const newChat = await ChatService.createOrUpdateChat(chatData);
-      
-      // Update chats list if this is a new chat
-      setChats(prevChats => {
-        const existingChatIndex = prevChats.findIndex(
-          chat => chat._id === newChat._id
-        );
-        
-        if (existingChatIndex >= 0) {
-          // Update existing chat
-          const updatedChats = [...prevChats];
-          updatedChats[existingChatIndex] = newChat;
-          return updatedChats;
-        } else {
-          // Add new chat to the beginning
-          return [newChat, ...prevChats];
-        }
-      });
-      
-      return newChat;
+      const fetchedChats = await ChatService.getChats(filters);
+      setChats(fetchedChats);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create/update chat';
-      setError(errorMessage);
-      console.error('Error creating/updating chat:', err);
-      return null;
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching chats (light):", err);
+      // Do not set global error to avoid interrupting UI; log only
     }
   }, []);
 
-  const markMessageAsRead = useCallback(async (readData: MarkMessageReadRequest): Promise<boolean> => {
-    try {
-      setError(null);
-      const result = await ChatService.markMessageAsRead(readData);
-      
-      if (result.success) {
-        // Update the message read status in local state
-        setChats(prevChats => 
-          prevChats.map(chat => {
-            if (chat._id === readData.chatId) {
+  const createOrUpdateChat = useCallback(
+    async (chatData: CreateChatRequest): Promise<IChat | null> => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const newChat = await ChatService.createOrUpdateChat(chatData);
+
+        // Update chats list if this is a new chat
+        setChats((prevChats) => {
+          const existingChatIndex = prevChats.findIndex(
+            (chat) => chat._id === newChat._id
+          );
+
+          if (existingChatIndex >= 0) {
+            // Update existing chat
+            const updatedChats = [...prevChats];
+            updatedChats[existingChatIndex] = newChat;
+            return updatedChats;
+          } else {
+            // Add new chat to the beginning
+            return [newChat, ...prevChats];
+          }
+        });
+
+        return newChat;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to create/update chat";
+        setError(errorMessage);
+        console.error("Error creating/updating chat:", err);
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  const markMessageAsRead = useCallback(
+    async (readData: MarkMessageReadRequest): Promise<boolean> => {
+      try {
+        setError(null);
+        const result = await ChatService.markMessageAsRead(readData);
+
+        if (result.success) {
+          // Update the message read status in local state
+          setChats((prevChats) =>
+            prevChats.map((chat) => {
+              if (chat._id === readData.chatId) {
+                return {
+                  ...chat,
+                  messages: chat.messages.map((msg) => {
+                    if (msg._id === readData.messageId) {
+                      return {
+                        ...msg,
+                        readBy: [...msg.readBy, readData.userId],
+                      };
+                    }
+                    return msg;
+                  }),
+                } as IChat;
+              }
+              return chat;
+            })
+          );
+
+          // Update current chat if it's the same one
+          if (currentChat?._id === readData.chatId) {
+            setCurrentChat((prev) => {
+              if (!prev) return prev;
               return {
-                ...chat,
-                messages: chat.messages.map(msg => {
+                ...prev,
+                messages: prev.messages.map((msg) => {
                   if (msg._id === readData.messageId) {
                     return {
                       ...msg,
-                      readBy: [...msg.readBy, readData.userId]
+                      readBy: [...msg.readBy, readData.userId],
                     };
                   }
                   return msg;
-                })
+                }),
               } as IChat;
-            }
-            return chat;
-          })
-        );
-        
-        // Update current chat if it's the same one
-        if (currentChat?._id === readData.chatId) {
-          setCurrentChat(prev => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              messages: prev.messages.map(msg => {
-                if (msg._id === readData.messageId) {
-                  return {
-                    ...msg,
-                    readBy: [...msg.readBy, readData.userId]
-                  };
-                }
-                return msg;
-              })
-            } as IChat;
-          });
+            });
+          }
         }
-      }
-      
-      return result.success;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mark message as read';
-      setError(errorMessage);
-      console.error('Error marking message as read:', err);
-      return false;
-    }
-  }, [currentChat]);
 
-  const deleteChatsByProduct = useCallback(async (productId: string): Promise<boolean> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const result = await ChatService.deleteChatsByProduct(productId);
-      
-      if (result.success) {
-        // Remove deleted chats from local state
-        setChats(prevChats => 
-          prevChats.filter(chat => chat.product.toString() !== productId)
-        );
-        
-        // Clear current chat if it's for the deleted product
-        if (currentChat?.product.toString() === productId) {
-          setCurrentChat(null);
+        return result.success;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to mark message as read";
+        setError(errorMessage);
+        console.error("Error marking message as read:", err);
+        return false;
+      }
+    },
+    [currentChat]
+  );
+
+  const deleteChatsByProduct = useCallback(
+    async (productId: string): Promise<boolean> => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const result = await ChatService.deleteChatsByProduct(productId);
+
+        if (result.success) {
+          // Remove deleted chats from local state
+          setChats((prevChats) =>
+            prevChats.filter((chat) => chat.product.toString() !== productId)
+          );
+
+          // Clear current chat if it's for the deleted product
+          if (currentChat?.product.toString() === productId) {
+            setCurrentChat(null);
+          }
         }
+
+        return result.success;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to delete chats";
+        setError(errorMessage);
+        console.error("Error deleting chats:", err);
+        return false;
+      } finally {
+        setIsLoading(false);
       }
-      
-      return result.success;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete chats';
-      setError(errorMessage);
-      console.error('Error deleting chats:', err);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentChat]);
+    },
+    [currentChat]
+  );
 
-  const getChatById = useCallback(async (chatId: string): Promise<IChat | null> => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const chat = await ChatService.getChatById(chatId);
-      setCurrentChat(chat);
-      return chat;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch chat';
-      setError(errorMessage);
-      console.error('Error fetching chat:', err);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const sendMessage = useCallback(async (chatId: string, message: IMessage): Promise<IChat | null> => {
-    try {
-      setError(null);
-      
-      // Find the existing chat in our local state
-      const existingChat = chats.find(chat => chat._id === chatId);
-      if (!existingChat) {
-        throw new Error('Chat not found in local state');
+  const getChatById = useCallback(
+    async (chatId: string): Promise<IChat | null> => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const chat = await ChatService.getChatById(chatId);
+        setCurrentChat(chat);
+        return chat;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to fetch chat";
+        setError(errorMessage);
+        console.error("Error fetching chat:", err);
+        return null;
+      } finally {
+        setIsLoading(false);
       }
+    },
+    []
+  );
 
-      // Prepare the chat data for the API
-      const chatData = {
-        product: typeof existingChat.product === 'object' ? existingChat.product._id : existingChat.product,
-        user1: typeof existingChat.user1 === 'object' ? existingChat.user1._id : existingChat.user1,
-        user2: typeof existingChat.user2 === 'object' ? existingChat.user2._id : existingChat.user2,
-        message: {
-          _id: message._id,
-          sender: message.sender,
-          content: message.content,
-          sentAt: message.sentAt,
-          readBy: message.readBy
+  const sendMessage = useCallback(
+    async (chatId: string, message: IMessage): Promise<IChat | null> => {
+      try {
+        setError(null);
+
+        // Find the existing chat in our local state
+        const existingChat = chats.find((chat) => chat._id === chatId);
+        if (!existingChat) {
+          throw new Error("Chat not found in local state");
         }
-      };
 
-      // Send to the main chats endpoint (which handles both creation and updates)
-      const updatedChat = await ChatService.createOrUpdateChat(chatData);
-      
-      if (updatedChat) {
-        // Update chats list
-        setChats(prevChats => 
-          prevChats.map(chat => 
-            chat._id === chatId ? updatedChat : chat
-          )
-        );
-        
-        // Update current chat if it's the same one
-        if (currentChat?._id === chatId) {
-          setCurrentChat(updatedChat);
+        // Prepare the chat data for the API
+        const chatData = {
+          product:
+            typeof existingChat.product === "object"
+              ? existingChat.product._id
+              : existingChat.product,
+          user1:
+            typeof existingChat.user1 === "object"
+              ? existingChat.user1._id
+              : existingChat.user1,
+          user2:
+            typeof existingChat.user2 === "object"
+              ? existingChat.user2._id
+              : existingChat.user2,
+          message: {
+            _id: message._id,
+            sender: message.sender,
+            content: message.content,
+            sentAt: message.sentAt,
+            readBy: message.readBy,
+          },
+        };
+
+        // Send to the main chats endpoint (which handles both creation and updates)
+        const updatedChat = await ChatService.createOrUpdateChat(chatData);
+
+        if (updatedChat) {
+          // Update chats list
+          setChats((prevChats) =>
+            prevChats.map((chat) => (chat._id === chatId ? updatedChat : chat))
+          );
+
+          // Update current chat if it's the same one
+          if (currentChat?._id === chatId) {
+            setCurrentChat(updatedChat);
+          }
         }
-      }
-      
-      return updatedChat;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
-      setError(errorMessage);
-      console.error('Error sending message:', err);
-      return null;
-    }
-  }, [currentChat, chats]);
 
-  const getUnreadCount = useCallback(async (userId: string): Promise<number> => {
-    try {
-      setError(null);
-      const result = await ChatService.getUnreadCount(userId);
-      return result.count;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get unread count';
-      setError(errorMessage);
-      console.error('Error getting unread count:', err);
-      return 0;
-    }
-  }, []);
+        return updatedChat;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to send message";
+        setError(errorMessage);
+        console.error("Error sending message:", err);
+        return null;
+      }
+    },
+    [currentChat, chats]
+  );
+
+  const getUnreadCount = useCallback(
+    async (userId: string): Promise<number> => {
+      try {
+        setError(null);
+        const result = await ChatService.getUnreadCount(userId);
+        return result.count;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to get unread count";
+        setError(errorMessage);
+        console.error("Error getting unread count:", err);
+        return 0;
+      }
+    },
+    []
+  );
 
   const refreshChats = useCallback(async () => {
     // This would need the current filters to be stored or passed
@@ -260,16 +310,17 @@ export const useChats = (): UseChatsReturn => {
     currentChat,
     isLoading,
     error,
-    
+
     // Actions
     getChats,
+    getChatsLight,
     createOrUpdateChat,
     markMessageAsRead,
     deleteChatsByProduct,
     getChatById,
     sendMessage,
     getUnreadCount,
-    
+
     // Utility
     setCurrentChat,
     clearError,

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
 import { useChats } from "@/hooks/use-chats";
+import { socket } from "@/lib/socket";
 
 interface MessagesComponentProps {
   sellerId?: string;
@@ -52,7 +53,8 @@ export const MessagesComponent = ({
     currentChat,
     isLoading,
     error,
-    getChats,
+  getChats,
+  getChatsLight,
     createOrUpdateChat,
     sendMessage,
     setCurrentChat,
@@ -67,6 +69,43 @@ export const MessagesComponent = ({
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, boolean>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const prevChatIdRef = useRef<string | null>(null);
+  const prevMsgCountRef = useRef<number>(0);
+
+  const scrollMessagesToBottom = (smooth = true) => {
+    // Use rAF to wait for DOM paint after messages render
+    requestAnimationFrame(() => {
+  const el = messagesContainerRef.current as HTMLDivElement | null;
+      if (el) {
+        const top = el.scrollHeight;
+        if ('scrollTo' in el) {
+          try {
+            el.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' as ScrollBehavior });
+          } catch {
+            // Fallback for browsers that don't support smooth
+    (el as HTMLDivElement).scrollTop = top;
+          }
+        } else {
+      (el as HTMLDivElement).scrollTop = top;
+        }
+      }
+    });
+  };
+
+  const isNearBottom = (threshold = 120) => {
+  const el = messagesContainerRef.current as HTMLDivElement | null;
+    if (!el) return true; // default to true to avoid missing scrolls
+    const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    return distanceFromBottom <= threshold;
+  };
+
+  // Resolve current user once on mount
+  useEffect(() => {
+    setCurrentUserId(getCurrentUserId());
+  }, []);
 
   // Helper functions
   const getOtherUserName = (chat: any) => {
@@ -269,11 +308,83 @@ export const MessagesComponent = ({
 
   // Load chats on component mount
   useEffect(() => {
-    const currentUserId = getCurrentUserId();
-    if (currentUserId) {
-      getChats({ userId: currentUserId });
+    const uid = currentUserId || getCurrentUserId();
+    if (uid) {
+      getChats({ userId: uid });
     }
-  }, [getChats]);
+  }, [getChats, currentUserId]);
+
+  // When opening a chat, jump to the latest message (smooth)
+  useEffect(() => {
+    if (currentChat?._id) {
+      scrollMessagesToBottom(true);
+      prevChatIdRef.current = String(currentChat._id);
+      // set baseline message count for this chat
+      const opened = chats.find((c) => c._id === currentChat._id);
+      prevMsgCountRef.current = opened?.messages?.length || 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChat?._id]);
+
+  // When chats update (e.g., new message), keep scrolled to bottom if user is near bottom
+  useEffect(() => {
+    if (!currentChat?._id) return;
+
+    const openChat = chats.find((c) => c._id === currentChat._id);
+    const currentCount = openChat?.messages?.length || 0;
+    const prevCount = prevMsgCountRef.current;
+    const chatChanged = prevChatIdRef.current !== String(currentChat._id);
+
+    // Only auto-scroll if:
+    // - chat just changed (open) OR
+    // - messages increased and user is near bottom
+    if (chatChanged) {
+      scrollMessagesToBottom(true);
+    } else if (currentCount > prevCount && isNearBottom()) {
+      scrollMessagesToBottom(true);
+    }
+
+    prevChatIdRef.current = String(currentChat._id);
+    prevMsgCountRef.current = currentCount;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats]);
+
+  // Socket presence + message listeners (re-uses server's simple "message" broadcast)
+  useEffect(() => {
+  const userId = currentUserId || getCurrentUserId();
+    if (!userId) return;
+
+    // Announce presence and request current list
+    socket.emit("user:online", { userId });
+    socket.emit("presence:subscribe");
+
+    const onPresenceList = (data: { online: string[] }) => {
+      const map: Record<string, boolean> = {};
+      data.online.forEach((id) => (map[id] = true));
+      setOnlineUsers(map);
+    };
+
+    const onPresenceUpdate = (data: { userId: string; status: "online" | "offline" }) => {
+      setOnlineUsers((prev) => ({ ...prev, [data.userId]: data.status === "online" }));
+    };
+
+    const onSocketMessage = (data: { from: string; message: string; to: string }) => {
+      // Only refresh if current user involved
+      if (data.from !== userId && data.to !== userId) return;
+      // Lightweight refresh to avoid flicker or page refresh sensations
+      getChatsLight({ userId });
+    };
+
+    socket.on("presence:list", onPresenceList);
+    socket.on("presence:update", onPresenceUpdate);
+    socket.on("message", onSocketMessage);
+
+    return () => {
+      socket.off("presence:list", onPresenceList);
+      socket.off("presence:update", onPresenceUpdate);
+      socket.off("message", onSocketMessage);
+    };
+  }, [getChatsLight, currentUserId]);
 
   // Fetch user details for all chats when chats are loaded
   useEffect(() => {
@@ -563,21 +674,31 @@ export const MessagesComponent = ({
     const targetChatId = chatId || currentChat?._id;
     if (!messageInput.trim() || !targetChatId) return;
 
-    const currentUserId = getCurrentUserId();
-    if (!currentUserId) return;
+  const uid = currentUserId || getCurrentUserId();
+  if (!uid) return;
 
     const newMessage = {
       _id: Date.now().toString(),
-      sender: currentUserId,
+      sender: currentUserId as string,
       content: messageInput.trim(),
       sentAt: new Date(),
-      readBy: [currentUserId],
+      readBy: [currentUserId as string],
     };
 
     setIsSending(true);
     try {
       await sendMessage(String(targetChatId), newMessage);
       setMessageInput("");
+      // Determine the other user and emit socket message so they refresh instantly
+      const chat = chats.find((c) => c._id === targetChatId) || currentChat;
+      if (chat) {
+        const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+        const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+        const otherUserId = u1 === uid ? u2 : u1;
+        if (otherUserId) {
+          socket.emit("message", { from: String(uid), to: String(otherUserId), message: newMessage.content });
+        }
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
     } finally {
@@ -685,6 +806,26 @@ export const MessagesComponent = ({
       };
     }
     return null;
+  };
+
+  const getLastMessageTimestamp = (chat: any) => {
+    if (chat.messages && chat.messages.length > 0) {
+      const lastMsg = chat.messages[chat.messages.length - 1];
+      return new Date(lastMsg.sentAt).getTime();
+    }
+    return 0;
+  };
+
+  const sortedChats = useMemo(() => {
+    return [...chats].sort((a, b) => getLastMessageTimestamp(b) - getLastMessageTimestamp(a));
+  }, [chats]);
+
+  const isOtherUserOnline = (chat: { user1: any; user2: any }) => {
+    const uid2 = currentUserId || getCurrentUserId();
+    const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+    const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+    const otherId = u1 === uid2 ? u2 : u1;
+    return !!(otherId && onlineUsers[String(otherId)]);
   };
 
   if (isLoading) {
@@ -804,7 +945,7 @@ export const MessagesComponent = ({
             <div className="space-y-4">
               {/* Chat List */}
               <div className="space-y-2">
-                {chats.map((chat) => (
+                {sortedChats.map((chat) => (
                   <div key={chat._id?.toString() || Date.now().toString()}>
                     {/* Chat Item */}
                     <div
@@ -843,8 +984,14 @@ export const MessagesComponent = ({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">
+                              <p className="font-medium truncate flex items-center gap-2">
                                 {getOtherUserName(chat)}
+                                <span
+                                  title={isOtherUserOnline(chat) ? "Online" : "Offline"}
+                                  className={`inline-block w-2.5 h-2.5 rounded-full ${
+                                    isOtherUserOnline(chat) ? "bg-green-500" : "bg-gray-400"
+                                  }`}
+                                />
                                 {getOtherUserName(chat) === "Loading..." && (
                                   <span className="inline-flex items-center gap-1 ml-2">
                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
@@ -921,9 +1068,14 @@ export const MessagesComponent = ({
                               <p className="text-xs text-muted-foreground">
                                 Between:
                               </p>
-                              <p className="text-sm font-medium">
-                                {getCurrentUserName(chat)} ↔{" "}
-                                {getOtherUserName(chat)}
+                              <p className="text-sm font-medium flex items-center gap-2">
+                                {getCurrentUserName(chat)} ↔ {getOtherUserName(chat)}
+                                <span
+                                  title={isOtherUserOnline(chat) ? "Online" : "Offline"}
+                                  className={`inline-block w-2.5 h-2.5 rounded-full ${
+                                    isOtherUserOnline(chat) ? "bg-green-500" : "bg-gray-400"
+                                  }`}
+                                />
                                 {getOtherUserName(chat) === "Loading..." && (
                                   <span className="inline-flex items-center gap-1 ml-1">
                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary"></div>
@@ -935,8 +1087,8 @@ export const MessagesComponent = ({
                         </div>
 
                         {/* Messages */}
-                        <div className="space-y-3 max-h-64 overflow-y-auto mb-3">
-                          {chat.messages.map((message) => {
+                        <div ref={messagesContainerRef} className="space-y-3 max-h-64 overflow-y-auto mb-3">
+                          {chat.messages.map((message: any) => {
                             const isOwn = message.sender === getCurrentUserId();
                             return (
                               <div
