@@ -272,46 +272,55 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="border-b bg-card">
           <div className="container mx-auto px-4 py-2.5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="flex items-center gap-2">
                   <Shield className="h-5 w-5 text-primary" />
-                  <h1 className="text-xl font-semibold">Dashboard</h1>
+                  <h1 className="text-xl font-semibold truncate">Dashboard</h1>
                 </div>
-                <Badge variant="secondary" className="ml-1 h-6 px-2 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="ml-1 h-6 px-2 text-xs whitespace-nowrap"
+                >
                   Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
                 </Badge>
               </div>
-              <TabsList className="flex items-center gap-1">
-                <TabsTrigger
-                  value="profile"
-                  className="h-8 px-2 text-sm flex items-center gap-1.5"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  <span>Profile</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="listings"
-                  className="h-8 px-2 text-sm flex items-center gap-1.5"
-                >
-                  <Package className="h-3.5 w-3.5" />
-                  <span>Listings</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="favourites"
-                  className="h-8 px-2 text-sm flex items-center gap-1.5"
-                >
-                  <Heart className="h-3.5 w-3.5" />
-                  <span>Favourites</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="messages"
-                  className="h-8 px-2 text-sm flex items-center gap-1.5"
-                >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  <span>Messages</span>
-                </TabsTrigger>
-              </TabsList>
+              <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+                <TabsList className="flex items-center gap-1 overflow-x-auto whitespace-nowrap w-full sm:w-auto">
+                  <TabsTrigger
+                    value="profile"
+                    aria-label="Profile"
+                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                  >
+                    <User className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Profile</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="listings"
+                    aria-label="Listings"
+                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                  >
+                    <Package className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Listings</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="favourites"
+                    aria-label="Favourites"
+                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                  >
+                    <Heart className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Favourites</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="messages"
+                    aria-label="Messages"
+                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                  >
+                    <MessageCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+                    <span className="hidden sm:inline">Messages</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
             </div>
           </div>
         </div>
