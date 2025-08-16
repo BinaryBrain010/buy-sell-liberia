@@ -167,6 +167,13 @@ export const MessagesComponent = ({
 
     setIsSending(true);
     try {
+      // Optimistic update: append to current chat UI immediately
+      setCurrentChat((prev) => {
+        if (!prev) return prev;
+        if (prev._id !== String(targetChatId)) return prev;
+        return { ...prev, messages: [...(prev.messages || []), newMessage] } as any;
+      });
+
       await sendMessage(String(targetChatId), newMessage);
       setMessageInput("");
 
@@ -177,14 +184,22 @@ export const MessagesComponent = ({
         const otherUserId = u1 === uid ? u2 : u1;
         if (otherUserId) {
           socket.emit("message", {
+            chatId: String(targetChatId),
             from: String(uid),
             to: String(otherUserId),
-            message: newMessage.content,
-          });
+            message: newMessage,
+          } as any);
         }
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+      // Rollback optimistic UI on failure
+      setCurrentChat((prev) => {
+        if (!prev) return prev;
+        if (prev._id !== String(targetChatId)) return prev;
+        const msgs = (prev.messages || []).filter((m: any) => m._id !== newMessage._id);
+        return { ...prev, messages: msgs } as any;
+      });
     } finally {
       setIsSending(false);
     }
@@ -345,25 +360,35 @@ export const MessagesComponent = ({
       }));
     };
 
-    const onSocketMessage = (data: {
-      from: string;
-      message: string;
-      to: string;
-    }) => {
+    const onSocketMessage = (data: any) => {
+      // Accept both old and new payloads. Must involve this user.
       if (data.from !== userId && data.to !== userId) return;
+
+      // If the current thread matches, append immediately for instant UI
+      if (data.chatId && currentChat?._id === data.chatId && data.message) {
+        setCurrentChat((prev) => {
+          if (!prev) return prev;
+          // avoid duplicate if already appended
+          const already = (prev.messages || []).some((m: any) => m._id === data.message._id);
+          if (already) return prev;
+          return { ...prev, messages: [...(prev.messages || []), data.message] } as any;
+        });
+      }
+
+      // Then do a lightweight refresh to keep lists in sync
       getChatsLight({ userId });
     };
 
     socket.on("presence:list", onPresenceList);
     socket.on("presence:update", onPresenceUpdate);
-    socket.on("message", onSocketMessage);
+  socket.on("message", onSocketMessage);
 
     return () => {
       socket.off("presence:list", onPresenceList);
       socket.off("presence:update", onPresenceUpdate);
-      socket.off("message", onSocketMessage);
+    socket.off("message", onSocketMessage);
     };
-  }, [getChatsLight, currentUserId]);
+  }, [getChatsLight, currentUserId, currentChat, setCurrentChat]);
 
   const sortedChats = useMemo(() => {
     return [...chats].sort((a, b) => {

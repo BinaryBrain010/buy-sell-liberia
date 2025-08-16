@@ -15,7 +15,24 @@ export default function SearchBar() {
   const [highlightedIndex, setHighlightedIndex] = React.useState<number>(-1);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Simple currency formatter with sane defaults for this app
+  const formatPrice = React.useCallback((price: any) => {
+    if (!price || typeof price.amount !== "number") return "";
+    const code = String(price.currency || "USD").toUpperCase();
+    const symbols: Record<string, string> = {
+      USD: "$",
+      LRD: "L$",
+      EUR: "€",
+      GBP: "£",
+      NGN: "₦",
+      GHS: "₵",
+    };
+    const symbol = symbols[code] || "$";
+    return `${symbol}${price.amount.toLocaleString()}`;
+  }, []);
 
   // Normalization + simple client-side filter/rank to refine relevance
   const normalize = React.useCallback((s: string) => {
@@ -105,7 +122,8 @@ export default function SearchBar() {
   // Handle outside click
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setShowResults(false);
       }
     }
@@ -144,7 +162,7 @@ export default function SearchBar() {
   return (
     <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
       <div className="relative w-full flex gap-2">
-        <div className="relative w-full">
+        <div className="relative w-full" ref={containerRef}>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             ref={inputRef}
@@ -170,12 +188,16 @@ export default function SearchBar() {
                   {results.map((item, index) => {
                     const isHighlighted = index === highlightedIndex;
                     return (
-                      <Link href={`/products/${item._id}`} key={item._id}>
-                        <li
-                          className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
-                            isHighlighted ? "bg-muted" : "hover:bg-muted"
-                          }`}
-                          onMouseEnter={() => setHighlightedIndex(index)}
+                      <li
+                        key={item._id}
+                        className={`px-4 py-2 cursor-pointer ${
+                          isHighlighted ? "bg-muted" : "hover:bg-muted"
+                        }`}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                      >
+                        <Link
+                          href={`/products/${item._id}`}
+                          className="flex items-center gap-2 w-full"
                         >
                           {(item.image || (item.images && item.images[0])) && (
                             <img
@@ -188,14 +210,10 @@ export default function SearchBar() {
                             {item.title}
                           </span>
                           <span className="ml-auto text-xs text-muted-foreground">
-                            {item.price?.amount
-                              ? `${item.price.currency || "₨"}${
-                                  item.price.amount
-                                }`
-                              : ""}
+                            {formatPrice(item.price)}
                           </span>
-                        </li>
-                      </Link>
+                        </Link>
+                      </li>
                     );
                   })}
                 </ul>

@@ -62,10 +62,10 @@ export function HeroSection() {
       <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl grid lg:grid-cols-2 gap-6 items-center">
         {/* Left Column */}
         <div className="flex flex-col items-start text-left">
-          <div className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700 mb-3">
+          {/* <div className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700 mb-3">
             <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
             Trusted by 10,000+ users worldwide
-          </div>
+          </div> */}
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
             Your Ultimate Buy & Sell{" "}
             <span className="bg-gradient-to-b from-v0-dark-blue via-v0-green to-v0-orange bg-clip-text text-transparent">
@@ -154,7 +154,7 @@ export function HeroSection() {
           </div>
 
           {/* Statistics Section */}
-          <Card className="p-2 flex flex-col sm:flex-row justify-around items-center gap-3">
+          {/* <Card className="p-2 flex flex-col sm:flex-row justify-around items-center gap-3">
             <div className="flex flex-col items-center">
               <span className="text-2xl font-bold text-blue-600">10K+</span>
               <span className="text-muted-foreground text-sm">
@@ -171,7 +171,7 @@ export function HeroSection() {
               <span className="text-2xl font-bold text-purple-600">4.8★</span>
               <span className="text-muted-foreground text-sm">User Rating</span>
             </div>
-          </Card>
+          </Card> */}
 
           {/* Ready to get started CTA */}
           <div className="p-3 rounded-xl bg-gradient-to-r from-v0-dark-blue to-v0-green text-white flex flex-col sm:flex-row items-center justify-between gap-2">

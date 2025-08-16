@@ -2,7 +2,13 @@ interface ServerToClientEvents {
   noArg: () => void;
   basicEmit: (a: number, b: string, c: Buffer) => void;
   withAck: (d: string, callback: (e: number) => void) => void;
-  message: (data: { from: string; message: string; to: string }) => void;
+  // message event may carry either a simple string or a full message object with chatId
+  message: (data: {
+    from: string;
+    message: string | any;
+    to: string;
+    chatId?: string;
+  }) => void;
   // Presence events from server
   "presence:update": (data: {
     userId: string;
@@ -13,7 +19,12 @@ interface ServerToClientEvents {
 
 interface ClientToServerEvents {
   hello: () => void;
-  message: (data: { from: string; message: string; to: string }) => void;
+  message: (data: {
+    from: string;
+    message: string | any;
+    to: string;
+    chatId?: string;
+  }) => void;
   // Presence events from client
   "user:online": (data: { userId: string }) => void;
   "presence:subscribe": () => void;

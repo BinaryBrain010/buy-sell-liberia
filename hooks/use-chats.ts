@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import ChatService from "@/app/services/Chat.Service";
 import {
   IChat,
@@ -26,7 +32,7 @@ interface UseChatsReturn {
   getUnreadCount: (userId: string) => Promise<number>;
 
   // Utility
-  setCurrentChat: (chat: IChat | null) => void;
+  setCurrentChat: Dispatch<SetStateAction<IChat | null>>;
   clearError: () => void;
   refreshChats: () => Promise<void>;
 }
