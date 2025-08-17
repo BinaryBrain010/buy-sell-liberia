@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { ContactSellerButton } from "@/components/ContactSellerPopup";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 type ImageType = string | { url: string; alt?: string; isPrimary?: boolean };
@@ -33,6 +33,9 @@ export default function ProductDetail(productData: ProductDetailProps) {
   const [showGallery, setShowGallery] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [isDescOverflowing, setIsDescOverflowing] = useState(false);
+  const descRef = useRef<HTMLDivElement | null>(null);
 
   const formatPrice = (price: any): string => {
     if (typeof price === "number") return `USD ${price.toLocaleString()}`;
@@ -101,6 +104,27 @@ export default function ProductDetail(productData: ProductDetailProps) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  // Measure description overflow only when collapsed
+  useEffect(() => {
+    if (descExpanded) return; // only check when collapsed
+    const el = descRef.current;
+    if (!el) return;
+
+    const checkOverflow = () => {
+      // small tolerance for sub-pixel rounding
+      const overflowing = el.scrollHeight > el.clientHeight + 1;
+      setIsDescOverflowing(overflowing);
+    };
+
+    // run after paint
+    const raf = requestAnimationFrame(checkOverflow);
+    window.addEventListener("resize", checkOverflow);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [descExpanded, productData?.description]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isZoomed) return;
@@ -335,16 +359,37 @@ export default function ProductDetail(productData: ProductDetailProps) {
                 ))}
             </div>
 
-            {/* Description - Truncated for compactness */}
+            {/* Description - Improved UX with expand/collapse */}
             <div>
               <h3 className="text-base font-semibold mb-2">Description</h3>
-              <div className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm max-h-20 overflow-hidden">
+              <div
+                ref={descRef}
+                className={cn(
+                  "relative text-gray-700 dark:text-gray-300 leading-relaxed text-sm overflow-hidden",
+                  descExpanded ? "max-h-none" : "max-h-40"
+                )}
+              >
                 {productData.description || (
                   <span className="italic text-gray-400">
                     No description available
                   </span>
                 )}
+
+                {!descExpanded && isDescOverflowing && (
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
+                )}
               </div>
+              {isDescOverflowing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 px-0 h-7 text-primary hover:underline"
+                  aria-expanded={descExpanded}
+                  onClick={() => setDescExpanded((v) => !v)}
+                >
+                  {descExpanded ? "Show less" : "Read more"}
+                </Button>
+              )}
             </div>
 
             {/* Custom Fields - More compact grid */}
