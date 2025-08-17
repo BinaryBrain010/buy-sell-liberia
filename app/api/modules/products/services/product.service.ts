@@ -58,14 +58,18 @@ export interface CreateProductData {
     cost?: number;
     methods: ("pickup" | "delivery" | "shipping")[];
   };
+  featured?: boolean;
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
   status?: "active" | "sold" | "inactive" | "pending";
+  featured?: boolean;
 }
 
 export interface ProductFilters {
   category?: string;
+  category_id?: string | mongoose.Types.ObjectId;
+  subcategory_id?: string | mongoose.Types.ObjectId;
   minPrice?: number;
   maxPrice?: number;
   condition?: string[];
@@ -130,6 +134,7 @@ export class ProductService extends BaseService<IProduct> {
         status: "active",
         views: 0,
         favorites: [],
+        featured: productData.featured ?? false,
       });
 
       // Update seller statistics
@@ -234,8 +239,11 @@ export class ProductService extends BaseService<IProduct> {
       // Build query filters
       const queryFilters: any = { status: "active" };
 
-      if (filters.category) {
-        queryFilters.category = filters.category;
+      if (filters.category_id) {
+        queryFilters.category_id = filters.category_id;
+      }
+      if (filters.subcategory_id) {
+        queryFilters.subcategory_id = filters.subcategory_id;
       }
 
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
@@ -592,20 +600,72 @@ export class ProductService extends BaseService<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Searching products:", searchTerm);
 
-      let queryFilters: any = {
-        ...filters,
-        status: "active",
-      };
-      if (searchTerm && searchTerm.trim() !== "") {
-        queryFilters.$text = { $search: searchTerm };
+      // Normalize filters for IDs
+      const queryFilters: any = { status: "active" };
+      if (filters.category_id) {
+        queryFilters.category_id =
+          typeof filters.category_id === "string"
+            ? new mongoose.Types.ObjectId(filters.category_id)
+            : filters.category_id;
+      }
+      if (filters.subcategory_id) {
+        queryFilters.subcategory_id =
+          typeof filters.subcategory_id === "string"
+            ? new mongoose.Types.ObjectId(filters.subcategory_id)
+            : filters.subcategory_id;
+      }
+      if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+        queryFilters["price.amount"] = {} as any;
+        if (filters.minPrice !== undefined)
+          queryFilters["price.amount"].$gte = filters.minPrice;
+        if (filters.maxPrice !== undefined)
+          queryFilters["price.amount"].$lte = filters.maxPrice;
+      }
+      if (filters.condition && filters.condition.length) {
+        queryFilters["details.condition"] = { $in: filters.condition };
+      }
+      if (filters.seller) {
+        queryFilters.seller = this.createObjectId(filters.seller);
+      }
+      if (filters.status) queryFilters.status = filters.status;
+      if (typeof filters.negotiable === "boolean")
+        queryFilters["price.negotiable"] = filters.negotiable;
+      if (typeof filters.featured === "boolean")
+        queryFilters.featured = filters.featured;
+
+      const raw = (searchTerm || "").trim();
+      if (raw) {
+        // Token-based AND search with safe regexes
+        const escapeRegExp = (input: string) =>
+          input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const tokens = raw
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((t) => t.length > 1)
+          .map(escapeRegExp);
+
+        if (tokens.length) {
+          const andClauses = tokens.map((t) => ({
+            $or: [
+              { title: new RegExp(`\\b${t}`, "i") },
+              { description: new RegExp(`\\b${t}`, "i") },
+              { tags: new RegExp(t, "i") },
+            ],
+          }));
+          queryFilters.$and = andClauses;
+        } else {
+          // Fallback to text search if tokenization yields nothing
+          queryFilters.$text = { $search: raw };
+        }
       }
 
       const result = await this.find(
-        queryFilters,
+        queryFilters as any,
         pagination,
         {
           ...sortOptions,
-          sortBy: sortOptions.sortBy || (searchTerm ? "score" : "createdAt"),
+          // When searching, default sort to relevance (score)
+          sortBy: sortOptions.sortBy || (raw ? "score" : "createdAt"),
         },
         "seller"
       );

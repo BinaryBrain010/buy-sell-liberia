@@ -1,10 +1,25 @@
+"use client";
+
+import type React from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Eye, Star, User, Heart } from 'lucide-react';
+import {
+  MapPin,
+  Clock,
+  Eye,
+  Star,
+  User,
+  Heart,
+  ZoomIn,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import Image from "next/image";
 import { ContactSellerButton } from "@/components/ContactSellerPopup";
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, useCallback, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 type ImageType = string | { url: string; alt?: string; isPrimary?: boolean };
 
@@ -15,8 +30,12 @@ interface ProductDetailProps {
 export default function ProductDetail(productData: ProductDetailProps) {
   const [liked, setLiked] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [isDescOverflowing, setIsDescOverflowing] = useState(false);
+  const descRef = useRef<HTMLDivElement | null>(null);
 
   const formatPrice = (price: any): string => {
     if (typeof price === "number") return `USD ${price.toLocaleString()}`;
@@ -58,6 +77,71 @@ export default function ProductDetail(productData: ProductDetailProps) {
       ? `${productData.user_id.firstName} ${productData.user_id.lastName}`
       : "Unknown Seller");
 
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!showGallery) return;
+
+      switch (e.key) {
+        case "Escape":
+          setShowGallery(false);
+          break;
+        case "ArrowLeft":
+          setCurrentImageIndex((prev) =>
+            prev === 0 ? images.length - 1 : prev - 1
+          );
+          break;
+        case "ArrowRight":
+          setCurrentImageIndex((prev) =>
+            prev === images.length - 1 ? 0 : prev + 1
+          );
+          break;
+      }
+    },
+    [showGallery, images.length]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Measure description overflow only when collapsed
+  useEffect(() => {
+    if (descExpanded) return; // only check when collapsed
+    const el = descRef.current;
+    if (!el) return;
+
+    const checkOverflow = () => {
+      // small tolerance for sub-pixel rounding
+      const overflowing = el.scrollHeight > el.clientHeight + 1;
+      setIsDescOverflowing(overflowing);
+    };
+
+    // run after paint
+    const raf = requestAnimationFrame(checkOverflow);
+    window.addEventListener("resize", checkOverflow);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [descExpanded, productData?.description]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isZoomed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
   if (!productData || Object.keys(productData).length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center">
@@ -73,275 +157,380 @@ export default function ProductDetail(productData: ProductDetailProps) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 grid grid-cols-1 md:grid-cols-2 gap-8">
-      {/* Images */}
-      <div>
-        <div
-          className={`relative aspect-[4/3] w-full rounded-lg overflow-hidden bg-gray-100 group cursor-pointer`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {images.length > 0 && getImageUrl(images[currentImageIndex]) ? (
-            <Image
-              src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
-              alt={
-                typeof images[currentImageIndex] === "object"
-                  ? images[currentImageIndex].alt ||
-                    productData.title ||
-                    "Product image"
-                  : productData.title || "Product image"
-              }
-              fill
-              className={`object-cover transition-transform duration-200 ${
-                isHovered ? "scale-105" : "scale-100"
-              }`}
-              priority
-              onClick={() => setShowModal(true)}
-              style={{ zIndex: 1 }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              No Image
-            </div>
-          )}
-          {/* Carousel controls for multiple images, only show on hover */}
-          {images.length > 1 && isHovered && (
-            <>
-              <button
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentImageIndex((prev) =>
-                    prev === 0 ? images.length - 1 : prev - 1
-                  );
-                }}
-                aria-label="Previous image"
-              >
-                &#8592;
-              </button>
-              <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hover:bg-white z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentImageIndex((prev) =>
-                    prev === images.length - 1 ? 0 : prev + 1
-                  );
-                }}
-                aria-label="Next image"
-              >
-                &#8594;
-              </button>
-            </>
-          )}
-          {/* Dots always visible */}
-          {images.length > 1 && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
-              {images.map((_: ImageType, idx: number) => (
-                <button
-                  key={idx}
-                  className={`w-3 h-3 rounded-full border-2 ${
-                    idx === currentImageIndex
-                      ? "bg-white border-primary"
-                      : "bg-white/60 border-white"
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentImageIndex(idx);
-                  }}
-                  aria-label={`Show image ${idx + 1}`}
-                />
-              ))}
-            </div>
-          )}
-          {/* Hover overlay effect */}
-          {isHovered && (
-            <div className="absolute inset-0 bg-black/10 transition-opacity duration-200 pointer-events-none z-0" />
-          )}
-        </div>
-        {/* Modal for expanded image */}
-        {showModal && images.length > 0 && (
-          <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
-            onClick={() => setShowModal(false)}
-          >
-            <div className="relative max-w-3xl w-full aspect-[4/3] bg-black rounded-lg overflow-hidden flex items-center justify-center">
-              <Image
-                src={getImageUrl(images[currentImageIndex])! || "/placeholder.svg"}
-                alt={productData.title || "Product image"}
-                fill
-                className="object-contain"
-                priority
-              />
-              <button
-                className="absolute top-2 right-2 bg-white/80 rounded-full p-2 shadow hover:bg-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowModal(false);
-                }}
-                aria-label="Close expanded image"
-              >
-                &#10005;
-              </button>
+    <>
+      <div className="max-w-7xl mx-auto py-4 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Enhanced Image Gallery - Made more compact */}
+          <div className="space-y-3">
+            {/* Main Image - Reduced height */}
+            <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-gray-100 group">
+              {images.length > 0 && getImageUrl(images[currentImageIndex]) ? (
+                <div
+                  className="relative w-full h-full cursor-zoom-in"
+                  onMouseMove={handleMouseMove}
+                  onMouseEnter={() => setIsZoomed(true)}
+                  onMouseLeave={() => setIsZoomed(false)}
+                  onClick={() => setShowGallery(true)}
+                >
+                  <Image
+                    src={
+                      getImageUrl(images[currentImageIndex])! ||
+                      "/placeholder.svg"
+                    }
+                    alt={
+                      typeof images[currentImageIndex] === "object"
+                        ? images[currentImageIndex].alt ||
+                          productData.title ||
+                          "Product image"
+                        : productData.title || "Product image"
+                    }
+                    fill
+                    className={cn(
+                      "object-cover transition-transform duration-300",
+                      isZoomed ? "scale-150" : "scale-100"
+                    )}
+                    style={
+                      isZoomed
+                        ? {
+                            transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                          }
+                        : {}
+                    }
+                    priority
+                  />
+
+                  {/* Zoom indicator */}
+                  <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ZoomIn className="h-3 w-3" />
+                  </div>
+
+                  {/* Image counter */}
+                  {images.length > 1 && (
+                    <div className="absolute top-3 left-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                      {currentImageIndex + 1} / {images.length}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                      <Eye className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm">No Image Available</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation arrows for main image */}
               {images.length > 1 && (
                 <>
                   <button
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow hover:bg-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentImageIndex((prev) =>
-                        prev === 0 ? images.length - 1 : prev - 1
-                      );
-                    }}
+                    onClick={prevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Previous image"
                   >
-                    &#8592;
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 shadow hover:bg-white"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentImageIndex((prev) =>
-                        prev === images.length - 1 ? 0 : prev + 1
-                      );
-                    }}
+                    onClick={nextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Next image"
                   >
-                    &#8594;
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </>
               )}
             </div>
+
+            {/* Enhanced Thumbnails - Made smaller */}
+            {images.length > 1 && (
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {images.map((img: ImageType, idx: number) => (
+                  <button
+                    key={idx}
+                    className={cn(
+                      "relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
+                      idx === currentImageIndex
+                        ? "border-primary ring-2 ring-primary/20"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                    onClick={() => setCurrentImageIndex(idx)}
+                  >
+                    {getImageUrl(img) ? (
+                      <Image
+                        src={getImageUrl(img)! || "/placeholder.svg"}
+                        alt={
+                          typeof img === "object"
+                            ? img.alt || productData.title
+                            : productData.title
+                        }
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 bg-gray-100">
+                        No Image
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-        {/* Thumbnails */}
-        {images.length > 1 && (
-          <div className="flex gap-2 mt-3">
-            {images.slice(0, 5).map((img: ImageType, idx: number) => (
-              <div
-                key={idx}
-                className={`relative w-16 h-12 rounded overflow-hidden border ${
-                  idx === currentImageIndex
-                    ? "border-primary"
-                    : "border-gray-200"
-                } cursor-pointer`}
-                onClick={() => setCurrentImageIndex(idx)}
-              >
-                {getImageUrl(img) ? (
-                  <Image
-                    src={getImageUrl(img)! || "/placeholder.svg"}
-                    alt={
-                      typeof img === "object"
-                        ? img.alt || productData.title
-                        : productData.title
-                    }
-                    fill
-                    className="object-cover"
+
+          {/* Product Details - Made more compact */}
+          <div className="space-y-4">
+            {/* Header - Reduced spacing */}
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold leading-tight mb-1">
+                  {productData.title || "Untitled Product"}
+                </h1>
+                <div className="text-3xl font-bold text-primary mb-3">
+                  {formatPrice(productData.price)}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {productData.featured && (
+                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs">
+                    <Star className="h-3 w-3 mr-1" /> Featured
+                  </Badge>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setLiked(!liked)}
+                  className="hover:bg-red-50 h-8 w-8"
+                >
+                  <Heart
+                    className={cn(
+                      "h-4 w-4",
+                      liked ? "fill-red-500 text-red-500" : "text-gray-600"
+                    )}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                    No Image
-                  </div>
+                </Button>
+              </div>
+            </div>
+
+            {/* Meta Information - Reduced spacing */}
+            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {productData.location?.city ||
+                  productData.location?.state ||
+                  productData.location?.country ||
+                  "Unknown location"}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {getTimeAgo(
+                  productData.created_at || productData.createdAt || ""
+                )}
+              </span>
+              <span className="flex items-center gap-1">
+                <Eye className="h-3 w-3" />
+                {productData.views || 0} views
+              </span>
+            </div>
+
+            {/* Tags and Categories - Smaller badges */}
+            <div className="flex flex-wrap gap-1.5">
+              {productData.category && (
+                <Badge variant="secondary" className="text-xs">
+                  {productData.category}
+                </Badge>
+              )}
+              {productData.subCategory && (
+                <Badge variant="secondary" className="text-xs">
+                  {productData.subCategory}
+                </Badge>
+              )}
+              {productData.condition && (
+                <Badge variant="secondary" className="text-xs">
+                  {productData.condition}
+                </Badge>
+              )}
+              {Array.isArray(productData.tags) &&
+                productData.tags.slice(0, 3).map((tag: string, idx: number) => (
+                  <Badge key={idx} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+            </div>
+
+            {/* Description - Improved UX with expand/collapse */}
+            <div>
+              <h3 className="text-base font-semibold mb-2">Description</h3>
+              <div
+                ref={descRef}
+                className={cn(
+                  "relative text-gray-700 dark:text-gray-300 leading-relaxed text-sm overflow-hidden",
+                  descExpanded ? "max-h-none" : "max-h-40"
+                )}
+              >
+                {productData.description || (
+                  <span className="italic text-gray-400">
+                    No description available
+                  </span>
+                )}
+
+                {!descExpanded && isDescOverflowing && (
+                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
                 )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {/* Details */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold flex-1">
-            {productData.title || "Untitled Product"}
-          </h1>
-          {productData.featured && (
-            <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white flex items-center">
-              <Star className="h-4 w-4 mr-1" /> Featured
-            </Badge>
-          )}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setLiked((l) => !l)}
-          >
-            <Heart
-              className={`h-5 w-5 ${
-                liked ? "fill-red-500 text-red-500" : "text-gray-600"
-              }`}
-            />
-          </Button>
-        </div>
-        <div className="text-3xl font-bold text-primary">
-          {formatPrice(productData.price)}
-        </div>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-          <span className="flex items-center">
-            <MapPin className="h-4 w-4 mr-1" />
-            {productData.location?.city ||
-              productData.location?.state ||
-              productData.location?.country ||
-              "Unknown location"}
-          </span>
-          <span className="flex items-center">
-            <Clock className="h-4 w-4 mr-1" />
-            {getTimeAgo(productData.created_at || productData.createdAt || "")}
-          </span>
-          <span className="flex items-center">
-            <Eye className="h-4 w-4 mr-1" />
-            {productData.views || 0} views
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {productData.category && (
-            <Badge variant="secondary">{productData.category}</Badge>
-          )}
-          {productData.subCategory && (
-            <Badge variant="secondary">{productData.subCategory}</Badge>
-          )}
-          {productData.condition && (
-            <Badge variant="secondary">{productData.condition}</Badge>
-          )}
-          {Array.isArray(productData.tags) &&
-            productData.tags.map((tag: string, idx: number) => (
-              <Badge key={idx} variant="outline">
-                {tag}
-              </Badge>
-            ))}
-        </div>
-        <div className="prose max-w-none text-base text-gray-800 dark:text-gray-100">
-          {productData.description || (
-            <span className="italic text-gray-400">
-              No description available
-            </span>
-          )}
-        </div>
-        {productData.customFields && productData.customFields.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {productData.customFields.map((field: any, idx: number) => (
-              <Badge key={idx} variant="secondary">
-                {typeof field.value === "boolean"
-                  ? field.fieldName
-                  : `${field.fieldName}: ${field.value}`}
-              </Badge>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-3 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <User className="h-5 w-5 text-white" />
+              {isDescOverflowing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 px-0 h-7 text-primary hover:underline"
+                  aria-expanded={descExpanded}
+                  onClick={() => setDescExpanded((v) => !v)}
+                >
+                  {descExpanded ? "Show less" : "Read more"}
+                </Button>
+              )}
             </div>
-            <span className="text-base font-medium">{displayName}</span>
+
+            {/* Custom Fields - More compact grid */}
+            {productData.customFields &&
+              productData.customFields.length > 0 && (
+                <div>
+                  <h3 className="text-base font-semibold mb-2">Details</h3>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {productData.customFields
+                      .slice(0, 3)
+                      .map((field: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                        >
+                          <span className="font-medium">{field.fieldName}</span>
+                          <span className="text-muted-foreground">
+                            {typeof field.value === "boolean"
+                              ? field.value
+                                ? "Yes"
+                                : "No"
+                              : field.value}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+            {/* Seller Information - More compact */}
+            <div className="border-t pt-4">
+              <h3 className="text-base font-semibold mb-3">Seller</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{displayName}</div>
+                    <div className="text-xs text-muted-foreground">Seller</div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <ContactSellerButton
+                    sellerId={
+                      productData.seller?._id || productData.user_id?._id || ""
+                    }
+                    productId={productData._id || productData.id}
+                    productTitle={productData.title || "Untitled Product"}
+                    showPhoneNumber={productData.showPhoneNumber ?? true}
+                    sellerName={displayName}
+                    variant="both"
+                    size="md"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <ContactSellerButton
-            sellerId={productData.seller?._id || productData.user_id?._id || ""}
-            productTitle={productData.title || "Untitled Product"}
-            showPhoneNumber={productData.showPhoneNumber ?? true}
-            sellerName={displayName}
-            variant="both"
-            size="lg"
-          />
         </div>
       </div>
-    </div>
+
+      {/* Enhanced Full-Screen Gallery Modal */}
+      {showGallery && images.length > 0 && (
+        <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            {/* Close button */}
+            <button
+              onClick={() => setShowGallery(false)}
+              className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors"
+              aria-label="Close gallery"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Image counter */}
+            <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-4 py-2 rounded-full">
+              {currentImageIndex + 1} of {images.length}
+            </div>
+
+            {/* Main image */}
+            <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
+              <Image
+                src={
+                  getImageUrl(images[currentImageIndex])! || "/placeholder.svg"
+                }
+                alt={productData.title || "Product image"}
+                width={800}
+                height={600}
+                className="max-w-full max-h-full object-contain"
+                priority
+              />
+            </div>
+
+            {/* Navigation */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-colors"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4">
+                {images.map((img: ImageType, idx: number) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={cn(
+                      "flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
+                      idx === currentImageIndex
+                        ? "border-white"
+                        : "border-white/30 hover:border-white/60"
+                    )}
+                  >
+                    <Image
+                      src={getImageUrl(img)! || "/placeholder.svg"}
+                      alt={`Thumbnail ${idx + 1}`}
+                      width={64}
+                      height={64}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

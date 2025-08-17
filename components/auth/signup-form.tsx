@@ -86,11 +86,18 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
   const [usernameError, setUsernameError] = useState("") // Add state for username error
   const { signup, loginWithGoogle } = useAuth()
   const { toast } = useToast()
+  const [phoneError, setPhoneError] = useState("");
+
 
   // Function to validate username (only letters and numbers)
   const isValidUsername = (username: string) => {
     return /^[a-zA-Z0-9]+$/.test(username)
   }
+
+  const isValidPhone = (phone: string) => {
+  return /^\+?[1-9]\d{1,14}$/.test(phone);
+};
+
 
   // Update form data when initialData changes (from Google signup)
   useEffect(() => {
@@ -119,6 +126,15 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
         setUsernameError("")
       }
     }
+    if (name === "phone") {
+  if (value.trim() && !isValidPhone(value)) {
+    setPhoneError("Please enter a valid phone number");
+  } else {
+    setPhoneError("");
+  }
+}
+
+    
   }
 
   const handleCountryChange = (value: string) => {
@@ -169,14 +185,15 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
       return
     }
 
-    if (!formData.phone.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter your phone number.",
-        variant: "destructive",
-      })
-      return
-    }
+    if (!isValidPhone(formData.phone)) {
+  toast({
+    title: "Invalid phone number",
+    description: "Please enter a valid phone number.",
+    variant: "destructive",
+  });
+  return;
+}
+
 
     if (!formData.country) {
       toast({
@@ -401,47 +418,59 @@ export function SignupForm({ onLogin, onVerification, initialData }: SignupFormP
         </div>
 
         {/* Row 3: Phone and Country */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="signup-phone" className="text-sm">
-              Phone Number *
-            </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                id="signup-phone"
-                name="phone"
-                type="tel"
-                placeholder="+1234567890"
-                value={formData.phone}
-                onChange={handleChange}
-                className="pl-10 h-10"
-                required
-              />
-            </div>
-          </div>
+            <div className="grid grid-cols-2 gap-3">
+  <div className="space-y-1">
+    <Label htmlFor="signup-phone" className="text-sm">
+      Phone Number *
+    </Label>
+    <div className="relative">
+      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      <Input
+        id="signup-phone"
+        name="phone"
+        type="tel"
+        placeholder="+1234567890"
+        value={formData.phone}
+        onChange={(e) => {
+          handleChange(e);
+          const value = e.target.value;
+          if (value.trim() && !/^\+?[1-9]\d{1,14}$/.test(value)) {
+            setPhoneError("Enter a valid phone starting with 1-9.");
+          } else {
+            setPhoneError("");
+          }
+        }}
+        className={`pl-10 h-10 ${phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+        required
+      />
+    </div>
+    {phoneError && (
+      <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+    )}
+  </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="signup-country" className="text-sm">
-              Country
-            </Label>
-            <div className="relative">
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 z-10" />
-              <Select value={formData.country} onValueChange={handleCountryChange} required>
-                <SelectTrigger className="pl-10 h-10">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countries.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+  <div className="space-y-1">
+    <Label htmlFor="signup-country" className="text-sm">
+      Country
+    </Label>
+    <div className="relative">
+      <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 z-10" />
+      <Select value={formData.country} onValueChange={handleCountryChange} required>
+        <SelectTrigger className="pl-10 h-10">
+          <SelectValue placeholder="Select country" />
+        </SelectTrigger>
+        <SelectContent>
+          {countries.map((country) => (
+            <SelectItem key={country} value={country}>
+              {country}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+</div>
+
 
         {/* Row 4: Password and Confirm Password */}
         <div className="grid grid-cols-2 gap-3">

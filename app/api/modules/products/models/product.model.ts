@@ -49,6 +49,7 @@ export interface IProduct extends Document {
   updatedAt: Date;
   expiresAt?: Date;
   slug: string;
+  featured: boolean;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -75,21 +76,21 @@ const ProductSchema = new Schema<IProduct>(
       minlength: [20, "Description must be at least 20 characters"],
     },
     price: {
-  amount: {
-    type: Number,
-    required: [true, "Price amount is required"],
-    min: [0, "Price must be positive"],
-    max: [10000000, "Price is too high"],
-  },
-  currency: {
-    type: String,
-    default: "PKR",
-  },
-  negotiable: {
-    type: Boolean,
-    default: false,
-  },
-},
+      amount: {
+        type: Number,
+        required: [true, "Price amount is required"],
+        min: [0, "Price must be positive"],
+        max: [10000000, "Price is too high"],
+      },
+      currency: {
+        type: String,
+        default: "PKR",
+      },
+      negotiable: {
+        type: Boolean,
+        default: false,
+      },
+    },
 
     category_id: {
       type: Schema.Types.ObjectId,
@@ -204,6 +205,11 @@ const ProductSchema = new Schema<IProduct>(
     expiresAt: {
       type: Date,
       default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+    },
+    featured: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
   },
   {

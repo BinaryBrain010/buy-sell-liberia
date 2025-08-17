@@ -9,14 +9,16 @@ import User from "./User";
 import Category from "./Category";
 import Product from "./Product";
 import Review from "./Review";
+import Chat from "./Chat";
 
-export { User, Category, Product, Review };
+export { User, Category, Product, Review, Chat };
 
 export const models = {
   User,
   Category,
   Product,
   Review,
+  Chat,
 };
 
 export const utils = {

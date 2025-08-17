@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import axios from "axios"
+import { CategoryService } from "@/app/services/Category.Service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -107,8 +108,20 @@ export function SellForm({ user }: SellFormProps) {
 
   const loadCategories = async () => {
     try {
-      const response = await axios.get('/api/categories')
-      setCategories(response.data.categories || [])
+  const service = new CategoryService()
+      const response = await service.getCategories()
+      const mapped = (response.categories || []).map((c: any) => ({
+        _id: c._id ?? c.slug,
+        name: c.name,
+        slug: c.slug,
+        subcategories: (c.subcategories || []).map((s: any) => ({
+          _id: s._id ?? s.slug,
+          name: s.name,
+          slug: s.slug,
+          customFields: s.customFields || []
+        }))
+      })) as Category[]
+      setCategories(mapped)
     } catch (error) {
       console.error('Failed to load categories:', error)
       toast({

@@ -99,12 +99,13 @@ export abstract class BaseService<T extends Document> {
       const { page = 1, limit = 20 } = pagination
       const { sortBy = "createdAt", sortOrder = "desc" } = sortOptions
 
-      // Build sort object
-      const sort: any = {}
-      sort[sortBy] = sortOrder === "desc" ? -1 : 1
+      // Detect text search to enable textScore sorting
+      const isTextSearch = !!(filters as any).$text && sortBy === "score"
 
-      // Build query
-      let query = this.model.find(filters)
+      // Build query with optional projection for text score
+      let query = isTextSearch
+        ? this.model.find(filters, { score: { $meta: "textScore" } } as any)
+        : this.model.find(filters)
       
       if (populate) {
         if (Array.isArray(populate)) {
@@ -116,10 +117,20 @@ export abstract class BaseService<T extends Document> {
         }
       }
 
+      // Build sort object
+      const sort: any = {}
+      if (isTextSearch) {
+        // Sort by textScore when performing $text search
+        ;(sort as any).score = { $meta: "textScore" }
+        // Optional secondary sorts can be appended after fetching if needed
+      } else {
+        sort[sortBy] = sortOrder === "desc" ? -1 : 1
+      }
+
       // Execute query with pagination
       const skip = (page - 1) * limit
       const [data, total] = await Promise.all([
-        query.sort(sort).skip(skip).limit(limit).exec(),
+        query.sort(sort as any).skip(skip).limit(limit).exec(),
         this.model.countDocuments(filters)
       ])
 
@@ -207,13 +218,13 @@ export abstract class BaseService<T extends Document> {
   async updateMany(
     filters: FilterQuery<T>,
     updateData: UpdateQuery<T>,
-    options: QueryOptions = {}
+    options?: QueryOptions & { upsert?: boolean; arrayFilters?: any[] }
   ): Promise<{ modifiedCount: number }> {
     try {
       console.log(`[${this.serviceName}] Updating multiple documents with filters:`, filters)
       await this.ensureConnection()
 
-      const result = await this.model.updateMany(filters, updateData, options)
+  const result = await this.model.updateMany(filters, updateData, options as any)
       
       console.log(`[${this.serviceName}] Updated ${result.modifiedCount} documents`)
       return { modifiedCount: result.modifiedCount }

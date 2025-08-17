@@ -15,12 +15,73 @@ export default function SearchBar() {
   const [highlightedIndex, setHighlightedIndex] = React.useState<number>(-1);
 
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Simple currency formatter with sane defaults for this app
+  const formatPrice = React.useCallback((price: any) => {
+    if (!price || typeof price.amount !== "number") return "";
+    const code = String(price.currency || "USD").toUpperCase();
+    const symbols: Record<string, string> = {
+      USD: "$",
+      LRD: "L$",
+      EUR: "€",
+      GBP: "£",
+      NGN: "₦",
+      GHS: "₵",
+    };
+    const symbol = symbols[code] || "$";
+    return `${symbol}${price.amount.toLocaleString()}`;
+  }, []);
+
+  // Normalization + simple client-side filter/rank to refine relevance
+  const normalize = React.useCallback((s: string) => {
+    return (
+      s
+        ?.normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim() || ""
+    );
+  }, []);
+
+  const filterAndRank = React.useCallback(
+    (products: any[], q: string) => {
+      const tokens = normalize(q).split(/\s+/).filter(Boolean);
+      if (!tokens.length) return [];
+      return products
+        .map((item) => {
+          const title = normalize(item.title ?? "");
+          const desc = normalize(item.description ?? "");
+          const tags = Array.isArray(item.tags)
+            ? item.tags.map((t: string) => normalize(t)).join(" ")
+            : "";
+
+          const matchesAll = tokens.every(
+            (t) => title.includes(t) || desc.includes(t) || tags.includes(t)
+          );
+          if (!matchesAll) return null as any;
+
+          let score = 0;
+          for (const t of tokens) {
+            if (title.startsWith(t)) score += 3;
+            if (title.includes(t)) score += 2;
+            if (tags.includes(t)) score += 1;
+            if (desc.includes(t)) score += 0.5;
+          }
+          return { item, score };
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => b.score - a.score)
+        .map((x: any) => x.item);
+    },
+    [normalize]
+  );
 
   // Debounced fetch on query/category change
   React.useEffect(() => {
     const normalizedQuery = query.replace(/\s+/g, " ").trim();
-    if (!normalizedQuery) {
+    if (!normalizedQuery || normalizedQuery.length < 2) {
       setResults([]);
       setShowResults(false);
       return;
@@ -28,9 +89,12 @@ export default function SearchBar() {
 
     setLoading(true);
     const timeout = setTimeout(() => {
-      let url = `/api/products?search=${encodeURIComponent(normalizedQuery)}`;
+      let url = `/api/products/search?search=${encodeURIComponent(
+        normalizedQuery
+      )}`;
       if (selectedCategory) {
-        url += `&category_id=${encodeURIComponent(selectedCategory)}`;
+        // The search route expects "category" based on provided route code
+        url += `&category=${encodeURIComponent(selectedCategory)}`;
       }
 
       fetch(url)
@@ -39,8 +103,10 @@ export default function SearchBar() {
           return res.json();
         })
         .then((data) => {
-          setResults(Array.isArray(data.products) ? data.products : []);
-          setShowResults(true);
+          const products = Array.isArray(data.products) ? data.products : [];
+          const filtered = filterAndRank(products, normalizedQuery);
+          setResults(filtered);
+          setShowResults(filtered.length > 0);
           setHighlightedIndex(-1);
         })
         .catch(() => {
@@ -51,12 +117,13 @@ export default function SearchBar() {
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [query, selectedCategory]);
+  }, [query, selectedCategory, filterAndRank]);
 
   // Handle outside click
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target)) {
         setShowResults(false);
       }
     }
@@ -77,7 +144,9 @@ export default function SearchBar() {
       setHighlightedIndex((prev) => (prev + 1) % results.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setHighlightedIndex((prev) => (prev - 1 + results.length) % results.length);
+      setHighlightedIndex(
+        (prev) => (prev - 1 + results.length) % results.length
+      );
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (highlightedIndex >= 0 && highlightedIndex < results.length) {
@@ -93,7 +162,7 @@ export default function SearchBar() {
   return (
     <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
       <div className="relative w-full flex gap-2">
-        <div className="relative w-full">
+        <div className="relative w-full" ref={containerRef}>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             ref={inputRef}
@@ -119,12 +188,16 @@ export default function SearchBar() {
                   {results.map((item, index) => {
                     const isHighlighted = index === highlightedIndex;
                     return (
-                      <Link href={`/products/${item._id}`} key={item._id}>
-                        <li
-                          className={`px-4 py-2 flex items-center gap-2 cursor-pointer ${
-                            isHighlighted ? "bg-muted" : "hover:bg-muted"
-                          }`}
-                          onMouseEnter={() => setHighlightedIndex(index)}
+                      <li
+                        key={item._id}
+                        className={`px-4 py-2 cursor-pointer ${
+                          isHighlighted ? "bg-muted" : "hover:bg-muted"
+                        }`}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                      >
+                        <Link
+                          href={`/products/${item._id}`}
+                          className="flex items-center gap-2 w-full"
                         >
                           {(item.image || (item.images && item.images[0])) && (
                             <img
@@ -137,12 +210,10 @@ export default function SearchBar() {
                             {item.title}
                           </span>
                           <span className="ml-auto text-xs text-muted-foreground">
-                            {item.price?.amount
-                              ? `${item.price.currency || "₨"}${item.price.amount}`
-                              : ""}
+                            {formatPrice(item.price)}
                           </span>
-                        </li>
-                      </Link>
+                        </Link>
+                      </li>
                     );
                   })}
                 </ul>

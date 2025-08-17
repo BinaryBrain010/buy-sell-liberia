@@ -1,54 +1,94 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import ProductDetail from "./ProductDetail";
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import ProductDetail from "./ProductDetail"
+import { ProductDetailSkeleton } from "@/components/product-detail-skeleton"
+import { FeaturedProducts } from "@/components/featured-products"
 
 export default function ProductDetailPage() {
-  const params = useParams();
-  const _id = params?.id;
-  useEffect(() => {
-    console.log("ProductDetailPage useParams:", params);
-  }, [params]);
-  const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const params = useParams()
+  const _id = params?.id
+
+  const [product, setProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     async function fetchProduct() {
-      setLoading(true);
-      setError("");
+      setLoading(true)
+      setError("")
       try {
-        const res = await fetch(`/api/products/${_id}`);
-        if (!res.ok) throw new Error("Failed to fetch product");
-        const data = await res.json();
-        console.log("API response:", data);
+        const res = await fetch(`/api/products/${_id}`)
+        if (!res.ok) throw new Error("Failed to fetch product")
+        const data = await res.json()
+
         if (data && typeof data.product === "object" && data.product !== null) {
-          setProduct(data.product);
+          setProduct(data.product)
         } else {
-          setProduct(null);
+          setProduct(null)
         }
       } catch (err: any) {
-        setError(err.message || "Error fetching product");
+        setError(err.message || "Error fetching product")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     }
-    if (_id) fetchProduct();
-  }, [_id]);
+
+    if (_id) fetchProduct()
+  }, [_id])
 
   if (!_id) {
     return (
-      <div className="py-8 text-center text-red-500">
-        No product ID found in route.
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Invalid Product</h2>
+          <p className="text-muted-foreground">No product ID found in route.</p>
+        </div>
       </div>
-    );
+    )
   }
-  if (loading) return <div className="py-8 text-center">Loading...</div>;
-  if (error)
-    return <div className="py-8 text-center text-red-500">{error}</div>;
-  if (!product)
-    return <div className="py-8 text-center">Product not found</div>;
 
-  return <ProductDetail {...product} />;
+  if (loading) return <ProductDetailSkeleton />
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
+          <p className="text-muted-foreground">The product you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen">
+      <ProductDetail {...product} />
+
+      <div className="border-t bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="max-w-7xl mx-auto py-8 px-4">
+          <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
+          <FeaturedProducts currentProductId={_id as string} category={product?.category} />
+        </div>
+      </div>
+    </div>
+  )
 }
