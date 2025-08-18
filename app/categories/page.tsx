@@ -413,10 +413,13 @@ export default function CategoriesPage() {
                   {selectedCategory.name}
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Link href={getViewAllProductsUrl()}>
-                  <Button className="btn-shadow">
-                    View All Products
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Link
+                  href={getViewAllProductsUrl()}
+                  className="w-full sm:w-auto"
+                >
+                  <Button className="btn-shadow w-full sm:w-auto">
+                    View All
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
@@ -430,7 +433,7 @@ export default function CategoriesPage() {
                     setCurrentPage(1);
                   }}
                   aria-label="Clear category selection"
-                  className="flex items-center"
+                  className="flex items-center w-full sm:w-auto"
                 >
                   <X className="h-4 w-4 mr-1" />
                   Clear

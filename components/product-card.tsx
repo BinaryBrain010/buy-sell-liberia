@@ -44,6 +44,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({
+  // Helper to get absolute image URL
+  // (function version is declared below, remove this invalid const)
   product,
   variant = "compact",
   onLike,
@@ -53,6 +55,24 @@ export function ProductCard({
 
   // Guard against undefined product during loading states
   if (!product) return null;
+
+  // Normalize images to array of objects with url property
+  const images = Array.isArray(product.images)
+    ? product.images.map((img) =>
+        typeof img === "string" ? { url: img } : img
+      )
+    : [];
+
+  // Helper to get absolute image URL
+  function getImageUrl(img: any) {
+    if (!img) return undefined;
+    if (typeof img === "string") {
+      if (img.startsWith("http")) return img;
+      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
+    }
+    if (img.url?.startsWith("http")) return img.url;
+    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+  }
 
   const getLocationString = () => {
     if (!product.location || typeof product.location !== "object") {
@@ -124,12 +144,9 @@ export function ProductCard({
             <div className="relative w-28 h-28 md:w-40 md:h-40">
               <Image
                 src={
-                  product.images &&
-                  Array.isArray(product.images) &&
-                  product.images.length > 0 &&
-                  product.titleImageIndex !== undefined &&
-                  product.images[product.titleImageIndex]?.url
-                    ? product.images[product.titleImageIndex].url
+                  images.length > 0 &&
+                  getImageUrl(images[product.titleImageIndex ?? 0])
+                    ? getImageUrl(images[product.titleImageIndex ?? 0])
                     : "/placeholder.jpg"
                 }
                 alt={product.title || "Product image"}
@@ -286,12 +303,9 @@ export function ProductCard({
             >
               <Image
                 src={
-                  product.images &&
-                  Array.isArray(product.images) &&
-                  product.images.length > 0 &&
-                  product.titleImageIndex !== undefined &&
-                  product.images[product.titleImageIndex]?.url
-                    ? product.images[product.titleImageIndex].url
+                  images.length > 0 &&
+                  getImageUrl(images[product.titleImageIndex ?? 0])
+                    ? getImageUrl(images[product.titleImageIndex ?? 0])
                     : "/placeholder.jpg"
                 }
                 alt={product.title || "Product image"}
