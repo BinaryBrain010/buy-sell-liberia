@@ -69,6 +69,20 @@ interface ProductResponse {
 
 export class ProductService {
   /**
+   * Toggles the favourite status of a product for the current user
+   */
+  static async toggleFavourite(productId: string, favourite: boolean): Promise<void> {
+    try {
+      if (favourite) {
+        await axiosInstance.put(`/products/${productId}/favorite`);
+      } else {
+        await axiosInstance.delete(`/products/${productId}/favorite`);
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Failed to update favourite status");
+    }
+  }
+  /**
    * Increments the view count for a product by its ID
    */
   async incrementProductViews(productId: string): Promise<void> {
@@ -116,12 +130,11 @@ export class ProductService {
         delete contactInfo.phone;
       }
 
-      // Prepare formData for backend
-      const formDataForBackend = {
+      // Prepare formData for backend (match API expectations)
+      const formDataForBackend: any = {
         title: formData.title,
         description: formData.description,
-        price: undefined, // let backend construct price
-        amount: formData.amount,
+        price: formData.amount, // API expects 'price' to be the amount
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id ?? "",
         condition: formData.condition,
@@ -134,10 +147,10 @@ export class ProductService {
         negotiable: formData.negotiable,
       };
 
-      // Remove undefined fields in a type-safe way
+      // Remove undefined fields
       Object.entries(formDataForBackend).forEach(([key, value]) => {
         if (value === undefined) {
-          delete (formDataForBackend as any)[key];
+          delete formDataForBackend[key];
         }
       });
 

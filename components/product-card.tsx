@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
 import Link from "next/link";
+import { FavouriteButton } from "@/components/FavouriteButton";
 
 export interface Product {
   _id: string;
@@ -172,22 +173,7 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <Button
-                aria-label="Like product"
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  product._id && onLike?.(product._id);
-                }}
-                className={`${
-                  isDark
-                    ? "text-gray-400 hover:text-red-400"
-                    : "text-gray-600 hover:text-red-500"
-                }`}
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
+              <FavouriteButton productId={product._id} />
             </div>
 
             {/* Price + Negotiable */}
@@ -327,22 +313,7 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  product._id && onLike?.(product._id);
-                }}
-                className={`${
-                  isDark
-                    ? "text-gray-400 hover:text-red-400"
-                    : "text-gray-600 hover:text-red-500"
-                }`}
-                aria-label="Like product"
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
+              <FavouriteButton productId={product._id} />
             </div>
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
