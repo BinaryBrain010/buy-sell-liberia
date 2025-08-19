@@ -1,32 +1,76 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { Search, Grid3X3, List, ChevronDown, SlidersHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Search,
+  Grid3X3,
+  List,
+  ChevronDown,
+  SlidersHorizontal,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FiltersSectionProps {
-  searchQuery: string
-  onSearchChange: (value: string) => void
-  sortBy: string
-  onSortChange: (value: string) => void
-  viewMode: "grid" | "list"
-  onViewModeChange: (mode: "grid" | "list") => void
-  showFilters: boolean
-  onToggleFilters: () => void
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  sortBy: string;
+  onSortChange: (value: string) => void;
+  viewMode: "grid" | "list";
+  onViewModeChange: (mode: "grid" | "list") => void;
+  showFilters: boolean;
+  onToggleFilters: () => void;
 }
 
-export function FiltersSection({
-  searchQuery,
-  onSearchChange,
-  sortBy,
-  onSortChange,
-  viewMode,
-  onViewModeChange,
-  showFilters,
-  onToggleFilters,
-}: FiltersSectionProps) {
+export function FiltersSection(props: FiltersSectionProps) {
+  const {
+    searchQuery,
+    onSearchChange,
+    sortBy,
+    onSortChange,
+    viewMode,
+    onViewModeChange,
+    showFilters,
+    onToggleFilters,
+  } = props;
+  // Local state for filters
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [localSort, setLocalSort] = useState(sortBy);
+  const [selectedCondition, setSelectedCondition] = useState<string | null>(
+    null
+  );
+
+  // Sync local state with props if they change externally
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+  useEffect(() => {
+    setLocalSort(sortBy);
+  }, [sortBy]);
+
+  const handleApplyFilters = () => {
+    onSearchChange(localSearch);
+    onSortChange(localSort);
+    // You can add a callback for condition if needed
+  };
+
+  const handleClearFilters = () => {
+    setLocalSearch("");
+    setLocalSort("");
+    setSelectedCondition(null);
+    onSearchChange("");
+    onSortChange("");
+    // You can add a callback for condition if needed
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -41,15 +85,15 @@ export function FiltersSection({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
+              value={localSearch}
+              onChange={(e) => setLocalSearch(e.target.value)}
               className="pl-10 input-shadow"
             />
           </div>
         </div>
 
         {/* Sort */}
-        <Select value={sortBy} onValueChange={onSortChange}>
+        <Select value={localSort} onValueChange={setLocalSort}>
           <SelectTrigger className="w-full lg:w-48 input-shadow">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -82,10 +126,18 @@ export function FiltersSection({
         </div>
 
         {/* Filters Button */}
-        <Button variant="outline" onClick={onToggleFilters} className="btn-shadow bg-transparent">
+        <Button
+          variant="outline"
+          onClick={onToggleFilters}
+          className="btn-shadow bg-transparent"
+        >
           <SlidersHorizontal className="h-4 w-4 mr-2" />
           Filters
-          <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${showFilters ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-4 w-4 ml-2 transition-transform ${
+              showFilters ? "rotate-180" : ""
+            }`}
+          />
         </Button>
       </div>
 
@@ -99,21 +151,46 @@ export function FiltersSection({
           <div className="space-y-4">
             {/* Example filter fields */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Condition</label>
+              <label className="text-sm font-medium mb-2 block">
+                Condition
+              </label>
               <div className="flex flex-wrap gap-2">
-                {["Brand New", "Like New", "Good", "Fair", "Poor"].map((condition) => (
-                  <Button key={condition} variant="outline" size="sm" className="btn-shadow bg-transparent">
-                    {condition}
-                  </Button>
-                ))}
+                {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
+                  (condition) => (
+                    <Button
+                      key={condition}
+                      variant={
+                        selectedCondition === condition ? "default" : "outline"
+                      }
+                      size="sm"
+                      className="btn-shadow bg-transparent"
+                      onClick={() =>
+                        setSelectedCondition(
+                          condition === selectedCondition ? null : condition
+                        )
+                      }
+                    >
+                      {condition}
+                    </Button>
+                  )
+                )}
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button className="btn-shadow">Apply Filters</Button>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                className="btn-shadow"
+                onClick={handleClearFilters}
+              >
+                Clear Filters
+              </Button>
+              <Button className="btn-shadow" onClick={handleApplyFilters}>
+                Apply Filters
+              </Button>
             </div>
           </div>
         </motion.div>
       )}
     </motion.div>
-  )
+  );
 }

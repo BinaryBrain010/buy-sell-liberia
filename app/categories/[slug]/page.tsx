@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { CategoryService } from "../../services/Category.Service";
+// You may need to create a ProductService if not present
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,8 +59,16 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("newest");
+  // Applied filter/search state
+  const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  // Pending filter/search state (for UI inputs)
+  const [pendingConditions, setPendingConditions] = useState<string[]>([]);
+  const [pendingMinPrice, setPendingMinPrice] = useState("");
+  const [pendingMaxPrice, setPendingMaxPrice] = useState("");
+  const [pendingSearch, setPendingSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
@@ -97,22 +107,18 @@ export default function CategoryPage() {
     return paginationNumbers;
   };
 
-  // Fetch category details
+  // Fetch category details using CategoryService
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const res = await fetch(`/api/categories?slug=${slug}`);
-        if (!res.ok) throw new Error("Failed to fetch category");
-        const data = await res.json();
-        // The API returns either { category } or { categories: [...] }
+        const service = new CategoryService();
+        const data = await service.getCategories({ slug });
         const category =
           data.category ||
           data.categories?.find((cat: any) => cat.slug === slug);
         setCurrentCategory(category);
-
         // Find subcategory if specified in URL
         if (subcategoryIdFromUrl && category?.subcategories) {
-          // subcategoryIdFromUrl may be an ObjectId string
           const subcategory = category.subcategories.find(
             (sub: any) => sub._id?.toString() === subcategoryIdFromUrl
           );
@@ -124,52 +130,95 @@ export default function CategoryPage() {
         setLoading(false);
       }
     };
-
     if (slug) {
       fetchCategory();
     }
   }, [slug, subcategoryIdFromUrl]);
 
-  // Fetch products for this category/subcategory
-  useEffect(() => {
-    const fetchProducts = async () => {
-      // Use category ID from URL if available, otherwise use the fetched category ID
-      const categoryId = categoryIdFromUrl || currentCategory?._id;
-      if (!categoryId) return;
+  // Fetch products using a ProductService (must exist in your services folder)
+  const fetchProducts = useCallback(async () => {
+    const categoryId = categoryIdFromUrl || currentCategory?._id;
+    if (!categoryId) return;
+    setLoadingProducts(true);
+    try {
+      const { ProductService } = await import("../../services/Product.Service");
+      const productService = new ProductService();
+      // Build filters and options for ProductService
+      const filters: any = {
+        category_id: categoryId,
+      };
+      // Use selectedSubcategory if set, else subcategoryIdFromUrl
+      const subcategoryId = selectedSubcategory?._id || subcategoryIdFromUrl;
+      if (subcategoryId) filters.subcategory_id = subcategoryId;
+      if (searchQuery.trim()) filters.search = searchQuery.trim();
+      if (selectedConditions.length > 0) filters.condition = selectedConditions;
+      if (minPrice) filters.minPrice = Number(minPrice);
+      if (maxPrice) filters.maxPrice = Number(maxPrice);
 
-      setLoadingProducts(true);
-      try {
-        let url = `/api/products?category_id=${encodeURIComponent(
-          categoryId
-        )}&limit=${itemsPerPage}&page=${currentPage}`;
+      // No sort options, always use default sort
+      let sortOptions: any = {};
+      // Pagination
+      const pagination = { page: currentPage, limit: itemsPerPage };
 
-        // Add subcategory filter if selected (either from URL or user selection)
-        const subcategoryId = subcategoryIdFromUrl || selectedSubcategory?._id;
-        if (subcategoryId) {
-          url += `&subcategory_id=${encodeURIComponent(subcategoryId)}`;
+      const data = await productService.getProducts(
+        filters,
+        sortOptions,
+        pagination
+      );
+
+      // Map API Product to UI Product, using category/subcategory names
+      const mappedProducts = (data.products || []).map((p: any) => {
+        let categoryName = "";
+        let subCategoryName = "";
+        if (currentCategory) {
+          categoryName = currentCategory.name;
+          if (
+            p.subcategory_id &&
+            Array.isArray(currentCategory.subcategories)
+          ) {
+            const subcat = currentCategory.subcategories.find(
+              (s: any) =>
+                s._id === p.subcategory_id || s.slug === p.subcategory_id
+            );
+            if (subcat) subCategoryName = subcat.name;
+          }
         }
-
-        // Add search query if present
-        if (searchQuery) {
-          url += `&search=${encodeURIComponent(searchQuery)}`;
-        }
-
-        console.log(`[CategoryPage] Fetching products with URL: ${url}`);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data = await res.json();
-        setProducts(data.products || []);
-        setTotalProducts(data.total || 0);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setProducts([]);
-        setTotalProducts(0);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-
-    fetchProducts();
+        return {
+          _id: p._id || p.id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          category: categoryName,
+          subCategory: subCategoryName,
+          condition: p.condition,
+          images: Array.isArray(p.images)
+            ? p.images.map((img: any) =>
+                typeof img === "string" ? { url: img } : img
+              )
+            : [],
+          titleImageIndex: p.titleImageIndex ?? 0,
+          location: p.location || { city: "", country: "" },
+          contactInfo: p.contactInfo || {},
+          seller: p.seller || "",
+          status: p.status,
+          tags: p.tags || [],
+          negotiable: p.price?.negotiable ?? false,
+          showPhoneNumber: p.showPhoneNumber ?? false,
+          views: p.views ?? 0,
+          featured: p.featured ?? false,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        };
+      });
+      setProducts(mappedProducts);
+      setTotalProducts(data.total || 0);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setProducts([]);
+      setTotalProducts(0);
+    } finally {
+      setLoadingProducts(false);
+    }
   }, [
     categoryIdFromUrl,
     currentCategory?._id,
@@ -177,6 +226,50 @@ export default function CategoryPage() {
     selectedSubcategory?._id,
     currentPage,
     searchQuery,
+    selectedConditions,
+    minPrice,
+    maxPrice,
+    // sortBy removed
+  ]);
+
+  // Fetch products whenever filters/search/page change
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentCategory?._id,
+    selectedSubcategory?._id,
+    currentPage,
+    searchQuery,
+    selectedConditions,
+    minPrice,
+    maxPrice,
+  ]);
+
+  // Reset page to 1 when filters/search change (except page itself)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    searchQuery,
+    selectedConditions,
+    minPrice,
+    maxPrice,
+    selectedSubcategory?._id,
+  ]);
+
+  // Sync pending state with applied state when category/subcategory changes
+  useEffect(() => {
+    setPendingSearch(searchQuery);
+    setPendingMinPrice(minPrice);
+    setPendingMaxPrice(maxPrice);
+    setPendingConditions(selectedConditions);
+  }, [
+    searchQuery,
+    minPrice,
+    maxPrice,
+    selectedConditions,
+    currentCategory?._id,
+    selectedSubcategory?._id,
   ]);
 
   // Add function to handle subcategory selection
@@ -313,26 +406,6 @@ export default function CategoryPage() {
                           onClick={() => handleSubcategorySelect(sub)}
                           className="text-xs h-8 pl-1 pr-3 flex items-center gap-2"
                         >
-                          {/* Small subcategory image */}
-                          <div className="relative w-5 h-5 rounded overflow-hidden flex-shrink-0">
-                            <Image
-                              src={
-                                sub.image?.url ||
-                                `/placeholder.svg?height=20&width=20&text=${
-                                  encodeURIComponent(sub.name.charAt(0)) ||
-                                  "/placeholder.svg"
-                                }`
-                              }
-                              alt={sub.name}
-                              fill
-                              className="object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = `/placeholder.svg?height=20&width=20&text=${encodeURIComponent(
-                                  sub.name.charAt(0)
-                                )}`;
-                              }}
-                            />
-                          </div>
                           {sub.name}
                         </Button>
                       ))}
@@ -358,34 +431,6 @@ export default function CategoryPage() {
           className="bg-background/50 rounded-xl p-6 border border-border/50 card-shadow mb-8"
         >
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder={`Search in ${
-                    selectedSubcategory?.name || currentCategory?.name
-                  }...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 input-shadow"
-                />
-              </div>
-            </div>
-
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full lg:w-48 input-shadow">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* View Mode */}
             <div className="flex border border-border rounded-lg overflow-hidden">
               <Button
@@ -404,6 +449,21 @@ export default function CategoryPage() {
               >
                 <List className="h-4 w-4" />
               </Button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder={`Search in ${
+                    selectedSubcategory?.name || currentCategory?.name
+                  }...`}
+                  value={pendingSearch}
+                  onChange={(e) => setPendingSearch(e.target.value)}
+                  className="pl-10 input-shadow"
+                />
+              </div>
             </div>
 
             {/* Filters Button */}
@@ -441,9 +501,20 @@ export default function CategoryPage() {
                       (condition) => (
                         <Button
                           key={condition}
-                          variant="outline"
+                          variant={
+                            pendingConditions.includes(condition)
+                              ? "default"
+                              : "outline"
+                          }
                           size="sm"
                           className="btn-shadow bg-transparent"
+                          onClick={() => {
+                            setPendingConditions((prev) =>
+                              prev.includes(condition)
+                                ? prev.filter((c) => c !== condition)
+                                : [...prev, condition]
+                            );
+                          }}
                         >
                           {condition}
                         </Button>
@@ -458,19 +529,68 @@ export default function CategoryPage() {
                     <label className="text-sm font-medium mb-2 block">
                       Min Price
                     </label>
-                    <Input placeholder="$0" className="input-shadow" />
+                    <Input
+                      placeholder="$0"
+                      className="input-shadow"
+                      value={pendingMinPrice}
+                      onChange={(e) =>
+                        setPendingMinPrice(
+                          e.target.value.replace(/[^\d.]/g, "")
+                        )
+                      }
+                      inputMode="numeric"
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">
                       Max Price
                     </label>
-                    <Input placeholder="$10,000" className="input-shadow" />
+                    <Input
+                      placeholder="$10,000"
+                      className="input-shadow"
+                      value={pendingMaxPrice}
+                      onChange={(e) =>
+                        setPendingMaxPrice(
+                          e.target.value.replace(/[^\d.]/g, "")
+                        )
+                      }
+                      inputMode="numeric"
+                    />
                   </div>
                 </div>
 
-                {/* Apply Filters Button */}
-                <div className="flex justify-end">
-                  <Button className="btn-shadow">Apply Filters</Button>
+                {/* Apply/Clear Filters Buttons */}
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    variant="default"
+                    onClick={() => {
+                      setSearchQuery(pendingSearch);
+                      setMinPrice(pendingMinPrice);
+                      setMaxPrice(pendingMaxPrice);
+                      setSelectedConditions(pendingConditions);
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                  >
+                    Apply Filters
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPendingSearch("");
+                      setPendingMinPrice("");
+                      setPendingMaxPrice("");
+                      setPendingConditions([]);
+                      setSearchQuery("");
+                      setMinPrice("");
+                      setMaxPrice("");
+                      setSelectedConditions([]);
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
                 </div>
               </div>
             </motion.div>
