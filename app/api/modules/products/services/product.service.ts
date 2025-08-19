@@ -1121,4 +1121,17 @@ export class ProductService extends BaseService<IProduct> {
       this.handleError(error, "get products by condition");
     }
   }
+
+  /**
+   * Increment product views
+   */
+  async incrementViews(productId: string): Promise<IProduct | null> {
+    try {
+      await this.ensureConnection();
+      const updatedProduct = await this.updateById(productId, { $inc: { views: 1 } });
+      return updatedProduct;
+    } catch (error: any) {
+      this.handleError(error, "increment views");
+    }
+  }
 }
