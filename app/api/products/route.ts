@@ -256,9 +256,14 @@ export async function GET(request: NextRequest) {
     const sortOptions: any = {};
     const sortBy = searchParams.get("sortBy");
     if (sortBy) {
-      sortOptions[sortBy === "price" ? "price" : sortBy] =
-        searchParams.get("sortOrder") === "desc" ? -1 : 1;
+      if (sortBy === "lastBumpedAt") {
+        sortOptions.lastBumpedAt = -1;
+      } else {
+        sortOptions[sortBy === "price" ? "price" : sortBy] =
+          searchParams.get("sortOrder") === "desc" ? -1 : 1;
+      }
     } else {
+      sortOptions.lastBumpedAt = -1;
       sortOptions.featured = -1;
       sortOptions.added_at = -1;
     }

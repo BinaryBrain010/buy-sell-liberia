@@ -17,7 +17,7 @@ const ITEMS_PER_PAGE = 30;
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("lastBumpedAt");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);

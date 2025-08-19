@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
 import Link from "next/link";
+import { useState } from "react";
 
 export interface Product {
   _id: string;
@@ -32,6 +33,8 @@ export interface Product {
   showPhoneNumber: boolean;
   views: number;
   featured: boolean;
+  bumpCount: number;
+  lastBumpedAt: string;
   // expiresAt: string;
   createdAt: string;
   updatedAt: string;
@@ -112,6 +115,31 @@ export function ProductCard({
       return "In the future";
     } catch {
       return "Unknown date";
+    }
+  };
+
+  // Add bump button and bump count display
+  const [bumping, setBumping] = useState(false);
+  const canBump = (product as any).bumpCount === undefined || (product as any).bumpCount < 2;
+  const bumpCount = (product as any).bumpCount || 0;
+
+  const handleBump = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!canBump || bumping) return;
+    setBumping(true);
+    try {
+      const res = await fetch(`/api/products/${product._id}/bump`, { method: 'POST' });
+      if (res.ok) {
+        window.location.reload(); // Or trigger a re-fetch in parent
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to bump product');
+      }
+    } catch (err) {
+      alert('Failed to bump product');
+    } finally {
+      setBumping(false);
     }
   };
 
@@ -427,6 +455,12 @@ export function ProductCard({
             >
               <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">{getLocationString()}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <Button size="sm" variant="outline" onClick={handleBump} disabled={!canBump || bumping}>
+                {canBump ? (bumping ? 'Bumping...' : 'Bump') : 'No Bumps Left'}
+              </Button>
+              <span className="text-xs text-muted-foreground">Bumps: {bumpCount}/2</span>
             </div>
           </div>
         </CardContent>

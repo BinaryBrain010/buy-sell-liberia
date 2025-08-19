@@ -177,6 +177,8 @@ export interface IProduct extends Document {
   markAsFeatured(): Promise<IProduct>
   unmarkAsFeatured(): Promise<IProduct>
   toggleFeatured(): Promise<IProduct>
+  bumpCount?: number;
+  lastBumpedAt?: Date;
 }
 
 const productSchema = new Schema<IProduct>(
@@ -303,6 +305,15 @@ const productSchema = new Schema<IProduct>(
       default: [],
     },
     searchText: String,
+    bumpCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 2,
+    },
+    lastBumpedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
