@@ -16,6 +16,7 @@ export interface IUser extends Document {
   updatedAt: Date
   chatRooms?: string[] // Array of room IDs the user is part of
   recentContacts?: mongoose.Types.ObjectId[] // Array of user IDs
+  favorites: mongoose.Types.ObjectId[] // Array of product ObjectIds
 }
 
 const UserSchema = new Schema<IUser>(
@@ -78,6 +79,7 @@ const UserSchema = new Schema<IUser>(
     },
     chatRooms: [{ type: String }],
     recentContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    favorites: [{ type: Schema.Types.ObjectId, ref: 'Product', default: [] }],
   },
   {
     timestamps: true,
