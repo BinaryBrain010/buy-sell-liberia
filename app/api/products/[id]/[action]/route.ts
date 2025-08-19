@@ -107,3 +107,28 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: error.message || "Failed to perform action" }, { status: 400 });
   }
 }
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string, action: string } }) {
+  try {
+    // Parse action from URL (e.g., /api/products/{id}/views)
+    const urlParts = request.url.split("/");
+    const action = urlParts[urlParts.length - 1];
+    if (action !== "views") {
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+    if (!params.id) {
+      return NextResponse.json({ error: "Missing product id" }, { status: 400 });
+    }
+    // Increment the views count
+    const product = await productService.incrementViews(params.id);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      message: "Product view incremented successfully",
+      product,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Failed to increment views" }, { status: 500 });
+  }
+}
