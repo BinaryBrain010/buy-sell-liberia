@@ -1,8 +1,14 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
+import { Suspense } from "react";
 // import { ThemeToggle } from "@/components/theme-toggle";
-import { AuthModal } from "@/components/auth-modal";
+import dynamic from "next/dynamic";
+const AuthModal = dynamic(
+  () => import("@/components/auth-modal").then((mod) => mod.AuthModal),
+  { ssr: false }
+) as any;
 import { useAuth } from "@/components/auth-provider";
 import { motion, AnimatePresence } from "framer-motion";
 // import MobileMenu from "./navbar/mobileMenu";
@@ -13,15 +19,20 @@ import NavigationLinks from "@/components/navbar/navigationLinks";
 import AuthButtons from "@/components/navbar/authButton";
 import UserActions from "@/components/navbar/userAction";
 import SellButton from "@/components/navbar/sellButton";
-import Logo from "@/components/ui/logo";
+import LogoRaw from "@/components/ui/logo";
 import MobileMenuToggleButton from "@/components/navbar/mobileMenuToggleButton";
-import MobileMenuAnimated from "@/components/navbar/mobileMenuAnimated";
+const MobileMenuAnimated = dynamic(
+  () => import("@/components/navbar/mobileMenuAnimated"),
+  { ssr: false }
+);
+const Logo = React.memo(LogoRaw);
 
 // test
 import { Menu, X } from "lucide-react";
 // Remove duplicate import since ThemeToggle is already imported above
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "./theme-toggle";
+import ThemeToggleRaw from "./theme-toggle";
+const ThemeToggle = React.memo(ThemeToggleRaw);
 
 export function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -49,7 +60,6 @@ export function Navbar() {
   //   // Add your logic here
   //   setMobileMenuOpen(false); // Close mobile menu
   // };
-
 
   return (
     <>
@@ -97,7 +107,7 @@ export function Navbar() {
             {/* Mobile Theme Toggle and Hamburger - Only visible on mobile */}
             <div className="md:hidden flex items-center gap-2">
               <ThemeToggle />
-                            {user && <DropDownMenu/>}
+              {user && <DropDownMenu />}
 
               <Button
                 variant="ghost"
@@ -127,9 +137,11 @@ export function Navbar() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onOpenChange={handleModalClose}
-        initialMode={authMode} onLoginSuccess={function (): void {
+        initialMode={authMode}
+        onLoginSuccess={function (): void {
           throw new Error("Function not implemented.");
-        } }      />
+        }}
+      />
     </>
   );
 }

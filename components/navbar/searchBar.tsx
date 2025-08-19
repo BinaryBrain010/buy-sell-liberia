@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ProductService } from "@/app/services/Product.Service";
 
 export default function SearchBar() {
   const [query, setQuery] = React.useState("");
@@ -89,19 +90,16 @@ export default function SearchBar() {
 
     setLoading(true);
     const timeout = setTimeout(() => {
-      let url = `/api/products/search?search=${encodeURIComponent(
-        normalizedQuery
-      )}`;
-      if (selectedCategory) {
-        // The search route expects "category" based on provided route code
-        url += `&category=${encodeURIComponent(selectedCategory)}`;
-      }
-
-      fetch(url)
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Failed to fetch");
-          return res.json();
-        })
+      const productService = new ProductService();
+      productService
+        .getProducts(
+          {
+            search: normalizedQuery,
+            ...(selectedCategory ? { category_id: selectedCategory } : {}),
+          },
+          {},
+          { page: 1, limit: 10 }
+        )
         .then((data) => {
           const products = Array.isArray(data.products) ? data.products : [];
           const filtered = filterAndRank(products, normalizedQuery);

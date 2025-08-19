@@ -171,7 +171,10 @@ export const MessagesComponent = ({
       setCurrentChat((prev) => {
         if (!prev) return prev;
         if (prev._id !== String(targetChatId)) return prev;
-        return { ...prev, messages: [...(prev.messages || []), newMessage] } as any;
+        return {
+          ...prev,
+          messages: [...(prev.messages || []), newMessage],
+        } as any;
       });
 
       await sendMessage(String(targetChatId), newMessage);
@@ -197,7 +200,9 @@ export const MessagesComponent = ({
       setCurrentChat((prev) => {
         if (!prev) return prev;
         if (prev._id !== String(targetChatId)) return prev;
-        const msgs = (prev.messages || []).filter((m: any) => m._id !== newMessage._id);
+        const msgs = (prev.messages || []).filter(
+          (m: any) => m._id !== newMessage._id
+        );
         return { ...prev, messages: msgs } as any;
       });
     } finally {
@@ -369,9 +374,14 @@ export const MessagesComponent = ({
         setCurrentChat((prev) => {
           if (!prev) return prev;
           // avoid duplicate if already appended
-          const already = (prev.messages || []).some((m: any) => m._id === data.message._id);
+          const already = (prev.messages || []).some(
+            (m: any) => m._id === data.message._id
+          );
           if (already) return prev;
-          return { ...prev, messages: [...(prev.messages || []), data.message] } as any;
+          return {
+            ...prev,
+            messages: [...(prev.messages || []), data.message],
+          } as any;
         });
       }
 
@@ -381,12 +391,12 @@ export const MessagesComponent = ({
 
     socket.on("presence:list", onPresenceList);
     socket.on("presence:update", onPresenceUpdate);
-  socket.on("message", onSocketMessage);
+    socket.on("message", onSocketMessage);
 
     return () => {
       socket.off("presence:list", onPresenceList);
       socket.off("presence:update", onPresenceUpdate);
-    socket.off("message", onSocketMessage);
+      socket.off("message", onSocketMessage);
     };
   }, [getChatsLight, currentUserId, currentChat, setCurrentChat]);
 
@@ -517,10 +527,10 @@ export const MessagesComponent = ({
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                 <p className="text-lg font-medium mb-2">
-                  Select a conversation
+                  There are no messages yet
                 </p>
                 <p className="text-sm">
-                  Choose a chat from the list to start messaging
+                  Start a conversation by selecting a product.
                 </p>
               </div>
             </div>
