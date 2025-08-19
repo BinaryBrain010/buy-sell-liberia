@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MessagesComponent } from "@/components/dashboard/MessagesComponent";
 import UserListings from "@/components/dashboard/userListings";
 import ProfileForm from "@/components/dashboard/profileForm";
+import FavouriteListings from "@/components/dashboard/favouriteListings";
 
 // JWT Decode function (no external dependencies needed)
 const decodeJWT = (token: string) => {
@@ -40,22 +41,8 @@ const ListingsTab = ({ userId }: { userId: string }) => (
   <UserListings userId={userId} />
 );
 
-const FavouritesTab = () => (
-  <div className="space-y-4">
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Heart className="h-5 w-5" />
-          Favourite Listings
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">
-          Favourites component will be implemented here.
-        </p>
-      </CardContent>
-    </Card>
-  </div>
+const FavouritesTab = ({ userId }: { userId: string }) => (
+  <FavouriteListings userId={userId} />
 );
 
 export default function DashboardPage() {
@@ -356,7 +343,17 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="favourites" className="space-y-4">
-            <FavouritesTab />
+            {user?.id || user?._id ? (
+              <FavouritesTab userId={user?.id || user?._id} />
+            ) : (
+              <div className="text-center py-12">
+                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">User ID Not Found</h3>
+                <p className="text-muted-foreground">
+                  Unable to load favourites: User ID is missing
+                </p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-4">

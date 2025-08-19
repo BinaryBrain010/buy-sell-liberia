@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
     if (!authResult.success || !authResult.userId) {
       return NextResponse.json({ error: "Unauthorized or missing user id" }, { status: 401 });
     }
-    const user = await User.findById(authResult.userId).populate("favorites");
+    const user = await User.findById(authResult.userId).populate({
+      path: "favorites",
+      populate: {
+        path: "seller",
+        select: "fullName username"
+      }
+    });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

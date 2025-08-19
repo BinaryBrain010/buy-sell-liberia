@@ -18,8 +18,8 @@ interface ContactInfo {
   email?: string;
 }
 
-interface Product {
-  id: string;
+export interface Product {
+  _id: string;
   title: string;
   description: string;
   price: Price;
@@ -28,8 +28,19 @@ interface Product {
   condition: string;
   images: string[];
   status: string;
-  createdAt: string;
+  createdAt: string | Date;
   featured: boolean;
+  location: {
+    city: string;
+    state?: string;
+    country?: string;
+  };
+  views?: number;
+  seller?: {
+    _id: string;
+    fullName: string;
+    username: string;
+  };
 }
 
 interface ProductFilters {
@@ -92,6 +103,20 @@ export class ProductService {
       // Optionally handle/log error, but don't throw to avoid blocking view
     }
   }
+
+  /**
+   * Gets the current user's favorite products
+   */
+  static async getUserFavorites(): Promise<Product[]> {
+    try {
+      const response = await axiosInstance.get('/products/favorites');
+      return response.data.favorites;
+    } catch (error: any) {
+      console.error("ProductService: Error fetching favorites:", error);
+      throw new Error(error.response?.data?.error || "Failed to fetch favorites");
+    }
+  }
+
   /**
    * Creates a new product with the provided data and images
    */
