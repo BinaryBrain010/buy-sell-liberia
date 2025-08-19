@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
+import { ProductService } from "@/app/services/Product.Service"
 import { useParams } from "next/navigation"
 import ProductDetail from "./ProductDetail"
 import { ProductDetailSkeleton } from "@/components/product-detail-skeleton"
@@ -14,11 +15,19 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  const hasIncrementedView = useRef(false);
   useEffect(() => {
-    async function fetchProduct() {
+    async function fetchProductAndIncrementView() {
       setLoading(true)
       setError("")
       try {
+        // Increment view count only once per mount
+        if (_id && !hasIncrementedView.current) {
+          hasIncrementedView.current = true;
+          const productService = new ProductService();
+          productService.incrementProductViews(_id as string);
+        }
+        // Fetch product details
         const res = await fetch(`/api/products/${_id}`)
         if (!res.ok) throw new Error("Failed to fetch product")
         const data = await res.json()
@@ -35,7 +44,7 @@ export default function ProductDetailPage() {
       }
     }
 
-    if (_id) fetchProduct()
+    if (_id) fetchProductAndIncrementView()
   }, [_id])
 
   if (!_id) {
