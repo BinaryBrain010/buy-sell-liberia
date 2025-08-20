@@ -53,6 +53,7 @@ export default function DashboardPage() {
   const [chatParams, setChatParams] = useState<{
     sellerId?: string;
     productId?: string;
+    productTitle?: string;
   }>({});
   const router = useRouter();
   const { toast } = useToast();
@@ -68,6 +69,15 @@ export default function DashboardPage() {
       const tab = urlParams.get("tab");
       const sellerId = urlParams.get("sellerId");
       const productId = urlParams.get("productId");
+      const productTitle = urlParams.get("productTitle");
+
+      console.log("🔍 Dashboard Debug - URL params:", {
+        tab,
+        sellerId,
+        productId,
+        productTitle,
+        fullUrl: window.location.href
+      });
 
       if (tab === "messages") {
         setActiveTab("messages");
@@ -77,6 +87,13 @@ export default function DashboardPage() {
         setChatParams({
           sellerId: sellerId || undefined,
           productId: productId || undefined,
+          productTitle: productTitle || undefined,
+        });
+        
+        console.log("🔍 Dashboard Debug - Set chat params:", {
+          sellerId: sellerId || undefined,
+          productId: productId || undefined,
+          productTitle: productTitle || undefined,
         });
       }
     }
@@ -360,6 +377,7 @@ export default function DashboardPage() {
             <MessagesComponent
               sellerId={chatParams.sellerId}
               productId={chatParams.productId}
+              productTitle={chatParams.productTitle}
             />
           </TabsContent>
         </div>

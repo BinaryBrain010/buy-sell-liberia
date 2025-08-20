@@ -15,11 +15,13 @@ import { ErrorState } from "./messages/error-state";
 interface MessagesComponentProps {
   sellerId?: string;
   productId?: string;
+  productTitle?: string;
 }
 
 export const MessagesComponent = ({
   sellerId,
   productId,
+  productTitle: propProductTitle,
 }: MessagesComponentProps) => {
   const isValidObjectId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id);
 
@@ -211,16 +213,30 @@ export const MessagesComponent = ({
   };
 
   const handleCreateNewChat = async () => {
+    console.log("🔍 Chat Debug - handleCreateNewChat called with:", {
+      sellerId,
+      productId,
+      currentUserId,
+      productTitle: propProductTitle
+    });
+    
     setIsCreatingChat(true);
     try {
       const currentUserId = getCurrentUserId();
-      if (!currentUserId || !sellerId || !productId) return;
+      if (!currentUserId || !sellerId || !productId) {
+        console.log("🔍 Chat Debug - Missing required parameters:", {
+          currentUserId,
+          sellerId,
+          productId
+        });
+        return;
+      }
 
       const newMessage = {
         _id: Date.now().toString(),
         sender: currentUserId,
         content: `Hi! I'm interested in your product: ${
-          productTitle || `Product ${productId.slice(-6)}`
+          propProductTitle || `Product ${productId.slice(-6)}`
         }`,
         sentAt: new Date(),
         readBy: [currentUserId],
@@ -233,13 +249,17 @@ export const MessagesComponent = ({
         message: newMessage,
       };
 
+      console.log("🔍 Chat Debug - Creating chat with request:", chatRequest);
+
       const newChat = await createOrUpdateChat(chatRequest);
+      console.log("🔍 Chat Debug - Chat creation result:", newChat);
+      
       if (newChat) {
         setCurrentChat(newChat);
         setMessageInput("");
       }
     } catch (error) {
-      console.error("Failed to create new chat:", error);
+      console.error("🔍 Chat Debug - Failed to create new chat:", error);
     } finally {
       setIsCreatingChat(false);
     }
@@ -349,56 +369,100 @@ export const MessagesComponent = ({
     socket.emit("user:online", { userId });
     socket.emit("presence:subscribe");
 
-    const onPresenceList = (data: { online: string[] }) => {
-      const map: Record<string, boolean> = {};
-      data.online.forEach((id) => (map[id] = true));
-      setOnlineUsers(map);
-    };
-
-    const onPresenceUpdate = (data: {
-      userId: string;
-      status: "online" | "offline";
-    }) => {
+    const handlePresenceUpdate = (data: { userId: string; status: "online" | "offline" }) => {
       setOnlineUsers((prev) => ({
         ...prev,
         [data.userId]: data.status === "online",
       }));
     };
 
-    const onSocketMessage = (data: any) => {
-      // Accept both old and new payloads. Must involve this user.
-      if (data.from !== userId && data.to !== userId) return;
+    const handlePresenceList = (data: { online: string[] }) => {
+      const map: Record<string, boolean> = {};
+      data.online.forEach((id) => (map[id] = true));
+      setOnlineUsers(map);
+    };
 
-      // If the current thread matches, append immediately for instant UI
-      if (data.chatId && currentChat?._id === data.chatId && data.message) {
+    const handleNewMessage = (data: {
+      from: string;
+      message: string | any;
+      to: string;
+      chatId?: string;
+    }) => {
+      if (data.chatId === currentChat?._id) {
         setCurrentChat((prev) => {
           if (!prev) return prev;
-          // avoid duplicate if already appended
-          const already = (prev.messages || []).some(
-            (m: any) => m._id === data.message._id
-          );
-          if (already) return prev;
           return {
             ...prev,
             messages: [...(prev.messages || []), data.message],
           } as any;
         });
       }
-
-      // Then do a lightweight refresh to keep lists in sync
       getChatsLight({ userId });
     };
 
-    socket.on("presence:list", onPresenceList);
-    socket.on("presence:update", onPresenceUpdate);
-    socket.on("message", onSocketMessage);
+    socket.on("presence:update", handlePresenceUpdate);
+    socket.on("presence:list", handlePresenceList);
+    socket.on("message", handleNewMessage);
 
     return () => {
-      socket.off("presence:list", onPresenceList);
-      socket.off("presence:update", onPresenceUpdate);
-      socket.off("message", onSocketMessage);
+      socket.off("presence:update", handlePresenceUpdate);
+      socket.off("presence:list", handlePresenceList);
+      socket.off("message", handleNewMessage);
     };
   }, [getChatsLight, currentUserId, currentChat, setCurrentChat]);
+
+  // Auto-create new chat when sellerId and productId are provided
+  useEffect(() => {
+    console.log("🔍 Chat Debug - useEffect triggered:", {
+      sellerId,
+      productId,
+      currentUserId,
+      hasAttemptedNewChat,
+      chatsLength: chats.length
+    });
+
+    if (sellerId && productId && currentUserId && !hasAttemptedNewChat) {
+      console.log("🔍 Chat Debug - Attempting to create/find chat");
+      
+      // Check if a chat already exists for this product and users
+      const existingChat = chats.find(chat => {
+        const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+        const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+        const chatProductId = typeof chat.product === "object" ? chat.product._id : chat.product;
+        
+        console.log("🔍 Chat Debug - Checking chat:", {
+          chatId: chat._id,
+          u1,
+          u2,
+          chatProductId,
+          productId,
+          currentUserId,
+          sellerId,
+          matches: (
+            chatProductId === productId &&
+            ((u1 === currentUserId && u2 === sellerId) || (u1 === sellerId && u2 === currentUserId))
+          )
+        });
+        
+        return (
+          chatProductId === productId &&
+          ((u1 === currentUserId && u2 === sellerId) || (u1 === sellerId && u2 === currentUserId))
+        );
+      });
+
+      if (!existingChat) {
+        console.log("🔍 Chat Debug - No existing chat found, creating new one");
+        // Auto-create new chat
+        handleCreateNewChat();
+        setHasAttemptedNewChat(true);
+      } else {
+        console.log("🔍 Chat Debug - Existing chat found, setting as current:", existingChat);
+        // Set existing chat as current
+        setCurrentChat(existingChat);
+        setHasAttemptedNewChat(true);
+      }
+    }
+  }, [sellerId, productId, currentUserId, chats, hasAttemptedNewChat]);
 
   const sortedChats = useMemo(() => {
     return [...chats].sort((a, b) => {
@@ -527,11 +591,23 @@ export const MessagesComponent = ({
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                 <p className="text-lg font-medium mb-2">
-                  There are no messages yet
+                  {sellerId && productId ? "Ready to start chatting?" : "There are no messages yet"}
                 </p>
-                <p className="text-sm">
-                  Start a conversation by selecting a product.
+                <p className="text-sm mb-4">
+                  {sellerId && productId 
+                    ? `Click the button below to start a conversation about: ${propProductTitle || "this product"}`
+                    : "Start a conversation by selecting a product."
+                  }
                 </p>
+                {sellerId && productId && (
+                  <Button 
+                    onClick={handleCreateNewChat} 
+                    disabled={isCreatingChat}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {isCreatingChat ? "Creating Chat..." : `Start Chat about ${propProductTitle || "Product"}`}
+                  </Button>
+                )}
               </div>
             </div>
           )}
