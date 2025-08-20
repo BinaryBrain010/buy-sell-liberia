@@ -45,21 +45,19 @@ const getSubcategoryImage = (subcategoryName: string, categorySlug: string) => {
   // Electronics subcategories
   if (category === "electronics") {
     if (name.includes("phone") || name.includes("mobile"))
-      return "/placeholder.svg?height=128&width=200&text=📱+Phones";
+      return "/assets/mobile.jpg";
     if (name.includes("laptop") || name.includes("computer"))
-      return "/placeholder.svg?height=128&width=200&text=💻+Laptops";
+      return "/assets/laptop.jpg";
     if (name.includes("tv") || name.includes("television"))
-      return "/placeholder.svg?height=128&width=200&text=📺+TVs";
+      return "/assets/tv.jpg";
     if (name.includes("camera"))
-      return "/placeholder.svg?height=128&width=200&text=📷+Cameras";
-    if (name.includes("headphone") || name.includes("audio"))
-      return "/placeholder.svg?height=128&width=200&text=🎧+Audio";
-    if (name.includes("gaming") || name.includes("console"))
-      return "/placeholder.svg?height=128&width=200&text=🎮+Gaming";
+      return "/assets/drone.jpg";
+    if (name.includes("headphone") || name.includes("audio") || name.includes("accessories"))
+      return "/assets/headphones.jpg";
     if (name.includes("tablet"))
-      return "/placeholder.svg?height=128&width=200&text=📱+Tablets";
+      return "/assets/tablets.jpg";
     if (name.includes("watch") || name.includes("wearable"))
-      return "/placeholder.svg?height=128&width=200&text=⌚+Wearables";
+      return "/assets/watch.jpg";
   }
 
   // Vehicles subcategories
@@ -413,10 +411,13 @@ export default function CategoriesPage() {
                   {selectedCategory.name}
                 </p>
               </div>
-              <div className="flex gap-3">
-                <Link href={getViewAllProductsUrl()}>
-                  <Button className="btn-shadow">
-                    View All Products
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Link
+                  href={getViewAllProductsUrl()}
+                  className="w-full sm:w-auto"
+                >
+                  <Button className="btn-shadow w-full sm:w-auto">
+                    View All
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
@@ -430,7 +431,7 @@ export default function CategoriesPage() {
                     setCurrentPage(1);
                   }}
                   aria-label="Clear category selection"
-                  className="flex items-center"
+                  className="flex items-center w-full sm:w-auto"
                 >
                   <X className="h-4 w-4 mr-1" />
                   Clear

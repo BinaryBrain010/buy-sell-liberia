@@ -8,6 +8,7 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { Price } from "@/app/api/modules/products/services/product.service";
 import Link from "next/link";
+import { FavouriteButton } from "@/components/FavouriteButton";
 
 export interface Product {
   _id: string;
@@ -44,6 +45,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({
+  // Helper to get absolute image URL
+  // (function version is declared below, remove this invalid const)
   product,
   variant = "compact",
   onLike,
@@ -53,6 +56,24 @@ export function ProductCard({
 
   // Guard against undefined product during loading states
   if (!product) return null;
+
+  // Normalize images to array of objects with url property
+  const images = Array.isArray(product.images)
+    ? product.images.map((img) =>
+        typeof img === "string" ? { url: img } : img
+      )
+    : [];
+
+  // Helper to get absolute image URL
+  function getImageUrl(img: any) {
+    if (!img) return undefined;
+    if (typeof img === "string") {
+      if (img.startsWith("http")) return img;
+      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
+    }
+    if (img.url?.startsWith("http")) return img.url;
+    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+  }
 
   const getLocationString = () => {
     if (!product.location || typeof product.location !== "object") {
@@ -124,12 +145,9 @@ export function ProductCard({
             <div className="relative w-28 h-28 md:w-40 md:h-40">
               <Image
                 src={
-                  product.images &&
-                  Array.isArray(product.images) &&
-                  product.images.length > 0 &&
-                  product.titleImageIndex !== undefined &&
-                  product.images[product.titleImageIndex]?.url
-                    ? product.images[product.titleImageIndex].url
+                  images.length > 0 &&
+                  getImageUrl(images[product.titleImageIndex ?? 0])
+                    ? getImageUrl(images[product.titleImageIndex ?? 0])
                     : "/placeholder.jpg"
                 }
                 alt={product.title || "Product image"}
@@ -155,22 +173,7 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <Button
-                aria-label="Like product"
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  product._id && onLike?.(product._id);
-                }}
-                className={`${
-                  isDark
-                    ? "text-gray-400 hover:text-red-400"
-                    : "text-gray-600 hover:text-red-500"
-                }`}
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
+              <FavouriteButton productId={product._id} />
             </div>
 
             {/* Price + Negotiable */}
@@ -286,12 +289,9 @@ export function ProductCard({
             >
               <Image
                 src={
-                  product.images &&
-                  Array.isArray(product.images) &&
-                  product.images.length > 0 &&
-                  product.titleImageIndex !== undefined &&
-                  product.images[product.titleImageIndex]?.url
-                    ? product.images[product.titleImageIndex].url
+                  images.length > 0 &&
+                  getImageUrl(images[product.titleImageIndex ?? 0])
+                    ? getImageUrl(images[product.titleImageIndex ?? 0])
                     : "/placeholder.jpg"
                 }
                 alt={product.title || "Product image"}
@@ -313,22 +313,7 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  product._id && onLike?.(product._id);
-                }}
-                className={`${
-                  isDark
-                    ? "text-gray-400 hover:text-red-400"
-                    : "text-gray-600 hover:text-red-500"
-                }`}
-                aria-label="Like product"
-              >
-                <Heart className="h-5 w-5" />
-              </Button>
+              <FavouriteButton productId={product._id} />
             </div>
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
