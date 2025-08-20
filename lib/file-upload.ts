@@ -51,10 +51,15 @@ export async function uploadProductImage(
  * Validate a single image file
  */
 export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  return FirebaseStorageService.validateFile(file, {
+  const result = FirebaseStorageService.validateFile(file, {
     maxSize: 5 * 1024 * 1024, // 5MB
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-  })
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
+  });
+
+  return {
+    valid: result.isValid,  // ✅ rename here
+    error: result.error,
+  };
 }
 
 /**

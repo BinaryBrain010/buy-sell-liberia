@@ -25,7 +25,8 @@ export const uploadMultiple = upload.array('images', 20)
 
 // Helper function to convert buffer to File object
 export function bufferToFile(buffer: Buffer, originalName: string, mimeType: string): File {
-  const blob = new Blob([buffer], { type: mimeType })
+  const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer
+  const blob = new Blob([arrayBuffer], { type: mimeType })
   return new File([blob], originalName, { type: mimeType })
 }
 

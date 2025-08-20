@@ -7,6 +7,9 @@ import { EmailService } from "./email.service"
 import { connectDB } from "@/lib/mongoose"
 
 export class AuthService {
+  resendOtp(email: any, type: any) {
+    throw new Error('Method not implemented.')
+  }
   private emailService = new EmailService()
 
   async signup(userData: {

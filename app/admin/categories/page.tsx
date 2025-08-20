@@ -49,12 +49,12 @@ export default function AdminCategoriesPage() {
   })
 
   // Check if user is admin
-  useEffect(() => {
-    if (user && user.role !== 'admin') {
-      toast.error('Access denied. Admin privileges required.')
-      // Redirect to home or show access denied
-    }
-  }, [user])
+  // useEffect(() => {
+  //   if (user && user. !== 'admin') {
+  //     toast.error('Access denied. Admin privileges required.')
+  //     // Redirect to home or show access denied
+  //   }
+  // }, [user])
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -383,7 +383,7 @@ export default function AdminCategoriesPage() {
                     variant="destructive"
                     size="sm"
                     onClick={() => handleDelete(category._id)}
-                    disabled={category.productCount > 0}
+                    // disabled={category.productCount > 0}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
                     Delete

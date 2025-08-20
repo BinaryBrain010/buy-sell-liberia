@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import AuthService from '../services/auth.service';
+import { AuthService } from '../services/auth.service';
 
 const authService = new AuthService();
 
@@ -23,8 +23,8 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { user, token } = await authService.login(req.body.email, req.body.password);
-    res.json({ user, token });
+    const { user, accessToken, refreshToken } = await authService.login(req.body.email, req.body.password);
+    res.json({ user, accessToken, refreshToken });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
   }
@@ -32,7 +32,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
-    await authService.sendForgotPasswordOtp(req.body.email);
+    await authService.forgotPassword(req.body.email);
     res.json({ message: 'OTP sent to email' });
   } catch (err: any) {
     res.status(400).json({ error: err.message });
