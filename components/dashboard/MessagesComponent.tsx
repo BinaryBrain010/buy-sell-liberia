@@ -179,15 +179,21 @@ export const MessagesComponent = ({
         } as any;
       });
 
-      await sendMessage(String(targetChatId), newMessage);
+      // Clear input immediately for better UX
       setMessageInput("");
 
+      // Send message to server
+      await sendMessage(String(targetChatId), newMessage);
+
+      // Find the chat to get the other user's ID for socket emission
       const chat = chats.find((c) => c._id === targetChatId) || currentChat;
       if (chat) {
         const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
         const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
         const otherUserId = u1 === uid ? u2 : u1;
+        
         if (otherUserId) {
+          // Emit socket message to notify other user
           socket.emit("message", {
             chatId: String(targetChatId),
             from: String(uid),
@@ -207,6 +213,8 @@ export const MessagesComponent = ({
         );
         return { ...prev, messages: msgs } as any;
       });
+      // Restore the message input on error
+      setMessageInput(newMessage.content);
     } finally {
       setIsSending(false);
     }
@@ -389,13 +397,37 @@ export const MessagesComponent = ({
       chatId?: string;
     }) => {
       if (data.chatId === currentChat?._id) {
-        setCurrentChat((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            messages: [...(prev.messages || []), data.message],
-          } as any;
-        });
+        // Check if this message is already in the current chat to prevent duplicates
+        const messageExists = currentChat?.messages?.some(
+          (msg: any) => {
+            // Check by ID first (most reliable)
+            if (msg._id === data.message._id) return true;
+            
+            // Check by content, sender, and time (fallback for optimistic updates)
+            if (msg.content === data.message.content && 
+                msg.sender === data.message.sender) {
+              const timeDiff = Math.abs(
+                new Date(msg.sentAt).getTime() - new Date(data.message.sentAt).getTime()
+              );
+              // If messages are within 2 seconds and have same content/sender, consider them duplicates
+              return timeDiff < 2000;
+            }
+            
+            return false;
+          }
+        );
+        
+        // Don't add the message if it's from the current user and already exists
+        // This prevents duplicate messages from optimistic updates
+        if (!messageExists && data.from !== (currentUserId || getCurrentUserId())) {
+          setCurrentChat((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              messages: [...(prev.messages || []), data.message],
+            } as any;
+          });
+        }
       }
       getChatsLight({ userId });
     };
