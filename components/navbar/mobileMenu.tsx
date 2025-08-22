@@ -4,17 +4,19 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, MessageCircle } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 export default function MobileMenu({
   isOpen,
   onAuthClick,
   onSellClick,
+  onChatClick,
 }: {
   isOpen: boolean;
   onAuthClick: (mode: "login" | "signup") => void;
   onSellClick: () => void;
+  onChatClick: () => void;
 }) {
   const { user } = useAuth();
 
@@ -46,15 +48,28 @@ export default function MobileMenu({
         ))}
       </div>
 
-      <div className="flex gap-2 pt-3">
+      <div className="flex flex-col gap-2 pt-3">
         <Button
           onClick={() => (user ? onSellClick() : onAuthClick("login"))}
           className="w-full"
         >
           Sell
         </Button>
+        
+        {/* Chat button - only show when user is logged in */}
+        {user && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={onChatClick}
+          >
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Chat
+          </Button>
+        )}
+        
         {!user && (
-          <>
+          <div className="flex gap-2">
             <Button
               variant="outline"
               className="w-full"
@@ -65,7 +80,7 @@ export default function MobileMenu({
             <Button className="w-full" onClick={() => onAuthClick("signup")}>
               Sign Up
             </Button>
-          </>
+          </div>
         )}
       </div>
     </motion.div>

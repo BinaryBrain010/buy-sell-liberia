@@ -55,6 +55,12 @@ export function Navbar() {
     // Don't reset authMode here - let it stay as user intended
   };
 
+  const handleChatClick = () => {
+    // Navigate to dashboard with messages tab
+    window.location.href = "/dashboard?tab=messages";
+    setMobileMenuOpen(false); // Close mobile menu
+  };
+
   // const handleSellClick = () => {
   //   // Handle sell button click for logged in users
   //   // Add your logic here
@@ -132,6 +138,7 @@ export function Navbar() {
         setIsOpen={setMobileMenuOpen}
         onAuthClick={handleAuthClick}
         onSellClick={() => setMobileMenuOpen(false)}
+        onChatClick={handleChatClick}
       />
 
       <AuthModal

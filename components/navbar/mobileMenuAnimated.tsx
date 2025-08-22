@@ -8,13 +8,15 @@ interface MobileMenuAnimatedProps {
   setIsOpen: (isOpen: boolean) => void;
   onAuthClick: (mode: "login" | "signup") => void;
   onSellClick: () => void;
+  onChatClick: () => void;
 }
 
 const MobileMenuAnimated = ({
   isOpen,
   setIsOpen,
   onAuthClick,
-  onSellClick
+  onSellClick,
+  onChatClick
 }: MobileMenuAnimatedProps) => {
   return (
     <div>
@@ -24,6 +26,7 @@ const MobileMenuAnimated = ({
             isOpen={isOpen}
             onAuthClick={onAuthClick}
             onSellClick={onSellClick}
+            onChatClick={onChatClick}
           />
         )}
       </AnimatePresence>
