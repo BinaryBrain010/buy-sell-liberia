@@ -3,6 +3,7 @@ import { AdminAuthService } from '../../../modules/auth/services/admin-auth.serv
 import mongoose from 'mongoose';
 import User from '../../../../../models/User';
 import Product from '../../../../../models/Product';
+import { Admin } from '../../../modules/auth/models/admin.model';
 // Placeholder: Replace with real models when implemented
 // import Report from '../../../../../../models/Report';
 // import ManualPayment from '../../../../../../models/ManualPayment';
@@ -33,12 +34,15 @@ export async function GET(request: NextRequest) {
     const featuredListings = await Product.countDocuments({ featured: true });
     const now = new Date();
     const nearExpiry = await Product.countDocuments({ status: 'active', expiryDate: { $lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) } });
+    // Count all admins except super_admin
+    const totalAdmins = await Admin.countDocuments({ role: { $ne: 'super_admin' } });
     // Placeholder counts for reports and manual payments
     const reports = 0; // await Report.countDocuments({ status: 'pending' });
     const manualPaymentRequests = 0; // await ManualPayment.countDocuments({ status: 'pending' });
 
     return NextResponse.json({
       totalUsers,
+      totalAdmins,
       activeListings,
       featuredListings,
       listingsNearExpiry: nearExpiry,
