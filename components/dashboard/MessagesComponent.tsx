@@ -11,6 +11,7 @@ import { ChatItem } from "./messages/chat-item";
 import { MessageThread } from "./messages/message-thread";
 import { LoadingState } from "./messages/loading-state";
 import { ErrorState } from "./messages/error-state";
+import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 interface MessagesComponentProps {
   sellerId?: string;
@@ -48,6 +49,19 @@ export const MessagesComponent = ({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [showChatList, setShowChatList] = useState(true);
+
+  // Listen for logout events and clear state
+  useAuthLogout(() => {
+    setMessageInput("");
+    setHasAttemptedNewChat(false);
+    setProductTitle("");
+    setUserNames({});
+    setIsCreatingChat(false);
+    setOnlineUsers({});
+    setCurrentUserId(null);
+    setShowChatList(true);
+    console.log("[MESSAGES_COMPONENT] State cleared due to logout");
+  });
 
   const getCurrentUserId = () => {
     if (typeof window !== "undefined") {

@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { authClient } from "@/app/services/Auth.Service";
-import { getLocalAuthStatus } from "@/lib/jwt";
+import { getLocalAuthStatus, clearAllAuthData } from "@/lib/jwt";
 
 interface User {
   id: string;
@@ -115,10 +115,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authClient.logout();
       setUser(null);
+      
+      // Clear all stored tokens and authentication data
+      clearAllAuthData();
+      
       console.log("[AUTH PROVIDER] Logout successful");
+      
+      // Refresh the page to ensure all components are reset
+      window.location.reload();
     } catch (error) {
       console.error("[AUTH PROVIDER] Logout error:", error);
-      setUser(null); // Clear user anyway
+      
+      // Even if logout fails, clear everything and refresh
+      setUser(null);
+      clearAllAuthData();
+      
+      // Refresh the page even if logout failed
+      window.location.reload();
     }
   };
 

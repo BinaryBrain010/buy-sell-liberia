@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategoryService } from "@/app/services/Category.Service";
+import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 interface Listing {
   _id: string;
@@ -108,6 +109,21 @@ export default function UserListings({ userId }: UserListingsProps) {
   >([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const router = useRouter();
+
+  // Listen for logout events and clear state
+  useAuthLogout(() => {
+    setListings([]);
+    setLoading(false);
+    setError(null);
+    setSearchTerm("");
+    setStatusFilter("all");
+    setEditingListing(null);
+    setEditForm({});
+    setIsUpdating(false);
+    setIsImageLoading(false);
+    setCategories([]);
+    console.log("[USER_LISTINGS] State cleared due to logout");
+  });
 
   // Fetch user's listings from API
   const fetchUserListings = async () => {

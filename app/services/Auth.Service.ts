@@ -1,4 +1,6 @@
 import axios from "./BaseService";
+import  User  from "@/models/User";
+import { clearAllAuthData } from "@/lib/jwt";
 
 interface User {
   user: any;
@@ -193,22 +195,18 @@ class AuthClient {
       const response = await axios.post("/auth/logout");
       console.log("[AUTH CLIENT] Logout response:", response.data);
 
-      // Clear tokens on logout
+      // Clear all authentication data on logout
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        console.log("[AUTH CLIENT] Cleared tokens");
+        clearAllAuthData();
       }
     } catch (error: any) {
       console.error(
         "[AUTH CLIENT] Logout error:",
         error.response?.data || error.message
       );
-      // Clear tokens even if logout request fails
+      // Clear all authentication data even if logout request fails
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        console.log("[AUTH CLIENT] Cleared tokens despite error");
+        clearAllAuthData();
       }
       throw new Error(error.response?.data?.error || "Logout failed");
     }

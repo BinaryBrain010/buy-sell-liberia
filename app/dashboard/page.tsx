@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { MessagesComponent } from "@/components/dashboard/MessagesComponent";
 import UserListings from "@/components/dashboard/userListings";
 import ProfileForm from "@/components/dashboard/profileForm";
 import FavouriteListings from "@/components/dashboard/favouriteListings";
+import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 // JWT Decode function (no external dependencies needed)
 const decodeJWT = (token: string) => {
@@ -57,6 +58,15 @@ export default function DashboardPage() {
   }>({});
   const router = useRouter();
   const { toast } = useToast();
+
+  // Listen for logout events and clear authentication state
+  useAuthLogout(() => {
+    setIsAuthenticated(false);
+    setUser(null);
+    setActiveTab("profile");
+    setChatParams({});
+    console.log("[DASHBOARD] Authentication state cleared due to logout");
+  });
 
   useEffect(() => {
     checkAuthentication();

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { User, Save, Edit3, CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 interface UserProfile {
   firstName: string;
@@ -51,6 +52,24 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
     city: "",
     state: "",
     country: "Pakistan",
+  });
+
+  // Listen for logout events and clear state
+  useAuthLogout(() => {
+    setProfile(null);
+    setLoading(false);
+    setSaving(false);
+    setEditing(false);
+    setFormData({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      city: "",
+      state: "",
+      country: "Pakistan",
+    });
+    console.log("[PROFILE_FORM] State cleared due to logout");
   });
 
   // Fetch user profile

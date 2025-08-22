@@ -57,3 +57,35 @@ export function clearStoredTokens(): void {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
 }
+
+export function clearAllAuthData(): void {
+  if (typeof window === "undefined") return;
+  
+  // Clear tokens
+  clearStoredTokens();
+  
+  // Clear any other potential authentication-related data
+  localStorage.removeItem("userData");
+  localStorage.removeItem("currentUser");
+  localStorage.removeItem("authUser");
+  localStorage.removeItem("user");
+  
+  // Clear any other potential keys that might contain auth data
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.includes("user") || key.includes("auth") || key.includes("token"))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+  
+  // Dispatch a custom event to notify components to clear their state
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("auth:logout", { 
+      detail: { timestamp: Date.now() } 
+    }));
+  }
+  
+  console.log("[JWT UTILS] Cleared all authentication data and dispatched logout event");
+}

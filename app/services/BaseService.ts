@@ -1,4 +1,5 @@
 import axios from "axios"
+import { clearAllAuthData } from "@/lib/jwt"
 
 const axiosInstance = axios.create({
   baseURL: "/api",
@@ -49,12 +50,11 @@ axiosInstance.interceptors.response.use(
   (error) => {
     console.error("[AXIOS] Response error:", error.response?.data || error.message)
     
-    // Handle 401 errors by clearing tokens
+    // Handle 401 errors by clearing all authentication data
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        console.log('[AXIOS] Cleared tokens due to 401 error')
+        clearAllAuthData()
+        console.log('[AXIOS] Cleared all authentication data due to 401 error')
       }
     }
     

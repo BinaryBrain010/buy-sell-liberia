@@ -9,6 +9,7 @@ import { ProductService } from "@/app/services/Product.Service";
 import type { Product } from "@/app/services/Product.Service";
 import { ProductCard } from "@/components/product-card";
 import { CategoryService } from "@/app/services/Category.Service";
+import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 interface FavouriteListingsProps {
   userId: string;
@@ -21,6 +22,17 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<Map<string, { name: string; subcategories: Map<string, string> }>>(new Map());
+
+  // Listen for logout events and clear state
+  useAuthLogout(() => {
+    setFavourites([]);
+    setLoading(false);
+    setSearchTerm("");
+    setError(null);
+    setRemovingItems(new Set());
+    setCategories(new Map());
+    console.log("[FAVOURITE_LISTINGS] State cleared due to logout");
+  });
 
   useEffect(() => {
     const loadData = async () => {
