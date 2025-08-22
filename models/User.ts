@@ -131,7 +131,7 @@ const preferencesSchema = new Schema<Preferences>(
       state: String,
       country: {
         type: String,
-        default: "Pakistan",
+        default: "Liberia",
       },
     },
     notifications: {

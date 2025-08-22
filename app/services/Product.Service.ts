@@ -124,6 +124,7 @@ export class ProductService {
     title: string;
     description: string;
     amount: number;
+    currency?: string;
     category_id: string;
     subcategory_id?: string;
     condition: string;
@@ -159,7 +160,11 @@ export class ProductService {
       const formDataForBackend: any = {
         title: formData.title,
         description: formData.description,
-        price: formData.amount, // API expects 'price' to be the amount
+        price: {
+          amount: formData.amount,
+          currency: formData.currency || "USD",
+          negotiable: formData.negotiable ?? true
+        },
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id ?? "",
         condition: formData.condition,

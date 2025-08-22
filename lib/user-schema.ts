@@ -164,7 +164,7 @@ export const worldCountries = [
   "North Macedonia",
   "Norway",
   "Oman",
-  "Pakistan",
+          "Liberia",
   "Palau",
   "Palestine",
   "Panama",

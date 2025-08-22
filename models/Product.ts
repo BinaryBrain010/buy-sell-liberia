@@ -73,7 +73,7 @@ const viewHistorySchema = new Schema<IViewHistory>(
 // Price schema
 export interface IPrice {
   amount: number
-  currency: "PKR" | "USD" | "EUR" | "GBP"
+  currency: "USD"
   negotiable?: boolean
 }
 
@@ -215,7 +215,7 @@ const productSchema = new Schema<IProduct>(
       },
       currency: {
         type: String,
-        default: "PKR",
+        default: "USD",
         enum: ["PKR", "USD", "EUR", "GBP"],
       },
       negotiable: {
@@ -231,7 +231,7 @@ const productSchema = new Schema<IProduct>(
       state: String,
       country: {
         type: String,
-        default: "Pakistan",
+        default: "Liberia",
       },
       coordinates: {
         latitude: Number,
@@ -525,7 +525,7 @@ productSchema.statics.getFeaturedCount = function () {
 
 // Virtual for formatted price
 productSchema.virtual("formattedPrice").get(function (this: IProduct) {
-  const currency = this.price.currency === "PKR" ? "Rs." : this.price.currency
+  const currency = this.price.currency === "USD" ? "Rs." : this.price.currency
   return `${currency} ${this.price.amount.toLocaleString()}${this.price.negotiable ? " (Negotiable)" : ""}`
 })
 

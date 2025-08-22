@@ -84,7 +84,7 @@ const ProductSchema = new Schema<IProduct>(
       },
       currency: {
         type: String,
-        default: "PKR",
+        default: "USD",
       },
       negotiable: {
         type: Boolean,

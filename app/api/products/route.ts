@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const {
       title,
       description,
-      price: amount,
+      price: priceField,
       category_id,
       subcategory_id = "",
       condition,
@@ -53,6 +53,22 @@ export async function POST(request: NextRequest) {
       tags = [],
       specifications = {},
     } = formData;
+
+    // Handle price field - it can be either a number or an object
+    let amount: number;
+    let currency: string = "USD";
+    
+    if (typeof priceField === 'number') {
+      amount = priceField;
+    } else if (priceField && typeof priceField === 'object' && 'amount' in priceField) {
+      amount = priceField.amount;
+      currency = priceField.currency || "USD";
+    } else {
+      return NextResponse.json(
+        { error: "Invalid price format" },
+        { status: 400 }
+      );
+    }
 
     // Validate required fields
     if (
@@ -133,7 +149,7 @@ export async function POST(request: NextRequest) {
     // Construct full price object with negotiable inside
     const price = {
       amount,
-      currency: "PKR", // Set dynamically if needed
+      currency: currency, // Use currency from form data
       negotiable: negotiable ?? true, // Fallback to true if undefined
     };
 

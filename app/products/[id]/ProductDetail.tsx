@@ -41,7 +41,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
     if (typeof price === "number") return `USD ${price.toLocaleString()}`;
     if (!price || typeof price.amount !== "number")
       return "Price not available";
-    const currency = price.currency || "USD";
+    const currency = "$";
     const formatted = `${currency} ${price.amount.toLocaleString()}`;
     return price.negotiable ? `${formatted} (Negotiable)` : formatted;
   };
