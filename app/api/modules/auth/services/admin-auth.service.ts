@@ -41,7 +41,7 @@ export class AdminAuthService {
     }
 
     static generateTokens(payload: any) {
-        const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
+        const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '60m' });
         const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
         return { accessToken, refreshToken };
     }
