@@ -70,6 +70,33 @@ io.on("connection", (socket) => {
   });
 });
 
+// Swagger UI setup
+const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerJsdoc = require('swagger-jsdoc');
+
+const app = express();
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'BuySell Liberia API',
+      version: '1.0.0',
+      description: 'API documentation for BuySell Liberia (Admin & Main Site)',
+    },
+    servers: [
+      { url: 'http://localhost:3001', description: 'Local server' },
+    ],
+  },
+  apis: ['./app/api/**/*.ts', './server/index.js'], // Adjust as needed
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+httpServer.on('request', app);
+
 httpServer
   .once("error", (err) => {
     console.error(err);
