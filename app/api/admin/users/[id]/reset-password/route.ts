@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
 import mongoose from 'mongoose';
-import User from '../../../../../models/User';
+import User from '../../../../../../models/User';
 import bcrypt from 'bcryptjs';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
