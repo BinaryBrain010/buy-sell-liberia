@@ -199,10 +199,11 @@ export interface IUser extends Document {
   activity: Activity;
   listedProducts: ProductListing[];
   likedProducts: LikedProduct[];
-  following: mongoose.Types.ObjectId[];
-  followers: mongoose.Types.ObjectId[];
   isActive: boolean;
   isBlocked: boolean;
+  isBanned: boolean;
+  banReason?: string | null;
+  bannedAt?: Date | null;
   emailVerificationToken?: string;
   emailVerified: boolean;
   phoneVerificationToken?: string;
@@ -220,10 +221,6 @@ export interface IUser extends Document {
   likeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   unlikeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   hasLikedProduct(productId: mongoose.Types.ObjectId): boolean;
-  followUser(userId: mongoose.Types.ObjectId): Promise<IUser>;
-  unfollowUser(userId: mongoose.Types.ObjectId): Promise<IUser>;
-  addFollower(userId: mongoose.Types.ObjectId): Promise<IUser>;
-  removeFollower(userId: mongoose.Types.ObjectId): Promise<IUser>;
   updateActivity(activityData: Partial<Activity>): Promise<IUser>;
   updateRating(newRating: number): Promise<IUser>;
   generatePasswordResetToken(): string;
@@ -287,19 +284,6 @@ const userSchema = new Schema<IUser>(
       type: [likedProductSchema],
       default: [],
     },
-    // Social features
-    following: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    followers: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
     // Account status
     isActive: {
       type: Boolean,
@@ -308,6 +292,19 @@ const userSchema = new Schema<IUser>(
     isBlocked: {
       type: Boolean,
       default: false,
+    },
+    // Ban management
+    isBanned: {
+      type: Boolean,
+      default: false,
+    },
+    banReason: {
+      type: String,
+      default: null,
+    },
+    bannedAt: {
+      type: Date,
+      default: null,
     },
     // Verification tokens
     emailVerificationToken: String,
@@ -361,8 +358,6 @@ userSchema.virtual("stats").get(function (this: IUser) {
     rating: this.profile.rating.average,
     reviewCount: this.profile.rating.count,
     joinedDate: this.activity.joinedDate,
-    followerCount: this.followers.length,
-    followingCount: this.following.length,
   };
 });
 
@@ -469,48 +464,6 @@ userSchema.methods.hasLikedProduct = function (
   return this.likedProducts.some(
     (like: LikedProduct) => like.product_id.toString() === productId.toString()
   );
-};
-
-userSchema.methods.followUser = function (
-  userId: mongoose.Types.ObjectId
-): Promise<IUser> {
-  const alreadyFollowing = this.following.some(
-    (id: mongoose.Types.ObjectId) => id.toString() === userId.toString()
-  );
-  if (!alreadyFollowing) {
-    this.following.push(userId);
-  }
-  return this.save();
-};
-
-userSchema.methods.unfollowUser = function (
-  userId: mongoose.Types.ObjectId
-): Promise<IUser> {
-  this.following = this.following.filter(
-    (id: mongoose.Types.ObjectId) => id.toString() !== userId.toString()
-  );
-  return this.save();
-};
-
-userSchema.methods.addFollower = function (
-  userId: mongoose.Types.ObjectId
-): Promise<IUser> {
-  const alreadyFollower = this.followers.some(
-    (id: mongoose.Types.ObjectId) => id.toString() === userId.toString()
-  );
-  if (!alreadyFollower) {
-    this.followers.push(userId);
-  }
-  return this.save();
-};
-
-userSchema.methods.removeFollower = function (
-  userId: mongoose.Types.ObjectId
-): Promise<IUser> {
-  this.followers = this.followers.filter(
-    (id: mongoose.Types.ObjectId) => id.toString() !== userId.toString()
-  );
-  return this.save();
 };
 
 userSchema.methods.updateActivity = function (
