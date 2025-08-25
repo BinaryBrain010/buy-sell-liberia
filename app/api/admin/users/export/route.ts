@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
 import mongoose from 'mongoose';
-import User from '../../../../models/User';
+import User from '@/models/User';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
 
