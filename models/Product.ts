@@ -177,6 +177,7 @@ export interface IProduct extends Document {
   markAsFeatured(): Promise<IProduct>
   unmarkAsFeatured(): Promise<IProduct>
   toggleFeatured(): Promise<IProduct>
+  reportIds: mongoose.Types.ObjectId[]
 }
 
 const productSchema = new Schema<IProduct>(
@@ -303,6 +304,10 @@ const productSchema = new Schema<IProduct>(
       default: [],
     },
     searchText: String,
+    reportIds: [{
+      type: Schema.Types.ObjectId,
+      ref: "Report"
+    }],
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
