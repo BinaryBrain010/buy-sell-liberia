@@ -137,7 +137,10 @@ export function Navbar() {
         isOpen={mobileMenuOpen}
         setIsOpen={setMobileMenuOpen}
         onAuthClick={handleAuthClick}
-        onSellClick={() => setMobileMenuOpen(false)}
+        onSellClick={() => {
+          setMobileMenuOpen(false);
+          window.location.href = "/sell";
+        }}
         onChatClick={handleChatClick}
       />
 
