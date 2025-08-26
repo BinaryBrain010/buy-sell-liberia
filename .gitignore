@@ -23,6 +23,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# package
+.package-lock.json
+
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
