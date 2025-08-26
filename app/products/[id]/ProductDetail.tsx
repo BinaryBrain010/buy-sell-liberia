@@ -63,10 +63,13 @@ export default function ProductDetail(productData: ProductDetailProps) {
     if (!img) return undefined;
     if (typeof img === "string") {
       if (img.startsWith("http")) return img;
-      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
+      // Remove leading slashes and use API route
+      const cleanPath = img.replace(/^\/+/, "");
+      return `/api/uploads/${cleanPath}`;
     }
     if (img.url.startsWith("http")) return img.url;
-    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+    const cleanPath = img.url.replace(/^\/+/, "");
+    return `/api/uploads/${cleanPath}`;
   };
 
   const images = Array.isArray(productData?.images) ? productData.images : [];
