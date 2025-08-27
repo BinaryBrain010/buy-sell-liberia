@@ -41,6 +41,7 @@ export interface IChat extends Document {
   messages: IMessage[];
   lastMessageAt: Date;
   isActive: boolean;
+  flagged: boolean;
   getMessageById(messageId: string): IMessage | undefined;
 }
 
@@ -77,6 +78,11 @@ const chatSchema = new Schema<IChat, ChatModel>(
       type: Boolean,
       default: true,
     },
+    flagged: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
@@ -96,6 +102,27 @@ chatSchema.statics.deleteChatsByProduct = async function (productId: mongoose.Ty
 chatSchema.methods.getMessageById = function (messageId: string): IMessage | undefined {
   return this.messages.find((msg: { _id: { toString: () => string; }; }) => msg._id.toString() === messageId);
 };
+
+// List of abusive keywords (can be expanded)
+const ABUSIVE_KEYWORDS = [
+  'idiot', 'stupid', 'dumb', 'fool', 'hate', 'bastard', 'moron', 'shut up', 'nonsense', 'fuck'
+];
+
+// Helper function to check if a message contains abusive keywords
+function containsAbusiveKeyword(text: string): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return ABUSIVE_KEYWORDS.some(word => lower.includes(word));
+}
+
+// Middleware to flag chat if any message is abusive
+chatSchema.pre('save', function (next) {
+  const chat = this as any;
+  if (chat.messages && Array.isArray(chat.messages)) {
+    chat.flagged = chat.messages.some((msg: any) => containsAbusiveKeyword(msg.content));
+  }
+  next();
+});
 
 // Use the existing model if it exists, otherwise create a new one
 const Chat = mongoose.models.Chat || mongoose.model<IChat, ChatModel>("Chat", chatSchema);
