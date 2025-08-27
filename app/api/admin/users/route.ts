@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch users (basic info)
-    const users = await User.find({}, 'fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts')
+    const users = await User.find({}, 'fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts createdAt updatedAt')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -75,8 +75,7 @@ export async function GET(request: NextRequest) {
         reviewCount: user.profile?.rating?.count || 0,
         totalViews: listedProducts.reduce((sum: number, product: any) => sum + (product.views || 0), 0),
         averageViews: listedProducts.length > 0 ? Math.round(listedProducts.reduce((sum: number, product: any) => sum + (product.views || 0), 0) / listedProducts.length) : 0,
-        joinedDate: user.activity?.joinedDate?.toISOString?.() || user.createdAt?.toISOString?.() || user.created_at?.toISOString?.() || null,
-        lastActive: user.activity?.lastActive?.toISOString?.() || user.updatedAt?.toISOString?.() || user.updated_at?.toISOString?.() || null,
+        joinedDate: user.createdAt ? new Date(user.createdAt).toISOString() : (user.created_at ? new Date(user.created_at).toISOString() : null),
       };
       // Prepare response
       return {
