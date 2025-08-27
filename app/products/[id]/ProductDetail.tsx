@@ -72,10 +72,10 @@ export default function ProductDetail(productData: ProductDetailProps) {
   const images = Array.isArray(productData?.images) ? productData.images : [];
   const displayName =
     productData?.seller?.fullName ||
-    productData?.user_id?.profile?.displayName ||
-    (productData?.user_id?.firstName && productData?.user_id?.lastName
-      ? `${productData.user_id.firstName} ${productData.user_id.lastName}`
-      : "Unknown Seller");
+    productData?.seller?.username ||
+    productData?.user_id?.fullName ||
+    productData?.user_id?.username ||
+    "Unknown Seller";
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {

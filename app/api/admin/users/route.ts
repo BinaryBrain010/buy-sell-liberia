@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     const users = await User.find({}, '-password -passwordResetToken -emailVerificationToken -phoneVerificationToken')
+      .select('fullName username email phone profile preferences activity emailVerified phoneVerified')
       .skip(skip)
       .limit(limit)
       .sort({ created_at: -1 });

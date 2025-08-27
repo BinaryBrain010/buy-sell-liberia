@@ -156,19 +156,13 @@ export default function DashboardPage() {
 
         if (storedUserData) {
           // Use the stored user data from auth provider
-          const userData = {
+          setUser({
             id: storedUserData._id,
-            firstName:
-              storedUserData.fullName?.split(" ")[0] || storedUserData.username,
-            lastName:
-              storedUserData.fullName?.split(" ").slice(1).join(" ") || "",
+            fullName: storedUserData.fullName,
+            username: storedUserData.username,
             email: storedUserData.email,
-            profile: {
-              avatar: storedUserData.profile?.avatar || "/placeholder-user.jpg",
-            },
-          };
-          console.log("🔐 Setting user from stored data:", userData);
-          setUser(userData);
+            profile: { avatar: storedUserData.profile?.avatar || "/placeholder-user.jpg" },
+          });
           setIsAuthenticated(true);
           return;
         }
@@ -186,49 +180,33 @@ export default function DashboardPage() {
         if (userData && userData.user) {
           // Extract user data from JWT payload
           console.log("🔐 Found user data in token:", userData.user);
-          const userDataObj = {
+          setUser({
             id: userData.user.id || userData.user._id,
-            firstName:
-              userData.user.firstName ||
-              userData.user.fullName?.split(" ")[0] ||
-              userData.user.username,
-            lastName:
-              userData.user.lastName ||
-              userData.user.fullName?.split(" ").slice(1).join(" ") ||
-              "",
+            fullName: userData.user.fullName,
+            username: userData.user.username,
             email: userData.user.email,
-            profile: {
-              avatar: userData.user.profile?.avatar || "/placeholder-user.jpg",
-            },
-          };
-          console.log("🔐 Setting user from JWT user data:", userDataObj);
-          setUser(userDataObj);
+            profile: { avatar: userData.user.profile?.avatar || "/placeholder-user.jpg" },
+          });
         } else if (userData && userData.userId) {
           // JWT only contains userId, we need to get user data from somewhere else
           console.log("🔐 JWT only contains userId:", userData.userId);
           // Since we don't have user data, we'll use a generic approach
-          const userDataObj = {
+          setUser({
             id: userData.userId,
-            firstName: "User",
-            lastName: "Account",
+            fullName: "User",
+            username: "Account",
             email: "user@example.com",
-            profile: {
-              avatar: "/placeholder-user.jpg",
-            },
-          };
-          console.log("🔐 Setting user from JWT userId:", userDataObj);
-          setUser(userDataObj);
+            profile: { avatar: "/placeholder-user.jpg" },
+          });
         } else {
           // Fallback to mock data if JWT decoding fails
           console.log("No user data found in token, using fallback");
           setUser({
             id: "user123",
-            firstName: "",
-            lastName: "Account",
+            fullName: "",
+            username: "Account",
             email: "user@example.com",
-            profile: {
-              avatar: "/placeholder-user.jpg",
-            },
+            profile: { avatar: "/placeholder-user.jpg" },
           });
         }
 
@@ -296,7 +274,7 @@ export default function DashboardPage() {
                   variant="secondary"
                   className="ml-1 h-6 px-2 text-xs whitespace-nowrap"
                 >
-                  Welcome back{user?.firstName ? `, ${user.firstName}` : ""}!
+                  Welcome back{user?.fullName ? `, ${user.fullName}` : user?.username ? `, ${user.username}` : ""}!
                 </Badge>
               </div>
               <div className="-mx-4 px-4 sm:mx-0 sm:px-0">

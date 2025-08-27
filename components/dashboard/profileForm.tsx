@@ -17,8 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
 
 interface UserProfile {
-  firstName: string;
-  lastName: string;
+  fullName: string;
+  username: string;
   email: string;
   phone?: string;
   preferences?: {
@@ -45,8 +45,8 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
 
   // Form state
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    fullName: "",
+    username: "",
     email: "",
     phone: "",
     city: "",
@@ -61,8 +61,8 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
     setSaving(false);
     setEditing(false);
     setFormData({
-      firstName: "",
-      lastName: "",
+      fullName: "",
+      username: "",
       email: "",
       phone: "",
       city: "",
@@ -87,8 +87,8 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
 
       // Initialize form data with current user values
       setFormData({
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
+        fullName: userData.fullName || "",
+        username: userData.username || "",
         email: userData.email || "",
         phone: userData.phone || "",
         city: userData.preferences?.defaultLocation?.city || "",
@@ -128,8 +128,8 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
 
       // Prepare update data
       const updateData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        fullName: formData.fullName,
+        username: formData.username,
         phone: formData.phone,
         preferences: {
           defaultLocation: {
@@ -183,8 +183,8 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
     // Reset form data to original values
     if (profile) {
       setFormData({
-        firstName: profile.firstName || "",
-        lastName: profile.lastName || "",
+        fullName: profile.fullName || "",
+        username: profile.username || "",
         email: profile.email || "",
         phone: profile.phone || "",
         city: profile.preferences?.defaultLocation?.city || "",
@@ -285,7 +285,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
           {/* Compact summary */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
             <span className="font-medium text-foreground">
-              {profile.firstName} {profile.lastName}
+              {profile.fullName} <span className="text-xs text-muted-foreground">({profile.username})</span>
             </span>
             <span className="truncate">{profile.email}</span>
           </div>
@@ -293,25 +293,25 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="fullName">Full Name</Label>
               <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => handleInputChange("fullName", e.target.value)}
                 disabled={!editing}
                 className="mt-1 h-9"
-                placeholder="Enter first name"
+                placeholder="Enter full name"
               />
             </div>
             <div>
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                id="username"
+                value={formData.username}
+                onChange={(e) => handleInputChange("username", e.target.value)}
                 disabled={!editing}
                 className="mt-1 h-9"
-                placeholder="Enter last name"
+                placeholder="Enter username"
               />
             </div>
             <div>

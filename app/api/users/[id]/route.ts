@@ -27,7 +27,7 @@ export async function GET(
 
   try {
     const user = await User.findById(userId).select(
-      "firstName lastName email phone profile preferences activity emailVerified phoneVerified"
+      "fullName username email phone profile preferences activity emailVerified phoneVerified"
     );
 
     if (!user) {
@@ -83,18 +83,14 @@ export async function PUT(
 
     // Prepare the update object
     const updateObject: any = {};
-    
-    if (updateData.firstName !== undefined) updateObject.firstName = updateData.firstName;
-    if (updateData.lastName !== undefined) updateObject.lastName = updateData.lastName;
+    if (updateData.fullName !== undefined) updateObject.fullName = updateData.fullName;
+    if (updateData.username !== undefined) updateObject.username = updateData.username;
     if (updateData.phone !== undefined) updateObject.phone = updateData.phone;
-    
     if (updateData.profile) {
       updateObject.profile = {};
-      if (updateData.profile.displayName !== undefined) updateObject.profile.displayName = updateData.profile.displayName;
       if (updateData.profile.bio !== undefined) updateObject.profile.bio = updateData.profile.bio;
       if (updateData.profile.avatar !== undefined) updateObject.profile.avatar = updateData.profile.avatar;
     }
-    
     if (updateData.preferences) {
       updateObject.preferences = {};
       if (updateData.preferences.defaultLocation) {
@@ -116,7 +112,7 @@ export async function PUT(
       userId,
       { $set: updateObject },
       { new: true, runValidators: true }
-    ).select("firstName lastName email phone profile preferences activity emailVerified phoneVerified");
+    ).select("fullName username email phone profile preferences activity emailVerified phoneVerified");
 
     if (!updatedUser) {
       return NextResponse.json(
@@ -131,7 +127,6 @@ export async function PUT(
       message: "Profile updated successfully",
       user: updatedUser
     });
-
   } catch (error: any) {
     console.error("❌ [USER API] Error:", error);
     return NextResponse.json(
