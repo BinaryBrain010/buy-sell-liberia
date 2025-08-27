@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import dbConnect from "@/lib/mongoose";
-import { User } from "@/models";
+import { User, Product } from "@/models";
 import { verifyToken } from "@/app/api/modules/auth/middlewares/next-auth-middleware";
 
 export const dynamic = 'force-dynamic';
@@ -15,29 +15,49 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   await dbConnect();
-
   const userId = params.id;
-
   if (!userId || !isValidObjectId(userId)) {
     return NextResponse.json(
       { error: "Invalid user ID" },
       { status: 400 }
     );
   }
-
   try {
-    const user = await User.findById(userId).select(
-      "firstName lastName email phone profile preferences activity emailVerified phoneVerified"
-    );
-
+    // Fetch user (without populating listedProducts)
+    const user = await User.findById(userId)
+      .select("fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts")
+      .lean();
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
         { status: 404 }
       );
     }
-
-    return NextResponse.json(user);
+    // Fetch all products listed by this user
+    const listedProducts = await Product.find({ user_id: user._id }).lean();
+    // Fetch all liked products by product_id
+    const likedProductIds = (user.likedProducts || []).map((like: any) => like.product_id);
+    const likedProducts = likedProductIds.length > 0
+      ? await Product.find({ _id: { $in: likedProductIds } }).lean()
+      : [];
+    // Prepare stats
+    const stats = {
+      likedProducts: likedProducts.length,
+      listedProducts: listedProducts.length,
+      totalListings: listedProducts.length,
+      activeListings: listedProducts.filter((p: any) => p.status === "active").length,
+      soldItems: listedProducts.filter((p: any) => p.status === "sold").length,
+      rating: user.profile?.rating?.average || 0,
+      reviewCount: user.profile?.rating?.count || 0,
+    };
+    // Prepare response
+    const userObj = {
+      ...user,
+      listedProducts,
+      likedProducts,
+      stats,
+    };
+    return NextResponse.json(userObj);
   } catch (error) {
     console.error("Error fetching user:", error);
     return NextResponse.json(
@@ -83,18 +103,14 @@ export async function PUT(
 
     // Prepare the update object
     const updateObject: any = {};
-    
-    if (updateData.firstName !== undefined) updateObject.firstName = updateData.firstName;
-    if (updateData.lastName !== undefined) updateObject.lastName = updateData.lastName;
+    if (updateData.fullName !== undefined) updateObject.fullName = updateData.fullName;
+    if (updateData.username !== undefined) updateObject.username = updateData.username;
     if (updateData.phone !== undefined) updateObject.phone = updateData.phone;
-    
     if (updateData.profile) {
       updateObject.profile = {};
-      if (updateData.profile.displayName !== undefined) updateObject.profile.displayName = updateData.profile.displayName;
       if (updateData.profile.bio !== undefined) updateObject.profile.bio = updateData.profile.bio;
       if (updateData.profile.avatar !== undefined) updateObject.profile.avatar = updateData.profile.avatar;
     }
-    
     if (updateData.preferences) {
       updateObject.preferences = {};
       if (updateData.preferences.defaultLocation) {
@@ -116,7 +132,7 @@ export async function PUT(
       userId,
       { $set: updateObject },
       { new: true, runValidators: true }
-    ).select("firstName lastName email phone profile preferences activity emailVerified phoneVerified");
+    ).select("fullName username email phone profile preferences activity emailVerified phoneVerified");
 
     if (!updatedUser) {
       return NextResponse.json(
@@ -131,7 +147,6 @@ export async function PUT(
       message: "Profile updated successfully",
       user: updatedUser
     });
-
   } catch (error: any) {
     console.error("❌ [USER API] Error:", error);
     return NextResponse.json(
