@@ -3,6 +3,7 @@ import { AdminAuthService } from '../../modules/auth/services/admin-auth.service
 import mongoose from 'mongoose';
 import User from '../../../../models/User';
 import Product from '../../../../models/Product';
+import Chat from '../../../../models/Chat';
 
 // Define interfaces for TypeScript
 interface ILike {
@@ -51,6 +52,14 @@ export async function GET(request: NextRequest) {
       const likedProducts = likedProductIds.length > 0
         ? await Product.find({ _id: { $in: likedProductIds } }).lean()
         : [];
+      // Fetch all chats where the user is a participant
+      const chats = await Chat.find({
+        $or: [{ user1: user._id }, { user2: user._id }]
+      })
+        .populate('product', 'title slug')
+        .populate('user1', 'fullName username')
+        .populate('user2', 'fullName username')
+        .lean();
       // Prepare stats
       const stats = {
         likedProducts: likedProducts.length,
@@ -75,6 +84,7 @@ export async function GET(request: NextRequest) {
         listedProducts,
         likedProducts,
         stats,
+        chats,
       };
     }));
 
