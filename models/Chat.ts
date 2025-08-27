@@ -105,7 +105,7 @@ chatSchema.methods.getMessageById = function (messageId: string): IMessage | und
 
 // List of abusive keywords (can be expanded)
 const ABUSIVE_KEYWORDS = [
-  'idiot', 'stupid', 'dumb', 'fool', 'hate', 'bastard', 'moron', 'shut up', 'nonsense', 'fuck'
+  'idiot', 'stupid', 'dumb', 'fool', 'hate','test', 'bastard', 'moron', 'shut up', 'nonsense', 'fuck'
 ];
 
 // Helper function to check if a message contains abusive keywords
