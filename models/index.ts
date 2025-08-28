@@ -10,8 +10,9 @@ import Category from "./Category";
 import Product from "./Product";
 import Review from "./Review";
 import Chat from "./Chat";
+import ManualPayment from "./ManualPayment";
 
-export { User, Category, Product, Review, Chat };
+export { User, Category, Product, Review, Chat, ManualPayment };
 
 export const models = {
   User,
@@ -19,6 +20,7 @@ export const models = {
   Product,
   Review,
   Chat,
+  ManualPayment,
 };
 
 export const utils = {
