@@ -42,8 +42,9 @@ export const ReportProductButton: React.FC<ReportProductButtonProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { user } = useAuth();
-  const effectiveUserId = currentUserId || user?.id || null;
+  const { user, loading: authLoading } = useAuth();
+  const effectiveUserId = currentUserId || (user?.id ? user.id : null);
+  const canReport = !!effectiveUserId;
 
   useEffect(() => {
     if (!open) {
@@ -109,7 +110,7 @@ export const ReportProductButton: React.FC<ReportProductButtonProps> = ({
               <X className="h-4 w-4" />
             </button>
             <h3 className="text-lg font-semibold mb-4">Report This Listing</h3>
-            {effectiveUserId ? (
+            {canReport ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -189,17 +190,29 @@ export const ReportProductButton: React.FC<ReportProductButtonProps> = ({
               </form>
             ) : (
               <div className="space-y-5">
-                <p className="text-sm text-muted-foreground">
-                  You need to be logged in to report this listing.
-                </p>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setOpen(false)}>
-                    Close
-                  </Button>
-                  <Button onClick={() => setIsAuthModalOpen(true)}>
-                    Login
-                  </Button>
-                </div>
+                {authLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Checking authentication...
+                  </p>
+                ) : user ? (
+                  <p className="text-sm text-muted-foreground">
+                    Preparing your account...
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground">
+                      You need to be logged in to report this listing.
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setOpen(false)}>
+                        Close
+                      </Button>
+                      <Button onClick={() => setIsAuthModalOpen(true)}>
+                        Login
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
