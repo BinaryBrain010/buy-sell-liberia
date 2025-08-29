@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
 
     // Parse files and fields
     const { files, fields } = await parseFiles(request);
+    console.log('Parsed fields:', fields);
+    console.log('Parsed files:', files);
     const { listing, amount, method, transactionId, userNotes = "" } = fields;
 
     // Validate required fields
@@ -32,15 +34,22 @@ export async function POST(request: NextRequest) {
 
     // Connect to DB if needed
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI!);
+      await mongoose.connect(process.env.MONGODB_URI || process.env.MONGODB_URI!);
     }
 
     // Check product exists and belongs to user
-    const product = await Product.findById(listing);
-    if (!product) {
+    const productDoc = await Product.findById(listing);
+    console.log('Product found:', productDoc);
+    if (!productDoc) {
       return NextResponse.json({ error: "Listing not found." }, { status: 404 });
     }
-    if (product.user_id.toString() !== userId) {
+    const product = productDoc.toObject ? productDoc.toObject() : productDoc;
+    const ownerId = product.user_id || (product as any).seller;
+    if (!ownerId) {
+      console.log('Product has no owner field:', product);
+      return NextResponse.json({ error: "Product has no owner field." }, { status: 500 });
+    }
+    if (ownerId.toString() !== userId) {
       return NextResponse.json({ error: "You can only feature your own products." }, { status: 403 });
     }
 
