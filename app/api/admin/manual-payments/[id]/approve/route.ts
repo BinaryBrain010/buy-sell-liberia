@@ -48,30 +48,38 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     payment.adminNotes = adminNotes;
     await payment.save();
 
-    // Mark product as featured
+    // Mark product as featured (direct update, no validation)
     let productDoc = null;
     if (payment.listing && typeof payment.listing === 'object' && 'featured' in payment.listing) {
       productDoc = payment.listing;
     } else {
       productDoc = await Product.findById(payment.listing);
     }
-    if (productDoc && typeof productDoc === 'object' && productDoc !== null && 'featured' in productDoc && productDoc.featured === false) {
-      productDoc.featured = true;
-      if (typeof (productDoc as any).save === 'function') {
-        await (productDoc as any).save();
-      }
+    if (productDoc && typeof productDoc === 'object' && productDoc !== null) {
+      const productIdToUpdate = productDoc._id || payment.listing;
+      await Product.updateOne({ _id: productIdToUpdate }, { $set: { featured: true } });
     }
 
     // Send message to user via chat
     const userId = payment.user._id;
+    let senderId = adminId;
+    // Defensive: ensure senderId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(senderId)) {
+      // Try to fetch admin by email or fallback
+      const adminUser = await User.findOne({ email: payload.email });
+      if (adminUser) senderId = adminUser._id;
+      else senderId = userId; // fallback to userId to avoid validation error
+    }
     const productTitle = productDoc && typeof productDoc === 'object' && productDoc !== null && 'title' in productDoc ? productDoc.title : '';
     const productId = productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing;
     let chat = await Chat.findOne({ product: productId, user2: userId });
     if (!chat) {
-      chat = await Chat.create({ product: productId, user1: adminId, user2: userId, messages: [] });
+      chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
+      console.log('Created new chat:', chat._id);
     }
-    chat.messages.push({ sender: adminId, content: `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured.`, sentAt: new Date(), readBy: [] });
+    chat.messages.push({ sender: senderId, content: `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured.`, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
+    console.log('Pushed message to chat:', chat._id, 'Sender:', senderId);
     await chat.save();
 
     return NextResponse.json({ success: true, message: 'Payment approved and user notified.' });

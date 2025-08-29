@@ -71,3 +71,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Failed to fetch manual payments' }, { status: 500 });
   }
 }
+
+
