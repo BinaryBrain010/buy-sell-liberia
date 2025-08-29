@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Phone, MessageCircle, Copy, LogIn } from "lucide-react";
+import { AuthModal } from "@/components/auth-modal";
 import { toast } from "sonner";
 
 interface ContactSellerButtonProps {
@@ -37,6 +38,7 @@ export function ContactSellerButton({
 }: ContactSellerButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [sellerPhone, setSellerPhone] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -95,8 +97,9 @@ export function ContactSellerButton({
   };
 
   const handleLogin = () => {
-    // Redirect to login page or open login modal
-    window.location.href = "/login";
+    // Close simple login required dialog (if open) and show full auth modal
+    setIsLoginDialogOpen(false);
+    setIsAuthModalOpen(true);
   };
 
   const copyPhoneNumber = () => {
@@ -200,6 +203,15 @@ export function ContactSellerButton({
             </div>
           </DialogContent>
         </Dialog>
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onOpenChange={setIsAuthModalOpen}
+          onLoginSuccess={() => {
+            setIsAuthenticated(true);
+            setIsAuthModalOpen(false);
+          }}
+          initialMode="login"
+        />
       </>
     );
   }
@@ -235,6 +247,15 @@ export function ContactSellerButton({
             </div>
           </DialogContent>
         </Dialog>
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onOpenChange={setIsAuthModalOpen}
+          onLoginSuccess={() => {
+            setIsAuthenticated(true);
+            setIsAuthModalOpen(false);
+          }}
+          initialMode="login"
+        />
       </>
     );
   }
@@ -337,6 +358,15 @@ export function ContactSellerButton({
           </div>
         </DialogContent>
       </Dialog>
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onOpenChange={setIsAuthModalOpen}
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          setIsAuthModalOpen(false);
+        }}
+        initialMode="login"
+      />
     </>
   );
 }
