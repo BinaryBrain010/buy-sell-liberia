@@ -5,13 +5,15 @@
  * utility functions for the marketplace system.
  */
 
-import User from "./User";
-import Category from "./Category";
-import Product from "./Product";
-import Review from "./Review";
-import Chat from "./Chat";
+import User from './User';
+import Product from './Product';
+import ManualPayment from './ManualPayment';
+import Category from './Category';
+import Review from './Review';
+import Chat from './Chat';
+// Add other models as needed
 
-export { User, Category, Product, Review, Chat };
+export { User, Product, ManualPayment, Category, Review, Chat };
 
 export const models = {
   User,
@@ -19,6 +21,7 @@ export const models = {
   Product,
   Review,
   Chat,
+  ManualPayment,
 };
 
 export const utils = {
