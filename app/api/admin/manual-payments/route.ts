@@ -4,6 +4,7 @@ import ManualPayment from '../../../../models/ManualPayment';
 import User from '../../../../models/User';
 import Product from '../../../../models/Product';
 import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
+import '../../../../models';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     // Connect to DB if needed
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI!);
+      await mongoose.connect(process.env.MONGODB_URI || process.env.MONGODB_URI!);
     }
 
     // Pagination and filtering
@@ -38,16 +39,35 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .sort({ createdAt: -1 })
       .populate('user', 'fullName username email')
-      .populate('listing', 'title featured');
+      .populate('listing', 'title featured')
+      .lean();
+
+    // Add all required details for the panel
+    const result = payments.map(payment => ({
+      _id: payment._id,
+      user: payment.user,
+      listing: payment.listing,
+      amount: payment.amount,
+      method: payment.method,
+      transactionId: payment.transactionId,
+      screenshot: payment.screenshot,
+      status: payment.status,
+      adminNotes: payment.adminNotes,
+      userNotes: payment.userNotes,
+      createdAt: payment.createdAt,
+      reviewedBy: payment.reviewedBy,
+      reviewedAt: payment.reviewedAt,
+    }));
 
     return NextResponse.json({
-      payments,
+      payments: result,
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
     });
   } catch (error: any) {
+    console.error('Manual payments GET error:', error);
     return NextResponse.json({ error: error.message || 'Failed to fetch manual payments' }, { status: 500 });
   }
 }

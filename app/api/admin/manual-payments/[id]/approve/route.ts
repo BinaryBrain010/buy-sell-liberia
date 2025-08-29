@@ -32,14 +32,24 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Payment already processed' }, { status: 400 });
     }
 
+    // Accept adminNotes from body
+    let adminNotes = '';
+    try {
+      const body = await request.json();
+      adminNotes = body.adminNotes || '';
+    } catch (e) {
+      // No body or not JSON, ignore
+    }
+
     // Mark payment as approved
     payment.status = 'approved';
     payment.reviewedBy = adminId;
     payment.reviewedAt = new Date();
+    payment.adminNotes = adminNotes;
     await payment.save();
 
     // Mark product as featured
-    let productDoc: any = null;
+    let productDoc = null;
     if (payment.listing && typeof payment.listing === 'object' && 'featured' in payment.listing) {
       productDoc = payment.listing;
     } else {
@@ -47,8 +57,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
     if (productDoc && typeof productDoc === 'object' && productDoc !== null && 'featured' in productDoc && productDoc.featured === false) {
       productDoc.featured = true;
-      if (typeof productDoc.save === 'function') {
-        await productDoc.save();
+      if (typeof (productDoc as any).save === 'function') {
+        await (productDoc as any).save();
       }
     }
 

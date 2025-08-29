@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import ManualPayment from '../../../../../models/ManualPayment';
-import Product from '../../../../../models/Product';
-import User from '../../../../../models/User';
-import Chat from '../../../../../models/Chat';
-import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
+import ManualPayment from '../../../../../../models/ManualPayment';
+import Product from '../../../../../../models/Product';
+import User from '../../../../../../models/User';
+import Chat from '../../../../../../models/Chat';
+import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -32,25 +32,37 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Payment already processed' }, { status: 400 });
     }
 
-    const { adminNotes } = await request.json();
+    // Accept adminNotes from body
+    let adminNotes = '';
+    try {
+      const body = await request.json();
+      adminNotes = body.adminNotes || '';
+    } catch (e) {
+      // No body or not JSON, ignore
+    }
+
     payment.status = 'rejected';
-    payment.adminNotes = adminNotes || '';
+    payment.adminNotes = adminNotes;
     payment.reviewedBy = adminId;
     payment.reviewedAt = new Date();
     await payment.save();
 
     // Send message to user via chat
     const userId = payment.user._id;
-    const productId = payment.listing._id;
+    let productTitle = '';
+    if (payment.listing && typeof payment.listing === 'object' && 'title' in payment.listing) {
+      productTitle = (payment.listing as any)?.title ?? '';
+    }
+    const productId = payment.listing && typeof payment.listing === 'object' && '_id' in payment.listing ? payment.listing._id : payment.listing;
     let chat = await Chat.findOne({ product: productId, user2: userId });
     if (!chat) {
       chat = await Chat.create({ product: productId, user1: adminId, user2: userId, messages: [] });
     }
-    chat.messages.push({ sender: adminId, content: `Your manual payment for featuring the product "${payment.listing.title}" has been rejected. Reason: ${adminNotes || 'No reason provided.'}`, sentAt: new Date(), readBy: [] });
+    chat.messages.push({ sender: adminId, content: `Your manual payment for featuring the product "${productTitle}" has been rejected. Reason: ${adminNotes || 'No reason provided.'}`, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
     await chat.save();
 
-    return NextResponse.json({ success: true, message: 'Payment rejected and user notified.' });
+    return NextResponse.json({ success: true, message: 'Payment rejected and user notified. User can resubmit.' });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to reject manual payment.' }, { status: 500 });
   }
