@@ -53,6 +53,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "You can only feature your own products." }, { status: 403 });
     }
 
+    // Prevent duplicate pending requests for the same user and listing
+    const existingPending = await ManualPayment.findOne({
+      user: userId,
+      listing: product._id,
+      status: 'pending',
+    });
+    if (existingPending) {
+      return NextResponse.json({ error: 'You already have a pending feature request for this product. Please wait for admin response.' }, { status: 409 });
+    }
+
     // Upload screenshot (use product category and title for folder structure)
     const screenshotPaths = await uploadProductImagesToLocal(files, String(product.category_id), String(product._id), product.title);
     const screenshot = screenshotPaths[0];
