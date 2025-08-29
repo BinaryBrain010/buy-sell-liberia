@@ -1,16 +1,36 @@
 // ReviewCard.tsx
 
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Image, MapPin, Info, Tag, DollarSign, Package, Phone, Truck } from 'lucide-react'
-import { ProductFormData } from './types'
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Image,
+  MapPin,
+  Info,
+  Tag,
+  DollarSign,
+  Package,
+  Phone,
+  Truck,
+} from "lucide-react";
+import { ProductFormData } from "./types";
+
+import { Category } from "./types";
 
 interface ReviewCardProps {
-  formData: ProductFormData
+  formData: ProductFormData;
+  categories: Category[];
 }
 
-const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
+const ReviewCard: React.FC<ReviewCardProps> = ({ formData, categories }) => {
+  // Prevent crash if categories is undefined
+  const safeCategories = categories || [];
+  const categoryObj = safeCategories.find(
+    (cat) => cat._id === formData.category
+  );
+  const subCategoryObj = categoryObj?.subcategories?.find(
+    (sub) => sub._id === formData.subCategory
+  );
   return (
     <Card className="border-blue-200">
       <CardHeader>
@@ -31,8 +51,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
               </p>
               <div className="flex items-center gap-4 mt-2 text-sm">
                 <span className="text-muted-foreground">
-                  {formData.category}
-                  {formData.subCategory && ` / ${formData.subCategory}`}
+                  {categoryObj?.name || ""}
+                  {subCategoryObj ? ` / ${subCategoryObj.name}` : ""}
                 </span>
                 <Badge variant="outline" className="capitalize">
                   {formData.condition}
@@ -46,7 +66,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
             <DollarSign className="w-5 h-5 text-green-600" />
             <div>
               <span className="font-semibold text-lg">
-                ₦{formData.price.toLocaleString()}
+                {formData.price.toLocaleString()}
               </span>
               {formData.negotiable && (
                 <Badge variant="secondary" className="ml-2">
@@ -62,11 +82,17 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
           <div className="flex items-center gap-3">
             <Image className="w-5 h-5 text-blue-600" />
             <div>
-              <span className="font-medium">{formData.images.length} images</span>
+              <span className="font-medium">
+                {formData.images.length} images
+              </span>
               <p className="text-sm text-muted-foreground">
-                uploaded {formData.titleImageIndex >= 0 && formData.titleImageIndex < formData.images.length && (
-                  <span className="text-green-600">• Title image selected</span>
-                )}
+                uploaded{" "}
+                {formData.titleImageIndex >= 0 &&
+                  formData.titleImageIndex < formData.images.length && (
+                    <span className="text-green-600">
+                      • Title image selected
+                    </span>
+                  )}
               </p>
             </div>
           </div>
@@ -76,9 +102,13 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
             <div>
               <span className="font-medium">Location</span>
               <p className="text-sm text-muted-foreground">
-                {[formData.location.city, formData.location.state, formData.location.country]
+                {[
+                  formData.location.city,
+                  formData.location.state,
+                  formData.location.country,
+                ]
                   .filter(Boolean)
-                  .join(', ')}
+                  .join(", ")}
               </p>
             </div>
           </div>
@@ -92,7 +122,8 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
             <p className="text-sm text-muted-foreground">
               {formData.contactInfo.phone}
               {formData.contactInfo.email && ` • ${formData.contactInfo.email}`}
-              {formData.contactInfo.whatsapp && ` • WhatsApp: ${formData.contactInfo.whatsapp}`}
+              {formData.contactInfo.whatsapp &&
+                ` • WhatsApp: ${formData.contactInfo.whatsapp}`}
             </p>
           </div>
         </div>
@@ -121,7 +152,9 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
               <Truck className="w-5 h-5 text-orange-600" />
               <div>
                 <span className="font-medium text-sm">Delivery</span>
-                <p className="text-sm text-muted-foreground">{formData.specifications.delivery}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formData.specifications.delivery}
+                </p>
               </div>
             </div>
           )}
@@ -131,14 +164,16 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData }) => {
               <Phone className="w-5 h-5 text-green-600" />
               <div>
                 <span className="font-medium text-sm">Contact</span>
-                <p className="text-sm text-muted-foreground">Phone number will be shown to buyers</p>
+                <p className="text-sm text-muted-foreground">
+                  Phone number will be shown to buyers
+                </p>
               </div>
             </div>
           )}
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default ReviewCard
+export default ReviewCard;

@@ -263,7 +263,7 @@ export default function SellForm() {
 
           {currentStep === 3 && showReview && (
             <div className="mt-8 pt-6 border-t">
-              <ReviewCard formData={formData} />
+              <ReviewCard formData={formData} categories={categories} />
             </div>
           )}
         </CardContent>

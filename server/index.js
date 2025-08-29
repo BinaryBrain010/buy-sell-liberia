@@ -9,7 +9,7 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "http://localhost:5173"],
     methods: ["GET", "POST"],
   },
 });
@@ -71,31 +71,33 @@ io.on("connection", (socket) => {
 });
 
 // Swagger UI setup
-const express = require('express');
-const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
+const express = require("express");
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
 
 const swaggerOptions = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'BuySell Liberia API',
-      version: '1.0.0',
-      description: 'API documentation for BuySell Liberia (Admin & Main Site)',
+      title: "BuySell Liberia API",
+      version: "1.0.0",
+      description: "API documentation for BuySell Liberia (Admin & Main Site)",
     },
     servers: [
-      { url: 'http://localhost:3001', description: 'Local server' },
+      { url: "http://localhost:3001", description: "Socket/Express server" },
+      { url: "http://localhost:3000", description: "Next.js frontend" },
+      { url: "http://localhost:5173", description: "Vite dev server" },
     ],
   },
-  apis: ['./app/api/**/*.ts', './server/index.js'], // Adjust as needed
+  apis: ["./app/api/**/*.ts", "./server/index.js"], // Adjust as needed
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-httpServer.on('request', app);
+httpServer.on("request", app);
 
 httpServer
   .once("error", (err) => {

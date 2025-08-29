@@ -23,7 +23,16 @@ yarn-error.log*
 # vercel
 .vercel
 
+# package
+.package-lock.json
+
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# pics
+/uploads
+
 README_REPORTS.md
+2fb1829306054ad23415ca7b423bd967ee104086

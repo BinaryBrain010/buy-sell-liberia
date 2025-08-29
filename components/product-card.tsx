@@ -69,10 +69,12 @@ export function ProductCard({
     if (!img) return undefined;
     if (typeof img === "string") {
       if (img.startsWith("http")) return img;
-      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
+      const cleanPath = img.replace(/^\/+/, "");
+      return `/api/uploads/${cleanPath}`;
     }
     if (img.url?.startsWith("http")) return img.url;
-    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+    const cleanPath = img.url?.replace(/^\/+/, "");
+    return `/api/uploads/${cleanPath}`;
   }
 
   const getLocationString = () => {

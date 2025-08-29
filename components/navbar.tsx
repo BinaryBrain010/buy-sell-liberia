@@ -137,7 +137,10 @@ export function Navbar() {
         isOpen={mobileMenuOpen}
         setIsOpen={setMobileMenuOpen}
         onAuthClick={handleAuthClick}
-        onSellClick={() => setMobileMenuOpen(false)}
+        onSellClick={() => {
+          setMobileMenuOpen(false);
+          window.location.href = "/sell";
+        }}
         onChatClick={handleChatClick}
       />
 
@@ -145,8 +148,9 @@ export function Navbar() {
         isOpen={isAuthModalOpen}
         onOpenChange={handleModalClose}
         initialMode={authMode}
-        onLoginSuccess={function (): void {
-          throw new Error("Function not implemented.");
+        onLoginSuccess={() => {
+          // Close auth modal after successful login/signup
+          setIsAuthModalOpen(false);
         }}
       />
     </>

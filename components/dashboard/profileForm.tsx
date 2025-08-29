@@ -51,7 +51,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
     phone: "",
     city: "",
     state: "",
-    country: "Pakistan",
+    country: "Nigeria",
   });
 
   // Listen for logout events and clear state
@@ -67,7 +67,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
       phone: "",
       city: "",
       state: "",
-      country: "Pakistan",
+      country: "Liberia",
     });
     console.log("[PROFILE_FORM] State cleared due to logout");
   });
@@ -93,7 +93,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
         phone: userData.phone || "",
         city: userData.preferences?.defaultLocation?.city || "",
         state: userData.preferences?.defaultLocation?.state || "",
-        country: userData.preferences?.defaultLocation?.country || "Pakistan",
+        country: userData.preferences?.defaultLocation?.country || "Liberia",
       });
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -189,7 +189,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
         phone: profile.phone || "",
         city: profile.preferences?.defaultLocation?.city || "",
         state: profile.preferences?.defaultLocation?.state || "",
-        country: profile.preferences?.defaultLocation?.country || "Pakistan",
+        country: profile.preferences?.defaultLocation?.country || "Nigeria",
       });
     }
   };
@@ -393,7 +393,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
             <div>
               <Label htmlFor="country">Country</Label>
               <Select
-                value={formData.country}
+                value={formData.country || undefined}
                 onValueChange={(value) => handleInputChange("country", value)}
                 disabled={!editing}
               >
@@ -401,7 +401,7 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Pakistan">Pakistan</SelectItem>
+                  <SelectItem value="Liberia">Liberia</SelectItem>
                   <SelectItem value="United States">United States</SelectItem>
                   <SelectItem value="United Kingdom">United Kingdom</SelectItem>
                   <SelectItem value="Canada">Canada</SelectItem>

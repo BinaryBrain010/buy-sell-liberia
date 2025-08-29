@@ -57,10 +57,14 @@ export async function POST(request: NextRequest) {
     // Handle price field - it can be either a number or an object
     let amount: number;
     let currency: string = "USD";
-    
-    if (typeof priceField === 'number') {
+
+    if (typeof priceField === "number") {
       amount = priceField;
-    } else if (priceField && typeof priceField === 'object' && 'amount' in priceField) {
+    } else if (
+      priceField &&
+      typeof priceField === "object" &&
+      "amount" in priceField
+    ) {
       amount = priceField.amount;
       currency = priceField.currency || "USD";
     } else {
@@ -207,6 +211,20 @@ export async function GET(request: NextRequest) {
   try {
     console.log("[PRODUCTS API] Getting products");
 
+    // Ensure database connection (in case this endpoint hit before any other)
+    try {
+      if (mongoose.connection.readyState === 0) {
+        await mongoose.connect(process.env.MONGODB_URI!);
+        console.log("[PRODUCTS API] MongoDB connected for GET");
+      }
+    } catch (connErr: any) {
+      console.error("[PRODUCTS API] DB connection error:", connErr?.message);
+      return NextResponse.json(
+        { error: "Database connection failed" },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     // Parse filters
@@ -229,12 +247,19 @@ export async function GET(request: NextRequest) {
     }
     if (searchParams.get("subcategory_id"))
       filters.subcategory_id = searchParams.get("subcategory_id");
-    if (searchParams.get("minPrice"))
-      filters.minPrice = Number(searchParams.get("minPrice"));
-    if (searchParams.get("maxPrice"))
-      filters.maxPrice = Number(searchParams.get("maxPrice"));
-    if (searchParams.get("condition"))
-      filters.condition = searchParams.get("condition")?.split(",");
+    if (searchParams.get("minPrice")) {
+      const v = Number(searchParams.get("minPrice"));
+      if (!isNaN(v) && isFinite(v)) filters.minPrice = v;
+    }
+    if (searchParams.get("maxPrice")) {
+      const v = Number(searchParams.get("maxPrice"));
+      if (!isNaN(v) && isFinite(v)) filters.maxPrice = v;
+    }
+    if (searchParams.get("condition")) {
+      const cond =
+        searchParams.get("condition")?.split(",").filter(Boolean) || [];
+      if (cond.length) filters.condition = cond;
+    }
     if (searchParams.get("search")) {
       const search = searchParams.get("search") as string;
       filters.$or = [
@@ -272,9 +297,15 @@ export async function GET(request: NextRequest) {
     const sortOptions: any = {};
     const sortBy = searchParams.get("sortBy");
     if (sortBy) {
-      sortOptions[sortBy === "price" ? "price" : sortBy] =
-        searchParams.get("sortOrder") === "desc" ? -1 : 1;
+      const sortOrder = searchParams.get("sortOrder") === "desc" ? -1 : 1;
+      if (sortBy === "price") {
+        // sort against nested price.amount field
+        sortOptions["price.amount"] = sortOrder;
+      } else {
+        sortOptions[sortBy] = sortOrder;
+      }
     } else {
+      // Default sort: featured first then newest
       sortOptions.featured = -1;
       sortOptions.added_at = -1;
     }
@@ -282,6 +313,12 @@ export async function GET(request: NextRequest) {
     // Parse pagination
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 20;
+
+    console.log("[PRODUCTS API] Filters:", JSON.stringify(filters));
+    console.log("[PRODUCTS API] Sort:", sortOptions, "Pagination:", {
+      page,
+      limit,
+    });
 
     const result = await productService.getProducts(filters, sortOptions, {
       page,
@@ -298,9 +335,13 @@ export async function GET(request: NextRequest) {
       totalPages: result.pages,
     });
   } catch (error: any) {
-    console.error("[PRODUCTS API] Get products error:", error.message);
+    console.error(
+      "[PRODUCTS API] Get products error:",
+      error?.message,
+      error?.stack
+    );
     return NextResponse.json(
-      { error: error.message || "Failed to get products" },
+      { error: error?.message || "Failed to get products" },
       { status: 500 }
     );
   }

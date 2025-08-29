@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+// NOTE: Make sure to install dependencies: npm install json2csv pdfkit
+import { NextRequest, NextResponse } from 'next/server';
+import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
+import mongoose from 'mongoose';
+import User from '@/models/User';
+import { Parser as Json2csvParser } from 'json2csv';
+import PDFDocument from 'pdfkit';
+=======
 // // NOTE: Make sure to install dependencies: npm install json2csv pdfkit
 // import { NextRequest, NextResponse } from 'next/server';
 // import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
@@ -5,6 +14,7 @@
 // // import User from '../../../../models/User';
 // // import { Parser as Json2csvParser } from 'json2csv';
 // import PDFDocument from 'pdfkit';
+>>>>>>> 2fb1829306054ad23415ca7b423bd967ee104086
 
 // export const dynamic = 'force-dynamic';
 

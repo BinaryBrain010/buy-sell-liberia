@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { ContactSellerButton } from "@/components/ContactSellerPopup";
+import { ReportProductButton } from "@/components/report-product-button";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -63,10 +64,13 @@ export default function ProductDetail(productData: ProductDetailProps) {
     if (!img) return undefined;
     if (typeof img === "string") {
       if (img.startsWith("http")) return img;
-      return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img}`;
+      // Remove leading slashes and use API route
+      const cleanPath = img.replace(/^\/+/, "");
+      return `/api/uploads/${cleanPath}`;
     }
     if (img.url.startsWith("http")) return img.url;
-    return `${process.env.NEXT_PUBLIC_BASE_URL || ""}${img.url}`;
+    const cleanPath = img.url.replace(/^\/+/, "");
+    return `/api/uploads/${cleanPath}`;
   };
 
   const images = Array.isArray(productData?.images) ? productData.images : [];
@@ -443,6 +447,12 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     sellerName={displayName}
                     variant="both"
                     size="md"
+                  />
+                  <ReportProductButton
+                    productId={productData._id || productData.id}
+                    currentUserId={productData.currentUserId}
+                    triggerLabel="Report"
+                    size="sm"
                   />
                 </div>
               </div>
