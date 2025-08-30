@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import ManualPayment from '../../../../models/ManualPayment';
-import Product from '../../../../models/Product';
-import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
+import ManualPayment from '@/models/ManualPayment';
+import Product from '@/models/Product';
+import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
 import { connectDB } from '@/lib/mongoose';
 
 export async function GET(req: NextRequest) {

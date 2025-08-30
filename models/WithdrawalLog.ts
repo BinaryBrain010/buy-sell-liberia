@@ -5,7 +5,8 @@ export interface IWithdrawalLog extends Document {
   date: Date;
   destination: string;
   note?: string;
-  admin: mongoose.Types.ObjectId;
+  admin?: mongoose.Types.ObjectId; // optional for super admin
+  adminTitle?: string; // for super admin logs
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,7 +16,8 @@ const withdrawalLogSchema = new Schema<IWithdrawalLog>({
   date: { type: Date, required: true },
   destination: { type: String, required: true },
   note: { type: String },
-  admin: { type: Schema.Types.ObjectId, ref: "Admin", required: true },
+  admin: { type: Schema.Types.ObjectId, ref: "Admin", required: false }, // optional
+  adminTitle: { type: String }, // for super admin
 }, {
   timestamps: true,
 });
