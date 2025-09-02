@@ -11,9 +11,12 @@ import ManualPayment from './ManualPayment';
 import Category from './Category';
 import Review from './Review';
 import Chat from './Chat';
+import Announcement from './Announcement';
+import AnnouncementInteraction from './AnnouncementInteraction';
+import UserMessageQueue from './UserMessageQueue';
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat };
+export { User, Product, ManualPayment, Category, Review, Chat, Announcement, AnnouncementInteraction, UserMessageQueue };
 
 export const models = {
   User,
@@ -22,6 +25,9 @@ export const models = {
   Review,
   Chat,
   ManualPayment,
+  Announcement,
+  AnnouncementInteraction,
+  UserMessageQueue,
 };
 
 export const utils = {
