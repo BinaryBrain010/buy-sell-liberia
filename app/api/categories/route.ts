@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Category, { ICategory, ISubcategory } from '../../../models/Category';
-import { IProduct } from '../../../models/Product';
+import Product, { IProduct } from '../../../models/Product';
+import path from 'path';
+import fs from 'fs';
+import { parseFiles } from '../../../lib/multer';
 
 // Force dynamic rendering for all routes
 export const dynamic = 'force-dynamic';
@@ -15,6 +18,42 @@ type LeanProduct = Omit<IProduct, keyof Document> & {
 interface ICategoryWithProducts extends Omit<ICategory, 'subcategories'> {
   subcategories: Array<ISubcategory & { products?: LeanProduct[]; productsPagination?: { total: number; page: number; limit: number; totalPages: number } }>;
 }
+
+// Helper function to generate slug from name
+const generateSlug = (name: string): string => {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+};
+
+// Helper function to preserve existing subcategory IDs and manage sort order
+const processSubcategories = (subcategories: any[], existingSubcategories: ISubcategory[] = []): ISubcategory[] => {
+  return subcategories.map((sub: any, index: number) => {
+    // Find existing subcategory by slug or name to preserve ID
+    const existing = existingSubcategories.find(existing => 
+      existing.slug === sub.slug || 
+      existing.name.toLowerCase() === sub.name.toLowerCase() ||
+      (sub._id && existing._id?.toString() === sub._id.toString())
+    );
+
+    // Generate slug if not provided
+    const slug = sub.slug || generateSlug(sub.name);
+    
+    return {
+      _id: sub._id ? new mongoose.Types.ObjectId(sub._id) : (existing?._id || new mongoose.Types.ObjectId()),
+      name: sub.name,
+      slug: slug,
+      description: sub.description || '',
+      isActive: sub.isActive !== undefined ? sub.isActive : true,
+      sortOrder: sub.sortOrder !== undefined ? Number(sub.sortOrder) : (existing?.sortOrder ?? index),
+      customFields: sub.customFields || existing?.customFields || [],
+    };
+  });
+};
 
 // Connect to MongoDB
 async function connectDB() {
@@ -63,9 +102,11 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      // Sort subcategories by sortOrder
+      category.subcategories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
       if (includeProducts) {
         console.log('Fetching products for category');
-        const Product = mongoose.model('Product');
         for (const subcategory of category.subcategories) {
           subcategory.products = await Product.find({
             category_id: category._id,
@@ -75,7 +116,7 @@ export async function GET(request: NextRequest) {
           })
             .limit(limit)
             .skip(skip)
-            .lean() as LeanProduct[];
+            .lean() as unknown as LeanProduct[];
         }
         console.log('Products fetched for category');
       }
@@ -97,8 +138,10 @@ export async function GET(request: NextRequest) {
 
     if (includeProducts) {
       console.log('Fetching products for all categories');
-      const Product = mongoose.model('Product');
       for (const category of categories) {
+        // Sort subcategories by sortOrder before fetching products
+        category.subcategories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        
         for (const subcategory of category.subcategories) {
           subcategory.products = await Product.find({
             category_id: category._id,
@@ -108,10 +151,15 @@ export async function GET(request: NextRequest) {
           })
             .limit(limit)
             .skip(skip)
-            .lean() as LeanProduct[];
+            .lean() as unknown as LeanProduct[];
         }
       }
       console.log('Products fetched for all categories');
+    } else {
+      // Sort subcategories even when not including products
+      for (const category of categories) {
+        category.subcategories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
     }
 
     return NextResponse.json({
@@ -141,62 +189,94 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const body = await request.json();
-
-    // Validate required fields
-    if (!body.name || !body.slug || !body.icon || !body.subcategories) {
+    // Parse form data (icon file and fields)
+    const { files, fields } = await parseFiles(request);
+    // Required fields
+    if (!fields.name || !fields.slug) {
       return NextResponse.json(
-        { message: 'Name, slug, icon, and subcategories are required' },
+        { message: 'Name, slug, and subcategories are required. If you are using the new separated category/subcategory API, use /api/categories/route.new and do not send subcategories.' },
         { status: 400 }
       );
     }
-
-    // Validate subcategories format
-    if (!Array.isArray(body.subcategories) || body.subcategories.length === 0) {
-      return NextResponse.json(
-        { message: 'Subcategories must be a non-empty array' },
-        { status: 400 }
-      );
+    // Handle icon upload
+    let iconPath = '';
+    const iconFile = files.find(f => f.name === 'icon');
+    if (iconFile) {
+      const uploadDir = path.join(process.cwd(), 'uploads/categories');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const fileName = `${Date.now()}_${iconFile.name}`;
+      const filePath = path.join(uploadDir, fileName);
+      const arrayBuffer = await iconFile.arrayBuffer();
+      fs.writeFileSync(filePath, Buffer.from(arrayBuffer));
+      iconPath = `/uploads/categories/${fileName}`;
+    } else if (fields.icon) {
+      iconPath = fields.icon; // fallback if path provided
+    } else {
+      return NextResponse.json({ message: 'Icon is required' }, { status: 400 });
     }
-
-    // Check for duplicate slug
-    const existingCategory = await Category.findOne({ slug: body.slug });
+    // Parse subcategories
+    let subcategories: any[] = [];
+    if (fields.subcategories) {
+    try {
+      subcategories = JSON.parse(fields.subcategories);
+    } catch {
+      return NextResponse.json({ message: 'Invalid subcategories format' }, { status: 400 });
+    }
+      if (!Array.isArray(subcategories)) {
+        return NextResponse.json({ message: 'Subcategories must be an array' }, { status: 400 });
+      }
+    }
+    
+    // Check for duplicate category slug
+    const existingCategory = await Category.findOne({ slug: fields.slug });
     if (existingCategory) {
-      return NextResponse.json(
-        { message: 'Category with this slug already exists' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Category with this slug already exists' }, { status: 400 });
     }
-
-    // Validate subcategory slugs
-    const subcategorySlugs = body.subcategories.map((sub: any) => sub.slug);
+    
+    // Process and validate subcategories
+    let processedSubcategories: ISubcategory[] = [];
+    if (subcategories.length > 0) {
+      // Generate slugs for subcategories that don't have them
+      subcategories = subcategories.map(sub => ({
+        ...sub,
+        slug: sub.slug || generateSlug(sub.name)
+      }));
+      
+      // Validate subcategory names and slugs
+      const subcategoryNames = subcategories.map((sub: any) => sub.name.toLowerCase());
+    const subcategorySlugs = subcategories.map((sub: any) => sub.slug);
+      
+      if (new Set(subcategoryNames).size !== subcategoryNames.length) {
+        return NextResponse.json({ message: 'Subcategory names must be unique within the category' }, { status: 400 });
+      }
+      
     if (new Set(subcategorySlugs).size !== subcategorySlugs.length) {
-      return NextResponse.json(
-        { message: 'Subcategory slugs must be unique within the category' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Subcategory slugs must be unique within the category' }, { status: 400 });
     }
-
+      
+      processedSubcategories = processSubcategories(subcategories);
+    }
+    
+    // Get sort order for new category
+    let categorySortOrder = 0;
+    if (fields.sortOrder) {
+      categorySortOrder = Number(fields.sortOrder);
+    } else {
+      const maxCategory = await Category.findOne({}, {}, { sort: { sortOrder: -1 } });
+      categorySortOrder = (maxCategory?.sortOrder || 0) + 1;
+    }
+    
     // Create new category
     const category = new Category({
-      name: body.name,
-      slug: body.slug,
-      icon: body.icon,
-      description: body.description || '',
-      isActive: body.isActive !== undefined ? body.isActive : true,
-      sortOrder: body.sortOrder || 0,
-      subcategories: body.subcategories.map((sub: any) => ({
-        name: sub.name,
-        slug: sub.slug,
-        description: sub.description || '',
-        isActive: sub.isActive !== undefined ? sub.isActive : true,
-        sortOrder: sub.sortOrder || 0,
-        customFields: sub.customFields || [],
-      })),
+      name: fields.name,
+      slug: fields.slug,
+      icon: iconPath,
+      description: fields.description || '',
+      isActive: fields.isActive !== undefined ? fields.isActive === 'true' : true,
+      sortOrder: categorySortOrder,
+      subcategories: processedSubcategories,
     });
-
     await category.save();
-
     return NextResponse.json({
       category: category.toObject(),
       message: 'Category created successfully',
@@ -217,85 +297,94 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     await connectDB();
-    const body = await request.json();
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
     const slug = searchParams.get('slug');
-
     if (!categoryId && !slug) {
-      return NextResponse.json(
-        { message: 'Category ID or slug is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Category ID or slug is required' }, { status: 400 });
     }
-
     if (categoryId && !mongoose.Types.ObjectId.isValid(categoryId)) {
-      return NextResponse.json(
-        { message: 'Invalid category ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Invalid category ID' }, { status: 400 });
     }
-
-    // Validate input
-    if (!body.name && !body.slug && !body.icon && !body.description && !body.subcategories && body.isActive === undefined && body.sortOrder === undefined) {
-      return NextResponse.json(
-        { message: 'At least one field to update is required' },
-        { status: 400 }
-      );
-    }
-
+    // Parse form data (icon file and fields)
+    const { files, fields } = await parseFiles(request);
     // Check for duplicate slug if updating slug
-    if (body.slug) {
-      const existingCategory = await Category.findOne({ slug: body.slug, ...(categoryId ? { _id: { $ne: categoryId } } : {}) });
+    if (fields.slug) {
+      const existingCategory = await Category.findOne({ slug: fields.slug, ...(categoryId ? { _id: { $ne: categoryId } } : {}) });
       if (existingCategory) {
-        return NextResponse.json(
-          { message: 'Category with this slug already exists' },
-          { status: 400 }
-        );
+        return NextResponse.json({ message: 'Category with this slug already exists' }, { status: 400 });
       }
     }
-
     // Prepare update object
     const updateData: Partial<ICategory> = {};
-    if (body.name) updateData.name = body.name;
-    if (body.slug) updateData.slug = body.slug;
-    if (body.icon) updateData.icon = body.icon;
-    if (body.description) updateData.description = body.description;
-    if (body.isActive !== undefined) updateData.isActive = body.isActive;
-    if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
-    if (body.subcategories) {
-      // Validate subcategory slugs
-      const subcategorySlugs = body.subcategories.map((sub: any) => sub.slug);
-      if (new Set(subcategorySlugs).size !== subcategorySlugs.length) {
-        return NextResponse.json(
-          { message: 'Subcategory slugs must be unique within the category' },
-          { status: 400 }
-        );
-      }
-      updateData.subcategories = body.subcategories.map((sub: any) => ({
-        name: sub.name,
-        slug: sub.slug,
-        description: sub.description || '',
-        isActive: sub.isActive !== undefined ? sub.isActive : true,
-        sortOrder: sub.sortOrder || 0,
-        customFields: sub.customFields || [],
-      }));
+    if (fields.name) updateData.name = fields.name;
+    if (fields.slug) updateData.slug = fields.slug;
+    // Handle icon upload
+    let iconPath = '';
+    const iconFile = files.find(f => f.name === 'icon');
+    if (iconFile) {
+      const uploadDir = path.join(process.cwd(), 'uploads/categories');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+      const fileName = `${Date.now()}_${iconFile.name}`;
+      const filePath = path.join(uploadDir, fileName);
+      const arrayBuffer = await iconFile.arrayBuffer();
+      fs.writeFileSync(filePath, Buffer.from(arrayBuffer));
+      iconPath = `/uploads/categories/${fileName}`;
+      updateData.icon = iconPath;
+    } else if (fields.icon) {
+      updateData.icon = fields.icon;
     }
-
+    if (fields.description) updateData.description = fields.description;
+    if (fields.isActive !== undefined) updateData.isActive = fields.isActive === 'true';
+    if (fields.sortOrder !== undefined) updateData.sortOrder = Number(fields.sortOrder);
+    if (fields.subcategories) {
+      let subcategories: any[] = [];
+      try {
+        subcategories = JSON.parse(fields.subcategories);
+      } catch {
+        return NextResponse.json({ message: 'Invalid subcategories format' }, { status: 400 });
+      }
+      
+      if (!Array.isArray(subcategories)) {
+        return NextResponse.json({ message: 'Subcategories must be an array' }, { status: 400 });
+      }
+      
+      // Get existing category to preserve subcategory data
+      const categoryQuery = categoryId ? { _id: categoryId } : { slug };
+      const existingCategory = await Category.findOne(categoryQuery);
+      if (!existingCategory) {
+        return NextResponse.json({ message: 'Category not found' }, { status: 404 });
+      }
+      
+      // Generate slugs for subcategories that don't have them
+      subcategories = subcategories.map(sub => ({
+        ...sub,
+        slug: sub.slug || generateSlug(sub.name)
+      }));
+      
+      // Validate subcategory names and slugs
+      const subcategoryNames = subcategories.map((sub: any) => sub.name.toLowerCase());
+      const subcategorySlugs = subcategories.map((sub: any) => sub.slug);
+      
+      if (new Set(subcategoryNames).size !== subcategoryNames.length) {
+        return NextResponse.json({ message: 'Subcategory names must be unique within the category' }, { status: 400 });
+      }
+      
+      if (new Set(subcategorySlugs).size !== subcategorySlugs.length) {
+        return NextResponse.json({ message: 'Subcategory slugs must be unique within the category' }, { status: 400 });
+      }
+      
+      updateData.subcategories = processSubcategories(subcategories, existingCategory.subcategories);
+    }
     const query = categoryId ? { _id: categoryId } : { slug };
     const category = await Category.findOneAndUpdate(
       query,
       { $set: updateData },
       { new: true, runValidators: true }
     ).lean();
-
     if (!category) {
-      return NextResponse.json(
-        { message: 'Category not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: 'Category not found' }, { status: 404 });
     }
-
     return NextResponse.json({
       category,
       message: 'Category updated successfully',
@@ -335,7 +424,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if category has active products
-    const Product = mongoose.model('Product');
     const query = categoryId ? { category_id: categoryId } : { category_id: (await Category.findOne({ slug }))?._id };
     const hasProducts = await Product.exists({
       ...query,
@@ -367,6 +455,212 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json(
       {
         message: 'Error deleting category',
+        error: (error as Error).message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH: Add or update individual subcategory
+export async function PATCH(request: NextRequest) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get('categoryId');
+    const subcategoryId = searchParams.get('subcategoryId');
+    const action = searchParams.get('action'); // 'add', 'update', 'delete', 'reorder'
+
+    if (!categoryId) {
+      return NextResponse.json({ message: 'Category ID is required' }, { status: 400 });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return NextResponse.json({ message: 'Invalid category ID' }, { status: 400 });
+    }
+
+    if (subcategoryId && !mongoose.Types.ObjectId.isValid(subcategoryId)) {
+      return NextResponse.json({ message: 'Invalid subcategory ID' }, { status: 400 });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return NextResponse.json({ message: 'Category not found' }, { status: 404 });
+    }
+
+    const requestData = await request.json();
+
+    switch (action) {
+      case 'add': {
+        const { name, description, isActive = true, customFields = [] } = requestData;
+        
+        if (!name) {
+          return NextResponse.json({ message: 'Subcategory name is required' }, { status: 400 });
+        }
+
+        const slug = generateSlug(name);
+        
+        // Check for duplicate name or slug
+        const duplicate = category.subcategories.find(sub => 
+          sub.name.toLowerCase() === name.toLowerCase() || sub.slug === slug
+        );
+        
+        if (duplicate) {
+          return NextResponse.json({ message: 'Subcategory with this name already exists' }, { status: 400 });
+        }
+
+        const newSubcategory = {
+          _id: new mongoose.Types.ObjectId(),
+          name,
+          slug,
+          description: description || '',
+          isActive,
+          sortOrder: category.subcategories.length,
+          customFields,
+        };
+
+        category.subcategories.push(newSubcategory);
+        await category.save();
+
+        return NextResponse.json({
+          subcategory: newSubcategory,
+          message: 'Subcategory added successfully',
+        });
+      }
+
+      case 'update': {
+        if (!subcategoryId) {
+          return NextResponse.json({ message: 'Subcategory ID is required for update' }, { status: 400 });
+        }
+
+        const subcategoryIndex = category.subcategories.findIndex(
+          sub => sub._id?.toString() === subcategoryId
+        );
+
+        if (subcategoryIndex === -1) {
+          return NextResponse.json({ message: 'Subcategory not found' }, { status: 404 });
+        }
+
+        const { name, description, isActive, sortOrder, customFields } = requestData;
+        const subcategory = category.subcategories[subcategoryIndex];
+
+        // Check for duplicate name if name is being changed
+        if (name && name.toLowerCase() !== subcategory.name.toLowerCase()) {
+          const duplicate = category.subcategories.find((sub, index) => 
+            index !== subcategoryIndex && sub.name.toLowerCase() === name.toLowerCase()
+          );
+          
+          if (duplicate) {
+            return NextResponse.json({ message: 'Subcategory with this name already exists' }, { status: 400 });
+          }
+          
+          subcategory.name = name;
+          subcategory.slug = generateSlug(name);
+        }
+
+        if (description !== undefined) subcategory.description = description;
+        if (isActive !== undefined) subcategory.isActive = isActive;
+        if (sortOrder !== undefined) subcategory.sortOrder = sortOrder;
+        if (customFields !== undefined) subcategory.customFields = customFields;
+
+        await category.save();
+
+        return NextResponse.json({
+          subcategory,
+          message: 'Subcategory updated successfully',
+        });
+      }
+
+      case 'delete': {
+        if (!subcategoryId) {
+          return NextResponse.json({ message: 'Subcategory ID is required for delete' }, { status: 400 });
+        }
+
+        const subcategoryIndex = category.subcategories.findIndex(
+          sub => sub._id?.toString() === subcategoryId
+        );
+
+        if (subcategoryIndex === -1) {
+          return NextResponse.json({ message: 'Subcategory not found' }, { status: 404 });
+        }
+
+        // Check if subcategory has active products
+        const hasProducts = await Product.exists({
+          category_id: categoryId,
+          subcategory_id: subcategoryId,
+          status: 'active',
+          expires_at: { $gt: new Date() },
+        });
+
+        if (hasProducts) {
+          return NextResponse.json(
+            { message: 'Cannot delete subcategory with active products' },
+            { status: 400 }
+          );
+        }
+
+        category.subcategories.splice(subcategoryIndex, 1);
+        
+        // Reorder remaining subcategories
+        category.subcategories.forEach((sub, index) => {
+          sub.sortOrder = index;
+        });
+
+        await category.save();
+
+        return NextResponse.json({
+          message: 'Subcategory deleted successfully',
+        });
+      }
+
+      case 'reorder': {
+        const { subcategories } = requestData;
+        
+        if (!Array.isArray(subcategories)) {
+          return NextResponse.json({ message: 'Subcategories array is required for reorder' }, { status: 400 });
+        }
+
+        // Validate that all provided subcategories exist
+        for (const sub of subcategories) {
+          if (!sub._id || !mongoose.Types.ObjectId.isValid(sub._id)) {
+            return NextResponse.json({ message: 'Invalid subcategory ID in reorder data' }, { status: 400 });
+          }
+          
+          const exists = category.subcategories.find(existing => 
+            existing._id?.toString() === sub._id.toString()
+          );
+          
+          if (!exists) {
+            return NextResponse.json({ message: `Subcategory with ID ${sub._id} not found` }, { status: 400 });
+          }
+        }
+
+        // Update sort orders
+        subcategories.forEach((sub, index) => {
+          const existing = category.subcategories.find(existing => 
+            existing._id?.toString() === sub._id.toString()
+          );
+          if (existing) {
+            existing.sortOrder = index;
+          }
+        });
+
+        await category.save();
+
+        return NextResponse.json({
+          subcategories: category.subcategories.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)),
+          message: 'Subcategories reordered successfully',
+        });
+      }
+
+      default:
+        return NextResponse.json({ message: 'Invalid action. Use: add, update, delete, or reorder' }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Subcategory management error:', error);
+    return NextResponse.json(
+      {
+        message: 'Error managing subcategory',
         error: (error as Error).message,
       },
       { status: 500 }

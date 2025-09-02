@@ -162,4 +162,88 @@ export class CategoryService {
       throw new Error(error.response?.data?.error || 'Failed to delete category');
     }
   }
+
+  /**
+   * Add a new subcategory to a category
+   */
+  async addSubcategory(categoryId: string, subcategoryData: {
+    name: string;
+    description?: string;
+    isActive?: boolean;
+    customFields?: any[];
+  }): Promise<{ subcategory: Subcategory; message: string }> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('categoryId', categoryId);
+      queryParams.append('action', 'add');
+
+      const response = await axiosInstance.patch(`/categories?${queryParams.toString()}`, subcategoryData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to add subcategory');
+    }
+  }
+
+  /**
+   * Update a subcategory
+   */
+  async updateSubcategory(
+    categoryId: string,
+    subcategoryId: string,
+    updateData: Partial<{
+      name: string;
+      description: string;
+      isActive: boolean;
+      sortOrder: number;
+      customFields: any[];
+    }>
+  ): Promise<{ subcategory: Subcategory; message: string }> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('categoryId', categoryId);
+      queryParams.append('subcategoryId', subcategoryId);
+      queryParams.append('action', 'update');
+
+      const response = await axiosInstance.patch(`/categories?${queryParams.toString()}`, updateData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update subcategory');
+    }
+  }
+
+  /**
+   * Delete a subcategory
+   */
+  async deleteSubcategory(categoryId: string, subcategoryId: string): Promise<{ message: string }> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('categoryId', categoryId);
+      queryParams.append('subcategoryId', subcategoryId);
+      queryParams.append('action', 'delete');
+
+      const response = await axiosInstance.patch(`/categories?${queryParams.toString()}`, {});
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to delete subcategory');
+    }
+  }
+
+  /**
+   * Reorder subcategories within a category
+   */
+  async reorderSubcategories(
+    categoryId: string,
+    subcategories: Array<{ _id: string; sortOrder?: number }>
+  ): Promise<{ subcategories: Subcategory[]; message: string }> {
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('categoryId', categoryId);
+      queryParams.append('action', 'reorder');
+
+      const response = await axiosInstance.patch(`/categories?${queryParams.toString()}`, { subcategories });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to reorder subcategories');
+    }
+  }
 }
