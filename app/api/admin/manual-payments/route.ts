@@ -8,14 +8,18 @@ import '../../../../models';
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth: Only super_admin can access
+    // Auth: Allow all admin/employee roles (centralized helper)
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
     }
     const token = authHeader.split(' ')[1];
     const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
+    // Previous restrictive check (super_admin only):
+    // if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
+    //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // }
+    if (!payload || typeof payload !== 'object' || !AdminAuthService.isAllowedRole((payload as any).role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
