@@ -209,7 +209,7 @@ export const MessagesComponent = ({
         const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
         const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
         const otherUserId = u1 === uid ? u2 : u1;
-        
+
         if (otherUserId) {
           // Emit socket message to notify other user
           socket.emit("message", {
@@ -243,9 +243,9 @@ export const MessagesComponent = ({
       sellerId,
       productId,
       currentUserId,
-      productTitle: propProductTitle
+      productTitle: propProductTitle,
     });
-    
+
     setIsCreatingChat(true);
     try {
       const currentUserId = getCurrentUserId();
@@ -253,7 +253,7 @@ export const MessagesComponent = ({
         console.log("🔍 Chat Debug - Missing required parameters:", {
           currentUserId,
           sellerId,
-          productId
+          productId,
         });
         return;
       }
@@ -279,7 +279,7 @@ export const MessagesComponent = ({
 
       const newChat = await createOrUpdateChat(chatRequest);
       console.log("🔍 Chat Debug - Chat creation result:", newChat);
-      
+
       if (newChat) {
         setCurrentChat(newChat);
         setMessageInput("");
@@ -393,7 +393,10 @@ export const MessagesComponent = ({
     socket.emit("user:online", { userId });
     socket.emit("presence:subscribe");
 
-    const handlePresenceUpdate = (data: { userId: string; status: "online" | "offline" }) => {
+    const handlePresenceUpdate = (data: {
+      userId: string;
+      status: "online" | "offline";
+    }) => {
       setOnlineUsers((prev) => ({
         ...prev,
         [data.userId]: data.status === "online",
@@ -414,28 +417,32 @@ export const MessagesComponent = ({
     }) => {
       if (data.chatId === currentChat?._id) {
         // Check if this message is already in the current chat to prevent duplicates
-        const messageExists = currentChat?.messages?.some(
-          (msg: any) => {
-            // Check by ID first (most reliable)
-            if (msg._id === data.message._id) return true;
-            
-            // Check by content, sender, and time (fallback for optimistic updates)
-            if (msg.content === data.message.content && 
-                msg.sender === data.message.sender) {
-              const timeDiff = Math.abs(
-                new Date(msg.sentAt).getTime() - new Date(data.message.sentAt).getTime()
-              );
-              // If messages are within 2 seconds and have same content/sender, consider them duplicates
-              return timeDiff < 2000;
-            }
-            
-            return false;
+        const messageExists = currentChat?.messages?.some((msg: any) => {
+          // Check by ID first (most reliable)
+          if (msg._id === data.message._id) return true;
+
+          // Check by content, sender, and time (fallback for optimistic updates)
+          if (
+            msg.content === data.message.content &&
+            msg.sender === data.message.sender
+          ) {
+            const timeDiff = Math.abs(
+              new Date(msg.sentAt).getTime() -
+                new Date(data.message.sentAt).getTime()
+            );
+            // If messages are within 2 seconds and have same content/sender, consider them duplicates
+            return timeDiff < 2000;
           }
-        );
-        
+
+          return false;
+        });
+
         // Don't add the message if it's from the current user and already exists
         // This prevents duplicate messages from optimistic updates
-        if (!messageExists && data.from !== (currentUserId || getCurrentUserId())) {
+        if (
+          !messageExists &&
+          data.from !== (currentUserId || getCurrentUserId())
+        ) {
           setCurrentChat((prev) => {
             if (!prev) return prev;
             return {
@@ -466,18 +473,19 @@ export const MessagesComponent = ({
       productId,
       currentUserId,
       hasAttemptedNewChat,
-      chatsLength: chats.length
+      chatsLength: chats.length,
     });
 
     if (sellerId && productId && currentUserId && !hasAttemptedNewChat) {
       console.log("🔍 Chat Debug - Attempting to create/find chat");
-      
+
       // Check if a chat already exists for this product and users
-      const existingChat = chats.find(chat => {
+      const existingChat = chats.find((chat) => {
         const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
         const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
-        const chatProductId = typeof chat.product === "object" ? chat.product._id : chat.product;
-        
+        const chatProductId =
+          typeof chat.product === "object" ? chat.product._id : chat.product;
+
         console.log("🔍 Chat Debug - Checking chat:", {
           chatId: chat._id,
           u1,
@@ -486,15 +494,16 @@ export const MessagesComponent = ({
           productId,
           currentUserId,
           sellerId,
-          matches: (
+          matches:
             chatProductId === productId &&
-            ((u1 === currentUserId && u2 === sellerId) || (u1 === sellerId && u2 === currentUserId))
-          )
+            ((u1 === currentUserId && u2 === sellerId) ||
+              (u1 === sellerId && u2 === currentUserId)),
         });
-        
+
         return (
           chatProductId === productId &&
-          ((u1 === currentUserId && u2 === sellerId) || (u1 === sellerId && u2 === currentUserId))
+          ((u1 === currentUserId && u2 === sellerId) ||
+            (u1 === sellerId && u2 === currentUserId))
         );
       });
 
@@ -504,7 +513,10 @@ export const MessagesComponent = ({
         handleCreateNewChat();
         setHasAttemptedNewChat(true);
       } else {
-        console.log("🔍 Chat Debug - Existing chat found, setting as current:", existingChat);
+        console.log(
+          "🔍 Chat Debug - Existing chat found, setting as current:",
+          existingChat
+        );
         // Set existing chat as current
         setCurrentChat(existingChat);
         setHasAttemptedNewChat(true);
@@ -639,21 +651,26 @@ export const MessagesComponent = ({
               <div className="text-center">
                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                 <p className="text-lg font-medium mb-2">
-                  {sellerId && productId ? "Ready to start chatting?" : "There are no messages yet"}
+                  {sellerId && productId
+                    ? "Ready to start chatting?"
+                    : "There are no messages yet"}
                 </p>
                 <p className="text-sm mb-4">
-                  {sellerId && productId 
-                    ? `Click the button below to start a conversation about: ${propProductTitle || "this product"}`
-                    : "Start a conversation by selecting a product."
-                  }
+                  {sellerId && productId
+                    ? `Click the button below to start a conversation about: ${
+                        propProductTitle || "this product"
+                      }`
+                    : "Start a conversation by selecting a product."}
                 </p>
                 {sellerId && productId && (
-                  <Button 
-                    onClick={handleCreateNewChat} 
+                  <Button
+                    onClick={handleCreateNewChat}
                     disabled={isCreatingChat}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    {isCreatingChat ? "Creating Chat..." : `Start Chat about ${propProductTitle || "Product"}`}
+                    {isCreatingChat
+                      ? "Creating Chat..."
+                      : `Start Chat about ${propProductTitle || "Product"}`}
                   </Button>
                 )}
               </div>
