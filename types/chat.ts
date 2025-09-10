@@ -18,6 +18,8 @@ export interface IPopulatedUser {
   _id: string;
   firstName?: string;
   lastName?: string;
+  fullName?: string;
+  username?: string;
   profile?: {
     avatar?: string;
   };

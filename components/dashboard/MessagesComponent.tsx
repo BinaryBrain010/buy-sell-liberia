@@ -346,7 +346,7 @@ export const MessagesComponent = ({
         Array.from(missingIds).map(async (id) => {
           try {
             const contact = await userClient.getUserContact(id);
-            const name = contact?.fullName || contact?.username || "Unknown User";
+            const name = contact?.name || "Unknown User";
             return [
               id,
               name && name.length > 0 ? name : "Unknown User",

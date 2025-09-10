@@ -3,6 +3,8 @@ import axios from "./BaseService";
 interface ContactInfo {
   phone: string;
   name: string;
+  fullName?: string;
+  username?: string;
 }
 
 class UserClient {
