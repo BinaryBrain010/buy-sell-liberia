@@ -1,28 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
-import mongoose from 'mongoose';
-import User from '../../../../models/User';
-import Chat from '../../../../models/Chat';
+import { NextRequest, NextResponse } from "next/server";
+import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
+import mongoose from "mongoose";
+import User from "../../../../models/User";
+import Chat from "../../../../models/Chat";
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth: Only super_admin can access
-    const authHeader = request.headers.get('authorization');
+    // Auth: allow all configured admin roles
+    const authHeader = request.headers.get("authorization");
     if (!authHeader) {
-      return NextResponse.json({ error: 'No token' }, { status: 401 });
+      return NextResponse.json(
+        { error: "Missing Authorization header" },
+        { status: 401 }
+      );
     }
-    
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return NextResponse.json(
+        { error: "Invalid Authorization header" },
+        { status: 401 }
+      );
+    }
     const payload = AdminAuthService.verifyAccessToken(token);
-    
-    if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json(
+        { error: "Invalid or expired token" },
+        { status: 401 }
+      );
+    }
+    if (!AdminAuthService.isAllowedRole((payload as any).role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Pagination
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "20", 10);
     const skip = (page - 1) * limit;
 
     // Ensure database connection
@@ -33,7 +46,7 @@ export async function GET(request: NextRequest) {
     // Get users with pagination
     const users = await User.find(
       {},
-      '-password -passwordResetToken -emailVerificationToken -phoneVerificationToken'
+      "-password -passwordResetToken -emailVerificationToken -phoneVerificationToken"
     )
       .skip(skip)
       .limit(limit)
@@ -41,25 +54,24 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Extract all user IDs
-    const userIds = users.map(user => new mongoose.Types.ObjectId(user._id.toString()));
+    const userIds = users.map(
+      (user) => new mongoose.Types.ObjectId(user._id.toString())
+    );
 
     // Find all chats where users are participants with populated user details
     const chats = await Chat.find({
-      $or: [
-        { user1: { $in: userIds } },
-        { user2: { $in: userIds } }
-      ]
+      $or: [{ user1: { $in: userIds } }, { user2: { $in: userIds } }],
     })
-    .populate('user1', 'fullName username email')
-    .populate('user2', 'fullName username email')
-    .populate('product', 'name title description')
-    .lean();
+      .populate("user1", "fullName username email")
+      .populate("user2", "fullName username email")
+      .populate("product", "name title description")
+      .lean();
 
     // Create a map to store chat conversations for each user
     const chatsByUser = new Map<string, any[]>();
 
     // Initialize empty arrays for all users
-    users.forEach(user => {
+    users.forEach((user) => {
       chatsByUser.set(user._id.toString(), []);
     });
 
@@ -76,11 +88,11 @@ export async function GET(request: NextRequest) {
       });
 
       // Calculate message stats for this chat
-      const user1Messages = sortedMessages.filter((msg: any) => 
-        msg.sender?.toString() === user1Id
+      const user1Messages = sortedMessages.filter(
+        (msg: any) => msg.sender?.toString() === user1Id
       );
-      const user2Messages = sortedMessages.filter((msg: any) => 
-        msg.sender?.toString() === user2Id
+      const user2Messages = sortedMessages.filter(
+        (msg: any) => msg.sender?.toString() === user2Id
       );
 
       const chatData = {
@@ -88,17 +100,17 @@ export async function GET(request: NextRequest) {
         product: chat.product,
         participants: {
           user1: chat.user1,
-          user2: chat.user2
+          user2: chat.user2,
         },
         messages: sortedMessages,
         chatStats: {
           totalMessages: sortedMessages.length,
           user1Messages: user1Messages.length,
-          user2Messages: user2Messages.length
+          user2Messages: user2Messages.length,
         },
         lastMessageAt: chat.lastMessageAt,
         isActive: chat.isActive,
-        createdAt: chat.created_at || chat.createdAt
+        createdAt: chat.created_at || chat.createdAt,
       };
 
       // Add this chat to both users
@@ -106,9 +118,9 @@ export async function GET(request: NextRequest) {
         chatsByUser.get(user1Id)!.push({
           ...chatData,
           otherParticipant: chat.user2,
-          myRole: 'user1',
+          myRole: "user1",
           myMessages: user1Messages.length,
-          otherMessages: user2Messages.length
+          otherMessages: user2Messages.length,
         });
       }
 
@@ -116,9 +128,9 @@ export async function GET(request: NextRequest) {
         chatsByUser.get(user2Id)!.push({
           ...chatData,
           otherParticipant: chat.user1,
-          myRole: 'user2',
+          myRole: "user2",
           myMessages: user2Messages.length,
-          otherMessages: user1Messages.length
+          otherMessages: user1Messages.length,
         });
       }
     });
@@ -127,7 +139,7 @@ export async function GET(request: NextRequest) {
     const usersWithChats = users.map((user: any) => {
       const userId = user._id.toString();
       const userChats = chatsByUser.get(userId) || [];
-      
+
       // Sort chats by last message date (most recent first)
       const sortedChats = userChats.sort((a: any, b: any) => {
         const dateA = new Date(a.lastMessageAt || a.createdAt || 0).getTime();
@@ -136,21 +148,31 @@ export async function GET(request: NextRequest) {
       });
 
       // Calculate overall statistics
-      const totalMessages = sortedChats.reduce((sum, chat) => sum + chat.chatStats.totalMessages, 0);
-      const totalSentMessages = sortedChats.reduce((sum, chat) => sum + chat.myMessages, 0);
-      const totalReceivedMessages = sortedChats.reduce((sum, chat) => sum + chat.otherMessages, 0);
+      const totalMessages = sortedChats.reduce(
+        (sum, chat) => sum + chat.chatStats.totalMessages,
+        0
+      );
+      const totalSentMessages = sortedChats.reduce(
+        (sum, chat) => sum + chat.myMessages,
+        0
+      );
+      const totalReceivedMessages = sortedChats.reduce(
+        (sum, chat) => sum + chat.otherMessages,
+        0
+      );
 
       return {
         ...user,
         chatConversations: sortedChats,
         overallStats: {
           totalChats: sortedChats.length,
-          activeChats: sortedChats.filter(chat => chat.isActive).length,
+          activeChats: sortedChats.filter((chat) => chat.isActive).length,
           totalMessages,
           sentMessages: totalSentMessages,
-          receivedMessages: totalReceivedMessages
+          receivedMessages: totalReceivedMessages,
         },
-        lastActivity: sortedChats.length > 0 ? sortedChats[0].lastMessageAt : null
+        lastActivity:
+          sortedChats.length > 0 ? sortedChats[0].lastMessageAt : null,
       };
     });
 
@@ -167,19 +189,18 @@ export async function GET(request: NextRequest) {
           total,
           totalPages: Math.ceil(total / limit),
           hasNextPage: page < Math.ceil(total / limit),
-          hasPrevPage: page > 1
-        }
+          hasPrevPage: page > 1,
+        },
       },
-      message: 'Users with complete chat conversations fetched successfully'
+      message: "Users with complete chat conversations fetched successfully",
     });
-
   } catch (error: any) {
-    console.error('Error fetching users with chat conversations:', error);
+    console.error("Error fetching users with chat conversations:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Failed to fetch users with chat conversations',
-        data: null
+        error: error.message || "Failed to fetch users with chat conversations",
+        data: null,
       },
       { status: 500 }
     );
