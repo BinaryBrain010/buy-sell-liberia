@@ -26,19 +26,16 @@ export async function GET(request: NextRequest) {
     // if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
     //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     // }
-    const allowedRoles = [
-      "super_admin",
-      "admin",
-      "moderator",
-      "payment_officer",
-      "support_agent",
-      "custom",
-    ];
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      !allowedRoles.includes(payload.role)
-    ) {
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+    // Use centralized role checker (keeps roles consistent)
+    // Dynamically import to avoid circular dependency if any
+    const { AdminAuthService: AService } = await import(
+      "../../modules/auth/services/admin-auth.service"
+    );
+    // Some earlier tokens may still carry 'admin' or other roles; allow if service recognizes
+    if (!AService.isAllowedRole((payload as any).role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

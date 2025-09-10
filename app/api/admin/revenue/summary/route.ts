@@ -15,7 +15,11 @@ export async function GET(req: NextRequest) {
     }
     const token = authHeader.split(' ')[1];
     const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== 'object' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
+    if (!payload || typeof payload !== 'object') {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    // Centralized role authorization (allows any configured admin/employee role)
+    if (!AdminAuthService.isAllowedRole((payload as any).role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

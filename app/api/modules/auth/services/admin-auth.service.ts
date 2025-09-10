@@ -97,6 +97,7 @@ export class AdminAuthService {
 
   // Centralized allowed roles (Admin + Employee roles that should access admin routes)
   private static readonly ALLOWED_ROLES: Set<string> = new Set([
+  "admin", // added missing generic admin role to align with route permissions
     "super_admin",
     "moderator",
     "payment_officer",
