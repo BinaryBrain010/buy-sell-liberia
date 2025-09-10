@@ -1,33 +1,52 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MessageCircle } from "lucide-react";
+import { Search } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 export default function MobileMenu({
   isOpen,
   onAuthClick,
   onSellClick,
-  onChatClick,
+  onClose,
 }: {
   isOpen: boolean;
   onAuthClick: (mode: "login" | "signup") => void;
   onSellClick: () => void;
-  onChatClick: () => void;
+  onClose: () => void;
 }) {
   const { user } = useAuth();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close when clicking outside the menu
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
+      if (containerRef.current && !containerRef.current.contains(target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isOpen, onClose]);
 
   return (
     <motion.div
+      ref={containerRef}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className="lg:hidden fixed top-16 left-0 right-0 z-40 px-4 pt-4 pb-6 space-y-4 glass border-t shadow-lg"
     >
-      
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
@@ -42,6 +61,7 @@ export default function MobileMenu({
             key={link}
             href={`/${link}`}
             className="text-muted-foreground hover:text-primary transition-colors capitalize"
+            onClick={() => onClose()}
           >
             {link}
           </Link>
@@ -50,34 +70,38 @@ export default function MobileMenu({
 
       <div className="flex flex-col gap-2 pt-3">
         <Button
-          onClick={() => (user ? onSellClick() : onAuthClick("login"))}
+          onClick={() => {
+            if (user) {
+              onSellClick();
+            } else {
+              onAuthClick("login");
+            }
+            onClose();
+          }}
           className="w-full"
         >
           Sell
         </Button>
-        
-        {/* Chat button - only show when user is logged in */}
-        {user && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={onChatClick}
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Chat
-          </Button>
-        )}
-        
+
         {!user && (
           <div className="flex gap-2">
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => onAuthClick("login")}
+              onClick={() => {
+                onAuthClick("login");
+                onClose();
+              }}
             >
               Login
             </Button>
-            <Button className="w-full" onClick={() => onAuthClick("signup")}>
+            <Button
+              className="w-full"
+              onClick={() => {
+                onAuthClick("signup");
+                onClose();
+              }}
+            >
               Sign Up
             </Button>
           </div>

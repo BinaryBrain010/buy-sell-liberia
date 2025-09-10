@@ -5,14 +5,19 @@ import User from '../../../../../../models/User';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Auth: Only super_admin can access
+    // Auth: Allow all admin roles
     const authHeader = request.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
     }
     const token = authHeader.split(' ')[1];
     const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
+    // Previous restrictive check:
+    // if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
+    //   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // }
+    const allowedRoles = ['super_admin', 'admin', 'moderator', 'payment_officer', 'support_agent', 'custom'];
+    if (!payload || typeof payload !== 'object' || !allowedRoles.includes(payload.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

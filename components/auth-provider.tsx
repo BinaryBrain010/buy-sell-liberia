@@ -55,15 +55,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fast path: set user state based on presence of valid JWT to avoid blocking UI
     const { isLoggedIn, payload } = getLocalAuthStatus();
     if (isLoggedIn) {
-      // We only know userId from JWT; set a minimal placeholder and hydrate with profile in background
+      // We only know limited data from JWT; create a richer placeholder so UI doesn't flash generic labels
+      const derivedName =
+        (payload?.fullName as string) ||
+        (payload?.name as string) ||
+        (payload?.username as string) ||
+        (payload?.email ? (payload.email as string).split("@")[0] : "");
+      const derivedUsername =
+        (payload?.username as string) ||
+        (payload?.name as string)?.replace(/\s+/g, "").toLowerCase() ||
+        (payload?.email ? (payload.email as string).split("@")[0] : "");
+
       setUser(
         (prev) =>
           prev ?? {
-            id: payload?.userId || "",
-            name: "",
-            email: "",
-            username: "",
-            isEmailVerified: false,
+            id:
+              (payload?.userId as string) ||
+              (payload?.id as string) ||
+              (payload?._id as string) ||
+              (payload?.sub as string) ||
+              "",
+            name: derivedName,
+            email: (payload?.email as string) || "",
+            username: derivedUsername,
+            isEmailVerified: Boolean(payload?.isEmailVerified),
           }
       );
       setLoading(false);
@@ -115,21 +130,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authClient.logout();
       setUser(null);
-      
+
       // Clear all stored tokens and authentication data
       clearAllAuthData();
-      
+
       console.log("[AUTH PROVIDER] Logout successful");
-      
+
       // Refresh the page to ensure all components are reset
       window.location.reload();
     } catch (error) {
       console.error("[AUTH PROVIDER] Logout error:", error);
-      
+
       // Even if logout fails, clear everything and refresh
       setUser(null);
       clearAllAuthData();
-      
+
       // Refresh the page even if logout failed
       window.location.reload();
     }

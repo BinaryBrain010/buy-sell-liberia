@@ -189,8 +189,8 @@ const activitySchema = new Schema<Activity>(
 
 // Main user schema interface
 export interface IUser extends Document {
-  firstName: string;
-  lastName: string;
+  fullName: string;
+  username: string;
   email: string;
   password: string;
   phone?: string;
@@ -212,8 +212,6 @@ export interface IUser extends Document {
   passwordResetExpires?: Date;
   lastLoginAt?: Date;
   loginCount: number;
-  fullName?: string;
-  displayName?: string;
   stats?: any;
   comparePassword(candidatePassword: string): Promise<boolean>;
   addProductListing(productId: mongoose.Types.ObjectId, status?: ProductListing["status"]): Promise<IUser>;
@@ -232,17 +230,21 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>(
   {
     // Basic Information
-    firstName: {
+    fullName: {
       type: String,
       required: true,
       trim: true,
-      maxlength: 30,
+      maxlength: 100,
     },
-    lastName: {
+    username: {
       type: String,
       required: true,
       trim: true,
+      lowercase: true,
+      minlength: 3,
       maxlength: 30,
+      match: [/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"],
+      unique: true,
     },
     email: {
       type: String,
@@ -338,28 +340,6 @@ userSchema.index({ phone: 1 }, { sparse: true, unique: true });
 userSchema.index({ "listedProducts.product_id": 1 });
 userSchema.index({ "likedProducts.product_id": 1 });
 userSchema.index({ "activity.lastActive": -1 });
-
-// Virtual for full name
-userSchema.virtual("fullName").get(function (this: IUser) {
-  return `${this.firstName} ${this.lastName}`;
-});
-
-// Virtual for display name (uses profile.displayName if available, otherwise fullName)
-userSchema.virtual("displayName").get(function (this: IUser) {
-  return this.profile.displayName || this.fullName;
-});
-
-// Virtual for user stats
-userSchema.virtual("stats").get(function (this: IUser) {
-  return {
-    totalListings: this.activity.totalListings,
-    activeListings: this.activity.activeListings,
-    soldItems: this.activity.soldItems,
-    rating: this.profile.rating.average,
-    reviewCount: this.profile.rating.count,
-    joinedDate: this.activity.joinedDate,
-  };
-});
 
 // Pre-save middleware to hash password
 userSchema.pre<IUser>("save", async function (next) {

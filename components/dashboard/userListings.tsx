@@ -1186,7 +1186,14 @@ export default function UserListings({ userId }: UserListingsProps) {
                         listing.images.map((image, index) => (
                           <div key={index} className="relative group">
                             <img
-                              src={image.url || "/placeholder.jpg"}
+                              src={
+                                image.url && !image.url.startsWith("http")
+                                  ? `/api/uploads/${image.url.replace(
+                                      /^\/+/,
+                                      ""
+                                    )}`
+                                  : image.url || "/placeholder.jpg"
+                              }
                               alt={image.alt || `Image ${index + 1}`}
                               className="w-full h-16 object-cover rounded border"
                               onError={(e) => {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { ContactSellerButton } from "@/components/ContactSellerPopup";
+import { ReportProductButton } from "@/components/report-product-button";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -75,10 +76,10 @@ export default function ProductDetail(productData: ProductDetailProps) {
   const images = Array.isArray(productData?.images) ? productData.images : [];
   const displayName =
     productData?.seller?.fullName ||
-    productData?.user_id?.profile?.displayName ||
-    (productData?.user_id?.firstName && productData?.user_id?.lastName
-      ? `${productData.user_id.firstName} ${productData.user_id.lastName}`
-      : "Unknown Seller");
+    productData?.seller?.username ||
+    productData?.user_id?.fullName ||
+    productData?.user_id?.username ||
+    "Unknown Seller";
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -446,6 +447,12 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     sellerName={displayName}
                     variant="both"
                     size="md"
+                  />
+                  <ReportProductButton
+                    productId={productData._id || productData.id}
+                    currentUserId={productData.currentUserId}
+                    triggerLabel="Report"
+                    size="sm"
                   />
                 </div>
               </div>

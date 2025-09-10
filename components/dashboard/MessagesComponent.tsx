@@ -93,10 +93,12 @@ export const MessagesComponent = ({
 
     if (chat.user1._id === currentUserId || chat.user1 === currentUserId) {
       if (chat.user2 && typeof chat.user2 === "object" && chat.user2._id) {
-        if (chat.user2.firstName && chat.user2.lastName) {
-          return `${chat.user2.firstName} ${chat.user2.lastName}`;
-        } else if (chat.user2.firstName) {
-          return chat.user2.firstName;
+        if (chat.user2.fullName && chat.user2.username) {
+          return `${chat.user2.fullName} (${chat.user2.username})`;
+        } else if (chat.user2.fullName) {
+          return chat.user2.fullName;
+        } else if (chat.user2.username) {
+          return chat.user2.username;
         }
       }
       const userId =
@@ -109,10 +111,12 @@ export const MessagesComponent = ({
       return "Loading...";
     } else {
       if (chat.user1 && typeof chat.user1 === "object" && chat.user1._id) {
-        if (chat.user1.firstName && chat.user1.lastName) {
-          return `${chat.user1.firstName} ${chat.user1.lastName}`;
-        } else if (chat.user1.firstName) {
-          return chat.user1.firstName;
+        if (chat.user1.fullName && chat.user1.username) {
+          return `${chat.user1.fullName} (${chat.user1.username})`;
+        } else if (chat.user1.fullName) {
+          return chat.user1.fullName;
+        } else if (chat.user1.username) {
+          return chat.user1.username;
         }
       }
       const userId =
@@ -321,7 +325,6 @@ export const MessagesComponent = ({
     chats.forEach((chat) => {
       const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
       const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
-
       // If the other user is already populated with a name object, skip
       const otherObj =
         typeof chat.user1 === "object" && u2 === uid
@@ -329,8 +332,7 @@ export const MessagesComponent = ({
           : typeof chat.user2 === "object" && u1 === uid
           ? chat.user2
           : null;
-      if (otherObj && (otherObj.firstName || otherObj.lastName)) return;
-
+      if (otherObj && (otherObj.fullName || otherObj.username)) return;
       const otherId = u1 === uid ? u2 : u1;
       const key = otherId ? String(otherId) : "";
       if (key && !userNames[key]) missingIds.add(key);
@@ -344,7 +346,7 @@ export const MessagesComponent = ({
         Array.from(missingIds).map(async (id) => {
           try {
             const contact = await userClient.getUserContact(id);
-            const name = contact?.name?.trim();
+            const name = contact?.fullName || contact?.username || "Unknown User";
             return [
               id,
               name && name.length > 0 ? name : "Unknown User",
