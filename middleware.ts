@@ -9,14 +9,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // CORS: Allow requests from http://localhost:5173
-  const allowedOrigin = "http://localhost:5173";
+  // CORS: Allow requests from multiple origins
+  const allowedOrigins = [
+    "http://localhost:5173",
+    "https://admin.buysellliberia.com",
+    "https://buysellliberia.com"
+  ];
   const origin = request.headers.get("origin");
 
   // Handle CORS preflight
   if (request.method === "OPTIONS") {
     const response = new NextResponse(null, { status: 204 });
-    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers.set("Access-Control-Allow-Origin", origin);
+    }
     response.headers.set(
       "Access-Control-Allow-Methods",
       "GET,POST,PUT,DELETE,OPTIONS,PATCH"
@@ -45,8 +51,8 @@ export function middleware(request: NextRequest) {
 
   // Normal response, add CORS headers if origin matches
   const response = NextResponse.next();
-  if (origin === allowedOrigin) {
-    response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
   return response;
