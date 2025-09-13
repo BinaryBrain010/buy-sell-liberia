@@ -285,7 +285,7 @@ const productSchema = new Schema<IProduct>(
     },
     expires_at: {
       type: Date,
-      default: () => Date.now() + 30 * 24 * 60 * 60 * 1000,
+      default: () => Date.now() + 180 * 24 * 60 * 60 * 1000,
     },
     renewed_at: Date,
     tags: [
