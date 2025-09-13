@@ -9,7 +9,7 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["*"],
     methods: ["GET", "POST"],
   },
 });
@@ -50,6 +50,19 @@ io.on("connection", (socket) => {
     console.log("Received message:", message);
     // Broadcast the message to all connected clients
     io.emit("message", message);
+  });
+
+  // --- Announcement Broadcasting ---
+  function emitAnnouncement(announcement) {
+    io.emit('announcement:new', announcement);
+  }
+
+  module.exports.emitAnnouncement = emitAnnouncement;
+
+  // Optionally, allow clients to broadcast (for demo/testing only, not for production)
+  socket.on('announcement:broadcast', (announcement) => {
+    // In production, authenticate/authorize here!
+    io.emit('announcement:new', announcement);
   });
 
   socket.on("disconnect", () => {
