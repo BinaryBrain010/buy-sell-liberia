@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
+import ActivityLog from '@/models/ActivityLog';
 
 export async function POST(
   request: NextRequest,
@@ -55,6 +56,12 @@ export async function POST(
     user.isBlocked = true;
     user.isActive = false;
     await user.save();
+    // Audit log for block
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: 'BLOCK_USER',
+      details: `User ID: ${id} blocked by ${payload.email || payload.name}`,
+    });
 
     return NextResponse.json({
       success: true,

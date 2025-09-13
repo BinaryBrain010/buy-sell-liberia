@@ -3,6 +3,7 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
+import ActivityLog from '@/models/ActivityLog';
 
 export async function GET(request: NextRequest) {
   try {
@@ -165,36 +166,56 @@ export async function PATCH(request: NextRequest) {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-
+    let logAction = '';
+    let logDetails = '';
     switch (action) {
       case "approve":
         product.status = "active";
+        logAction = "APPROVE_LISTING";
+        logDetails = `Listing ID: ${productId} approved by ${payload.email || payload.name}`;
         break;
       case "reject":
         product.status = "removed";
+        logAction = "REJECT_LISTING";
+        logDetails = `Listing ID: ${productId} rejected by ${payload.email || payload.name}`;
         break;
       case "delete":
         await product.deleteOne();
+        logAction = "DELETE_LISTING";
+        logDetails = `Listing ID: ${productId} deleted by ${payload.email || payload.name}`;
+        await ActivityLog.create({
+          user: payload.sub || payload.id,
+          action: logAction,
+          details: logDetails,
+        });
         return NextResponse.json({ success: true, message: "Product deleted" });
       case "hide":
         product.status = "removed";
+        logAction = "HIDE_LISTING";
+        logDetails = `Listing ID: ${productId} hidden by ${payload.email || payload.name}`;
         break;
       case "markAsSold":
         product.status = "sold";
+        logAction = "MARK_AS_SOLD";
+        logDetails = `Listing ID: ${productId} marked as sold by ${payload.email || payload.name}`;
         break;
       case "feature":
         product.featured = true;
+        logAction = "FEATURE_LISTING";
+        logDetails = `Listing ID: ${productId} featured by ${payload.email || payload.name}`;
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
     await product.save();
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: logAction,
+      details: logDetails,
+    });
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Failed to update product" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Failed to update product" }, { status: 500 });
   }
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
 import mongoose from 'mongoose';
 import User from '../../../../../../models/User';
+import ActivityLog from '@/models/ActivityLog';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -43,7 +44,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
+    // Audit log for ban/unban
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: isBanned ? 'BAN_USER' : 'UNBAN_USER',
+      details: `User ID: ${params.id} ${isBanned ? 'banned' : 'unbanned'} by ${payload.email || payload.name}${banReason ? `, Reason: ${banReason}` : ''}`,
+    });
     return NextResponse.json(user);
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to update user ban status' }, { status: 500 });

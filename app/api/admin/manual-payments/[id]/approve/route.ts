@@ -4,6 +4,7 @@ import ManualPayment from '../../../../../../models/ManualPayment';
 import Product from '../../../../../../models/Product';
 import User from '../../../../../../models/User';
 import Chat from '../../../../../../models/Chat';
+import ActivityLog from '@/models/ActivityLog';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -47,6 +48,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     payment.reviewedAt = new Date();
     payment.adminNotes = adminNotes;
     await payment.save();
+
+    // Audit log for payment approval
+    await ActivityLog.create({
+      user: payload._id || payload.id,
+      action: 'APPROVE_PAYMENT',
+      details: `Payment ID: ${params.id} approved by ${payload.email || payload.name}`,
+    });
 
     // Mark product as featured (direct update, no validation)
     let productDoc = null;

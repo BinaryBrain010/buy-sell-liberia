@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import Report from "../../../../models/Report";
 import Product from "../../../../models/Product";
 import User from "../../../../models/User";
+import ActivityLog from '@/models/ActivityLog';
 
 // GET: View all reports, filter by reason, status, product, user
 export async function GET(request: NextRequest) {
@@ -102,14 +103,20 @@ export async function PATCH(request: NextRequest) {
     if (!report)
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     let product, user;
+    let logAction = '';
+    let logDetails = '';
     switch (action) {
       case "approve":
         report.status = "approved";
         report.adminAction = "approve";
+        logAction = "APPROVE_REPORT";
+        logDetails = `Report ID: ${reportId} approved by ${payload.email || payload.name}`;
         break;
       case "remove":
         report.status = "removed";
         report.adminAction = "remove";
+        logAction = "REMOVE_REPORT";
+        logDetails = `Report ID: ${reportId} removed by ${payload.email || payload.name}`;
         product = await Product.findById(report.product_id);
         if (product) {
           product.status = "removed";
@@ -119,6 +126,8 @@ export async function PATCH(request: NextRequest) {
       case "warn":
         report.status = "resolved";
         report.adminAction = "warn";
+        logAction = "WARN_USER";
+        logDetails = `User warned via report ID: ${reportId} by ${payload.email || payload.name}`;
         user = await User.findById(report.reported_by);
         if (user) {
           user.isBlocked = true;
@@ -128,6 +137,8 @@ export async function PATCH(request: NextRequest) {
       case "ban":
         report.status = "resolved";
         report.adminAction = "ban";
+        logAction = "BAN_USER";
+        logDetails = `User banned via report ID: ${reportId} by ${payload.email || payload.name}`;
         user = await User.findById(report.reported_by);
         if (user) {
           user.isBanned = true;
@@ -141,6 +152,11 @@ export async function PATCH(request: NextRequest) {
     }
     if (adminNotes) report.adminNotes = adminNotes;
     await report.save();
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: logAction,
+      details: logDetails,
+    });
     return NextResponse.json({ success: true, report });
   } catch (error: any) {
     return NextResponse.json(

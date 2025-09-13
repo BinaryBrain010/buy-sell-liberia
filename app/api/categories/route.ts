@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Category, { ICategory, ISubcategory } from '../../../models/Category';
 import { IProduct } from '../../../models/Product';
+import ActivityLog from '@/models/ActivityLog';
+import { AdminAuthService } from '../modules/auth/services/admin-auth.service';
 
 // Force dynamic rendering for all routes
 export const dynamic = 'force-dynamic';
@@ -140,6 +142,14 @@ export async function GET(request: NextRequest) {
 // POST: Create a new category
 export async function POST(request: NextRequest) {
   try {
+    // Auth: Require admin
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'No token' }, { status: 401 });
+    const token = authHeader.split(' ')[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (!payload || typeof payload !== 'object' || !payload.role) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     await connectDB();
     const body = await request.json();
 
@@ -197,6 +207,13 @@ export async function POST(request: NextRequest) {
 
     await category.save();
 
+    // Audit log for add
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: 'ADD_CATEGORY',
+      details: `Employee: ${payload.fullName || payload.email || payload.name} | Action: Added category '${body.name}' (slug: ${body.slug})`,
+    });
+
     return NextResponse.json({
       category: category.toObject(),
       message: 'Category created successfully',
@@ -216,6 +233,14 @@ export async function POST(request: NextRequest) {
 // PUT: Update an existing category
 export async function PUT(request: NextRequest) {
   try {
+    // Auth: Require admin
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'No token' }, { status: 401 });
+    const token = authHeader.split(' ')[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (!payload || typeof payload !== 'object' || !payload.role) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     await connectDB();
     const body = await request.json();
     const { searchParams } = new URL(request.url);
@@ -296,6 +321,13 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Audit log for edit
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: 'EDIT_CATEGORY',
+      details: `Employee: ${payload.fullName || payload.email || payload.name} | Action: Edited category '${category.name}' (ID/slug: ${categoryId || slug})`,
+    });
+
     return NextResponse.json({
       category,
       message: 'Category updated successfully',
@@ -315,6 +347,14 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete a category
 export async function DELETE(request: NextRequest) {
   try {
+    // Auth: Require admin
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'No token' }, { status: 401 });
+    const token = authHeader.split(' ')[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (!payload || typeof payload !== 'object' || !payload.role) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     await connectDB();
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
@@ -358,6 +398,13 @@ export async function DELETE(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Audit log for delete
+    await ActivityLog.create({
+      user: payload.sub || payload.id,
+      action: 'DELETE_CATEGORY',
+      details: `Employee: ${payload.fullName || payload.email || payload.name} | Action: Deleted category '${category.name}' (ID/slug: ${categoryId || slug})`,
+    });
 
     return NextResponse.json({
       message: 'Category deleted successfully',
