@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import Announcement from '@/models/Announcement';
 import { AdminAuthService } from '@/app/api/modules/auth/services/admin-auth.service';
-// Import emitAnnouncement from the socket server
-// @ts-ignore
-import { emitAnnouncement } from '../../../../server/index.js';
 import User from '@/models/User';
 import Chat from '@/models/Chat';
 import { EmailService } from '@/app/api/modules/auth/services/email.service';
@@ -32,29 +29,39 @@ export async function POST(request: NextRequest) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
     const body = await request.json();
-    const { id } = body;
-    if (!id) return NextResponse.json({ error: 'Announcement id required' }, { status: 400 });
-    const announcement = await Announcement.findById(id);
-    if (!announcement) return NextResponse.json({ error: 'Announcement not found' }, { status: 404 });
-    // Update status and sentAt
-    announcement.status = 'sent';
-    announcement.sentAt = new Date();
-    // Set expiry date to 7 days after send
-    announcement.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const { title, content, type, scheduledAt, targetAudience } = body;
+    if (!title || !content || !type || !Array.isArray(type) || type.length === 0) {
+      return NextResponse.json({ error: 'title, content, and at least one type are required' }, { status: 400 });
+    }
+    // Save the announcement
+    const announcement = new Announcement({
+      title,
+      content,
+      type,
+      status: 'sent',
+      sentAt: new Date(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      scheduledAt,
+      targetAudience,
+    });
     await announcement.save();
     // Emit real-time announcement if type includes banner, popup, or chat
-    if (announcement.type.includes('banner') || announcement.type.includes('popup') || announcement.type.includes('chat')) {
-      emitAnnouncement({
-        id: announcement._id,
-        title: announcement.title,
-        content: announcement.content,
-        type: announcement.type,
-        sentAt: announcement.sentAt,
-        expiresAt: announcement.expiresAt,
+    if (type.includes('banner') || type.includes('popup') || type.includes('chat')) {
+      await fetch('http://localhost:3001/broadcast-announcement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: announcement._id,
+          title: announcement.title,
+          content: announcement.content,
+          type: announcement.type,
+          sentAt: announcement.sentAt,
+          expiresAt: announcement.expiresAt,
+        }),
       });
     }
     // Email delivery
-    if (announcement.type.includes('email')) {
+    if (type.includes('email')) {
       const users = await User.find({ isActive: true, isBlocked: false, emailVerified: true }, 'email').lean();
       const emailService = new EmailService();
       const subject = announcement.title || 'Announcement from BuySell';
@@ -70,15 +77,17 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-    // Chat delivery
-    if (announcement.type.includes('chat')) {
-      // Find admin user (first active, not blocked/banned, emailVerified, or fallback to first admin)
-      let adminUser = await User.findOne({ isActive: true, isBlocked: false, isBanned: false, emailVerified: true, username: /admin/i });
-      if (!adminUser) {
-        adminUser = await User.findOne({ username: /admin/i });
+    // Chat delivery: use the authenticated admin as sender
+    if (type.includes('chat')) {
+      // Find the admin user by payload (assume payload.sub or payload.id is the admin's user ID)
+      let adminUser = null;
+      if (payload.sub || payload.id) {
+        adminUser = await User.findById(payload.sub || payload.id);
+      } else if (payload.email) {
+        adminUser = await User.findOne({ email: payload.email });
       }
       if (!adminUser) {
-        return NextResponse.json({ error: 'No admin user found for chat delivery' }, { status: 500 });
+        return NextResponse.json({ error: 'Authenticated admin user not found for chat delivery' }, { status: 500 });
       }
       const users = await User.find({ isActive: true, isBlocked: false, isBanned: false, _id: { $ne: adminUser._id } }, '_id').lean();
       for (const user of users) {

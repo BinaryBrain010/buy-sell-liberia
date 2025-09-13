@@ -54,8 +54,9 @@ const chatSchema = new Schema<IChat, ChatModel>(
     product: {
       type: Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
+      required: false, // Allow null for announcement chats
       index: true,
+      default: null,   // Default to null
     },
     user1: {
       type: Schema.Types.ObjectId,

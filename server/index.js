@@ -89,6 +89,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
+app.use(express.json()); // For JSON body parsing
 
 const swaggerOptions = {
   definition: {
@@ -109,6 +110,13 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Add this route to handle announcement broadcasts
+app.post("/broadcast-announcement", (req, res) => {
+  const announcement = req.body;
+  io.emit("announcement:new", announcement);
+  res.json({ success: true });
+});
 
 httpServer.on("request", app);
 
