@@ -9,7 +9,7 @@ const httpServer = createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["*"],
     methods: ["GET", "POST"],
   },
 });
@@ -52,6 +52,19 @@ io.on("connection", (socket) => {
     io.emit("message", message);
   });
 
+  // --- Announcement Broadcasting ---
+  function emitAnnouncement(announcement) {
+    io.emit('announcement:new', announcement);
+  }
+
+  module.exports.emitAnnouncement = emitAnnouncement;
+
+  // Optionally, allow clients to broadcast (for demo/testing only, not for production)
+  socket.on('announcement:broadcast', (announcement) => {
+    // In production, authenticate/authorize here!
+    io.emit('announcement:new', announcement);
+  });
+
   socket.on("disconnect", () => {
     const userId = socketUser.get(socket.id);
     if (userId) {
@@ -76,6 +89,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
 const app = express();
+app.use(express.json()); // For JSON body parsing
 
 const swaggerOptions = {
   definition: {
@@ -96,6 +110,13 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Add this route to handle announcement broadcasts
+app.post("/broadcast-announcement", (req, res) => {
+  const announcement = req.body;
+  io.emit("announcement:new", announcement);
+  res.json({ success: true });
+});
 
 httpServer.on("request", app);
 

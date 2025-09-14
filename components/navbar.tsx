@@ -73,7 +73,7 @@ export function Navbar() {
         <div className="container mx-auto px-2 md:px-4">
           <div className="flex items-center justify-between h-16 gap-2 md:gap-4">
             {/* Logo */}
-            <div className="flex items-center h-full order-2 md:order-none">
+            <div className="flex items-center h-full">
               <Logo />
             </div>
 
@@ -103,12 +103,21 @@ export function Navbar() {
             </div>
 
             {/* Mobile Theme Toggle and Hamburger - Only visible on mobile */}
-            <div className="md:hidden flex items-center gap-2 order-1 md:order-none">
+            <div className="md:hidden flex items-center gap-2">
+              {/* Left side of mobile controls: theme/user actions */}
+              {!user && <ThemeToggle />}
+              {user && (
+                <div className="flex items-center">
+                  <UserActions />
+                </div>
+              )}
+              {user && <DropDownMenu includeThemeToggle />}
+              {/* Hamburger on far right */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={toggleMobileMenu}
-                className="p-2 btn-shadow"
+                className="p-2 btn-shadow ml-1"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               >
                 {mobileMenuOpen ? (
@@ -117,13 +126,6 @@ export function Navbar() {
                   <Menu className="h-5 w-5" />
                 )}
               </Button>
-              {!user && <ThemeToggle />}
-              {user && (
-                <div className="flex items-center">
-                  <UserActions />
-                </div>
-              )}
-              {user && <DropDownMenu includeThemeToggle />}
             </div>
           </div>
         </div>

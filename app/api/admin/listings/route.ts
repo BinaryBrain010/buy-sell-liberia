@@ -185,6 +185,9 @@ export async function PATCH(request: NextRequest) {
       case "feature":
         product.featured = true;
         break;
+      case "unfeature":
+        product.featured = false;
+        break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
