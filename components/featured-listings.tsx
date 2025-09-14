@@ -13,7 +13,7 @@ let featuredProductsPromise: Promise<{ products?: any[] }> | null = null;
 const fetchFeaturedProducts = (svc: ProductService) => {
   if (!featuredProductsPromise) {
     featuredProductsPromise = svc
-      .getProducts({}, { featured: -1 }, { page: 1, limit: 10 })
+      .getFeaturedProducts({ page: 1, limit: 10 }, { featured: -1 })
       .catch((err) => {
         // Reset cache on failure to allow retries
         featuredProductsPromise = null;
@@ -69,7 +69,7 @@ export function FeaturedListings() {
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-lg text-muted-foreground">
-            No featured listings found.
+            sorry right nmow there are nmo featured products at the moment
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

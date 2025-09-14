@@ -278,6 +278,13 @@ export async function GET(request: NextRequest) {
         filters.customFields = { $elemMatch: { fieldName, value } };
     }
 
+    // Featured-only filter
+    const featuredOnly = searchParams.get("featuredOnly");
+    const featuredParam = searchParams.get("featured");
+    if (featuredOnly === "true" || featuredParam === "true") {
+      filters.featured = true;
+    }
+
     // Location filters
     if (
       searchParams.get("city") ||

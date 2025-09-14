@@ -54,6 +54,10 @@ interface ProductFilters {
   status?: string;
   tags?: string[];
   customField?: string;
+  // New: filter by featured products only
+  featuredOnly?: boolean;
+  // Optional alias matching API support
+  featured?: boolean;
   location?: {
     city?: string;
     state?: string;
@@ -82,7 +86,10 @@ export class ProductService {
   /**
    * Toggles the favourite status of a product for the current user
    */
-  static async toggleFavourite(productId: string, favourite: boolean): Promise<void> {
+  static async toggleFavourite(
+    productId: string,
+    favourite: boolean
+  ): Promise<void> {
     try {
       if (favourite) {
         await axiosInstance.put(`/products/${productId}/favorite`);
@@ -90,7 +97,9 @@ export class ProductService {
         await axiosInstance.delete(`/products/${productId}/favorite`);
       }
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || "Failed to update favourite status");
+      throw new Error(
+        error.response?.data?.error || "Failed to update favourite status"
+      );
     }
   }
   /**
@@ -109,11 +118,13 @@ export class ProductService {
    */
   static async getUserFavorites(): Promise<Product[]> {
     try {
-      const response = await axiosInstance.get('/products/favorites');
+      const response = await axiosInstance.get("/products/favorites");
       return response.data.favorites;
     } catch (error: any) {
       console.error("ProductService: Error fetching favorites:", error);
-      throw new Error(error.response?.data?.error || "Failed to fetch favorites");
+      throw new Error(
+        error.response?.data?.error || "Failed to fetch favorites"
+      );
     }
   }
 
@@ -163,7 +174,7 @@ export class ProductService {
         price: {
           amount: formData.amount,
           currency: formData.currency || "USD",
-          negotiable: formData.negotiable ?? true
+          negotiable: formData.negotiable ?? true,
         },
         category_id: formData.category_id,
         subcategory_id: formData.subcategory_id ?? "",
@@ -230,6 +241,13 @@ export class ProductService {
       if (filters.customField)
         params.append("customField", filters.customField);
 
+      // Featured-only filter
+      if (typeof filters.featuredOnly === "boolean") {
+        params.append("featuredOnly", String(filters.featuredOnly));
+      } else if (typeof filters.featured === "boolean") {
+        params.append("featured", String(filters.featured));
+      }
+
       // Add location filters
       if (filters.location) {
         if (filters.location.city) params.append("city", filters.location.city);
@@ -259,5 +277,19 @@ export class ProductService {
         error.response?.data?.error || "Failed to fetch products"
       );
     }
+  }
+
+  /**
+   * Convenience: fetch only featured products
+   */
+  async getFeaturedProducts(
+    pagination: PaginationOptions = {},
+    sortOptions: SortOptions = {}
+  ): Promise<ProductResponse> {
+    // Ensure featured first by default if no sort is provided
+    const sort: SortOptions =
+      Object.keys(sortOptions).length > 0 ? sortOptions : { featured: -1 };
+
+    return this.getProducts({ featuredOnly: true }, sort, pagination);
   }
 }

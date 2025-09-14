@@ -1,25 +1,25 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useRef } from "react"
-import { ProductService } from "@/app/services/Product.Service"
-import { useParams } from "next/navigation"
-import ProductDetail from "./ProductDetail"
-import { ProductDetailSkeleton } from "@/components/product-detail-skeleton"
-import { FeaturedProducts } from "@/components/featured-products"
+import { useEffect, useState, useRef } from "react";
+import { ProductService } from "@/app/services/Product.Service";
+import { useParams } from "next/navigation";
+import ProductDetail from "./ProductDetail";
+import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
+import { FeaturedListings } from "@/components/featured-listings";
 
 export default function ProductDetailPage() {
-  const params = useParams()
-  const _id = params?.id
+  const params = useParams();
+  const _id = params?.id;
 
-  const [product, setProduct] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const hasIncrementedView = useRef(false);
   useEffect(() => {
     async function fetchProductAndIncrementView() {
-      setLoading(true)
-      setError("")
+      setLoading(true);
+      setError("");
       try {
         // Increment view count only once per mount
         if (_id && !hasIncrementedView.current) {
@@ -28,37 +28,39 @@ export default function ProductDetailPage() {
           productService.incrementProductViews(_id as string);
         }
         // Fetch product details
-        const res = await fetch(`/api/products/${_id}`)
-        if (!res.ok) throw new Error("Failed to fetch product")
-        const data = await res.json()
+        const res = await fetch(`/api/products/${_id}`);
+        if (!res.ok) throw new Error("Failed to fetch product");
+        const data = await res.json();
 
         if (data && typeof data.product === "object" && data.product !== null) {
-          setProduct(data.product)
+          setProduct(data.product);
         } else {
-          setProduct(null)
+          setProduct(null);
         }
       } catch (err: any) {
-        setError(err.message || "Error fetching product")
+        setError(err.message || "Error fetching product");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    if (_id) fetchProductAndIncrementView()
-  }, [_id])
+    if (_id) fetchProductAndIncrementView();
+  }, [_id]);
 
   if (!_id) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Invalid Product</h2>
+          <h2 className="text-2xl font-bold text-red-600 mb-2">
+            Invalid Product
+          </h2>
           <p className="text-muted-foreground">No product ID found in route.</p>
         </div>
       </div>
-    )
+    );
   }
 
-  if (loading) return <ProductDetailSkeleton />
+  if (loading) return <ProductDetailSkeleton />;
 
   if (error) {
     return (
@@ -74,7 +76,7 @@ export default function ProductDetailPage() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -82,10 +84,12 @@ export default function ProductDetailPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-muted-foreground">The product you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">
+            The product you're looking for doesn't exist.
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -95,9 +99,9 @@ export default function ProductDetailPage() {
       <div className="border-t bg-gray-50/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto py-8 px-4">
           <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
-          <FeaturedProducts currentProductId={_id as string} category={product?.category} />
+          <FeaturedListings />
         </div>
       </div>
     </div>
-  )
+  );
 }
