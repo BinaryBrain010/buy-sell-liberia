@@ -67,9 +67,18 @@ export async function POST(req: NextRequest) {
       // Use the project's file parser
       const { files, fields } = await parseFiles(req);
       
-      // Handle logo upload
-      const logoFile = files.find(f => f.name === 'logo');
+      console.log('Parsed files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+      console.log('Parsed fields:', Object.keys(fields));
+      
+      // Handle logo upload - check both 'logo' and any image file
+      let logoFile = files.find(f => f.name === 'logo');
+      if (!logoFile && files.length > 0) {
+        // If no file named 'logo', take the first image file
+        logoFile = files.find(f => f.type.startsWith('image/'));
+      }
+      
       if (logoFile) {
+        console.log('Processing logo file:', { name: logoFile.name, size: logoFile.size, type: logoFile.type });
         // Validate file type
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(logoFile.type)) {
@@ -112,6 +121,8 @@ export async function POST(req: NextRequest) {
         );
 
         console.log(`Logo uploaded successfully: ${logoPath}`);
+      } else {
+        console.log('No logo file found in request');
       }
 
       // Handle other form fields
@@ -138,11 +149,22 @@ export async function POST(req: NextRequest) {
       // Clear settings cache so new values are picked up immediately
       clearSettingsCache();
       
-      return NextResponse.json({ 
-        success: true, 
-        message: logoFile ? 'Logo uploaded and settings updated' : 'Settings updated',
-        updatedSettings: logoFile ? { ...updates, logo_uploaded: true } : updates
-      });
+      // Return different response based on whether logo was uploaded
+      if (logoFile) {
+        const logoPath = `/logo/site-logo-${Date.now()}.${logoFile.name.split('.').pop()}`;
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Logo uploaded successfully',
+          logoPath: logoPath,
+          updatedSettings: { ...updates, logo_path: logoPath }
+        });
+      } else {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Settings updated',
+          updatedSettings: updates
+        });
+      }
     } else {
       const body = await req.json();
       for (const key of Object.keys(body)) {
