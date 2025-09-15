@@ -1,12 +1,34 @@
 import { Metadata } from "next";
 
+async function fetchPage(slug: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/${slug}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.exists ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 export const metadata: Metadata = {
   title: "Terms of Use | BuySell Liberia",
   description:
     "Read the Terms of Use for BuySell Liberia. Learn about acceptable use, listings, payments, safety, and more.",
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const data = await fetchPage("terms");
+  if (data) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <h1>{data.title}</h1>
+        <div dangerouslySetInnerHTML={{ __html: data.content }} />
+      </main>
+    );
+  }
   return (
     <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
       <h1>Terms of Use</h1>

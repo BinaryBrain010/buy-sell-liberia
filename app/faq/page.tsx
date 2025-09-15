@@ -6,7 +6,24 @@ export const metadata: Metadata = {
 	description: "Answers to common questions about using BuySell Liberia for buying and selling products and services.",
 };
 
-const faqs = [
+async function fetchPage(slug: string) {
+	try {
+		const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/${slug}`, {
+			next: { revalidate: 60 },
+		});
+		if (!res.ok) return null;
+		const data = await res.json();
+		return data?.exists ? data : null;
+	} catch {
+		return null;
+	}
+}
+
+type FAQItem = { q: string; a: string };
+
+type FAQGroup = { category: string; items: FAQItem[] };
+
+const faqs: FAQGroup[] = [
 	{
 		category: "Getting Started",
 		items: [
@@ -65,18 +82,21 @@ const faqs = [
 	},
 ];
 
-export default function FAQPage() {
+export default async function FAQPage() {
+	const db = await fetchPage("faq");
+	const groups: FAQGroup[] = db?.data?.groups || faqs;
+	const title = db?.title || "Frequently Asked Questions";
 	return (
 		<main className="container mx-auto max-w-4xl px-4 py-10">
 			<section className="mb-8">
-				<h1 className="text-3xl font-bold tracking-tight">Frequently Asked Questions</h1>
+				<h1 className="text-3xl font-bold tracking-tight">{title}</h1>
 				<p className="text-muted-foreground mt-2">
 					Quick answers to the most common questions about using the marketplace.
 				</p>
 			</section>
 
 			<div className="space-y-8">
-				{faqs.map((group, idx) => (
+				{groups.map((group, idx) => (
 					<div key={idx}>
 						<h2 className="text-xl font-semibold mb-3">{group.category}</h2>
 						<Accordion type="single" collapsible className="w-full">

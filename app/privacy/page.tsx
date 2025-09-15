@@ -1,4 +1,18 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
+
+async function fetchPage(slug: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/${slug}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.exists ? data : null;
+  } catch {
+    return null;
+  }
+}
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BuySell Liberia",
@@ -6,7 +20,16 @@ export const metadata: Metadata = {
     "Learn how BuySell Liberia collects, uses, and protects your personal information.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const data = await fetchPage("privacy");
+  if (data) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <h1>{data.title}</h1>
+        <div dangerouslySetInnerHTML={{ __html: data.content }} />
+      </main>
+    );
+  }
   return (
     <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
       <h1>Privacy Policy</h1>

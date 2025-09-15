@@ -1,7 +1,32 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function HelpPage() {
+async function fetchPage(slug: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/${slug}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.exists ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+type HelpData = { blocks?: Array<{ icon?: string; title: string; text: string }> };
+
+export default async function HelpPage() {
+  const data = await fetchPage("help");
+  const blocks: HelpData["blocks"] = data?.data?.blocks;
+  if (data && !blocks) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <h1>{data.title}</h1>
+        <div dangerouslySetInnerHTML={{ __html: data.content }} />
+      </main>
+    )
+  }
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-20">
