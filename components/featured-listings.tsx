@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
 import { ProductService } from "@/app/services/Product.Service";
-import ProductListSkeleton from "@/components/ProductListSkeleton";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Cache the in-flight fetch to avoid duplicate requests in React Strict Mode (dev)
 let featuredProductsPromise: Promise<{ products?: any[] }> | null = null;
@@ -65,34 +73,42 @@ export function FeaturedListings() {
         </motion.div>
 
         {loading ? (
-          <ProductListSkeleton variant="grid" count={6} />
+          <FeaturedCarouselSkeleton count={10} />
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-lg text-muted-foreground">
             Sorry, there are no featured products at the moment.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product, index) => (
-              <motion.div
-                key={product._id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ scale: 1.02 }}
-                className="cursor-pointer"
-                onClick={() => router.push(`/products/${product._id}`)}
-              >
-                <ProductCard
-                  product={product}
-                  variant="compact"
-                  onLike={(productId) =>
-                    console.log("Liked product:", productId)
-                  }
-                />
-              </motion.div>
-            ))}
-          </div>
+          <Carousel className="w-full">
+            <CarouselContent>
+              {products.map((product: any, index: number) => (
+                <CarouselItem
+                  key={product._id}
+                  className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.05 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.02 }}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/products/${product._id}`)}
+                  >
+                    <ProductCard
+                      product={product}
+                      variant="compact"
+                      onLike={(productId) =>
+                        console.log("Liked product:", productId)
+                      }
+                    />
+                  </motion.div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         )}
 
         <motion.div
@@ -113,5 +129,41 @@ export function FeaturedListings() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+function FeaturedCarouselSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <Carousel className="w-full">
+      <CarouselContent>
+        {Array.from({ length: count }).map((_, idx) => (
+          <CarouselItem
+            key={idx}
+            className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+          >
+            <Card className="border-0">
+              <CardContent className="p-4">
+                <Skeleton className="h-48 w-full mb-4 rounded-lg" />
+                <div className="flex items-center justify-between mb-2">
+                  <Skeleton className="h-5 w-2/3" />
+                  <Skeleton className="h-6 w-6 rounded-full" />
+                </div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <Skeleton className="h-5 w-16" />
+                  <Skeleton className="h-5 w-20" />
+                </div>
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious />
+      <CarouselNext />
+    </Carousel>
   );
 }
