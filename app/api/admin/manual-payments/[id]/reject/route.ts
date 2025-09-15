@@ -5,6 +5,7 @@ import Product from '../../../../../../models/Product';
 import User from '../../../../../../models/User';
 import Chat from '../../../../../../models/Chat';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
+import { logAdminAction } from '@/lib/admin-logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -61,6 +62,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     chat.messages.push({ sender: adminId, content: `Your manual payment for featuring the product "${productTitle}" has been rejected. Reason: ${adminNotes || 'No reason provided.'}`, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
     await chat.save();
+
+    // Log payment rejection
+    await logAdminAction({
+      adminId: (payload as any).id || 'unknown',
+      adminName: (payload as any).name || 'Unknown Admin',
+      adminEmail: (payload as any).email || 'unknown@admin.com',
+      adminRole: (payload as any).role || 'unknown',
+      action: 'rejected_payment',
+      module: 'payments',
+      targetType: 'payment',
+      targetId: params.id,
+      targetName: `Payment of ${payment.amount}`,
+      details: { 
+        amount: payment.amount,
+        reason: adminNotes,
+        productTitle
+      },
+      description: `Rejected payment of ${payment.amount} for ${productTitle}`,
+      request
+    });
 
     return NextResponse.json({ success: true, message: 'Payment rejected and user notified. User can resubmit.' });
   } catch (error: any) {

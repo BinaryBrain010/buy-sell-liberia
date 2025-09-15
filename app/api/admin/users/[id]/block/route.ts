@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
+import { QuickLog } from "@/lib/admin-logger";
 
 export async function POST(
   request: NextRequest,
@@ -52,9 +53,19 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const previousStatus = user.isBlocked ? 'blocked' : 'active';
     user.isBlocked = true;
     user.isActive = false;
     await user.save();
+
+    // Log user block action
+    await QuickLog.userBanned(
+      payload, 
+      id, 
+      user.fullName || user.email, 
+      'User blocked by admin', 
+      request
+    );
 
     return NextResponse.json({
       success: true,

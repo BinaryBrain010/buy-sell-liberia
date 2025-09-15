@@ -3,6 +3,7 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
+import { QuickLog, logAdminAction } from "@/lib/admin-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -166,27 +167,109 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const previousStatus = product.status;
+    const previousFeatured = product.featured;
+
     switch (action) {
       case "approve":
         product.status = "active";
+        await QuickLog.listingApproved(payload, productId, product.title, request);
         break;
       case "reject":
         product.status = "removed";
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'rejected_listing',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousStatus, reason: 'Admin rejection' },
+          request
+        });
         break;
       case "delete":
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'deleted_listing',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousStatus },
+          request
+        });
         await product.deleteOne();
         return NextResponse.json({ success: true, message: "Product deleted" });
       case "hide":
         product.status = "removed";
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'hidden_listing',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousStatus },
+          request
+        });
         break;
       case "markAsSold":
         product.status = "sold";
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'marked_listing_sold',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousStatus },
+          request
+        });
         break;
       case "feature":
         product.featured = true;
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'featured_listing',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousFeatured },
+          request
+        });
         break;
       case "unfeature":
         product.featured = false;
+        await logAdminAction({
+          adminId: (payload as any).id || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'unfeatured_listing',
+          module: 'listings',
+          targetType: 'listing',
+          targetId: productId,
+          targetName: product.title,
+          details: { previousFeatured },
+          request
+        });
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });

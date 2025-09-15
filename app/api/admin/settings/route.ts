@@ -7,6 +7,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { parseFiles } from '@/lib/multer';
 import { existsSync } from 'fs';
+import { logAdminAction, QuickLog } from '@/lib/admin-logger';
 
 const MONETIZATION_KEY = 'monetization_enabled';
 const SETTINGS_KEYS = [
@@ -121,6 +122,26 @@ export async function POST(req: NextRequest) {
         );
 
         console.log(`Logo uploaded successfully: ${logoPath}`);
+        
+        // Log logo upload
+        await logAdminAction({
+          adminId: (payload as any).id || (payload as any).adminId || 'unknown',
+          adminName: (payload as any).name || 'Unknown Admin',
+          adminEmail: (payload as any).email || 'unknown@admin.com',
+          adminRole: (payload as any).role || 'unknown',
+          action: 'uploaded_logo',
+          module: 'settings',
+          targetType: 'logo',
+          targetName: logoFile.name,
+          details: { 
+            originalName: logoFile.name,
+            size: logoFile.size,
+            type: logoFile.type,
+            savedPath: logoPath
+          },
+          description: `Uploaded new logo: ${logoFile.name}`,
+          request: req
+        });
       } else {
         console.log('No logo file found in request');
       }
@@ -145,6 +166,11 @@ export async function POST(req: NextRequest) {
           { upsert: true, new: true }
         );
       }
+
+      // Log settings updates if any
+      if (Object.keys(updates).length > 0) {
+        await QuickLog.settingsUpdated(payload, Object.keys(updates), req);
+      }
       
       // Clear settings cache so new values are picked up immediately
       clearSettingsCache();
@@ -167,9 +193,37 @@ export async function POST(req: NextRequest) {
       }
     } else {
       const body = await req.json();
+      const updatedKeys: string[] = [];
+      
       for (const key of Object.keys(body)) {
         if (!SETTINGS_KEYS.includes(key)) continue;
         await Setting.findOneAndUpdate({ key }, { value: body[key] }, { upsert: true, new: true });
+        updatedKeys.push(key);
+      }
+      
+      // Log settings updates
+      if (updatedKeys.length > 0) {
+        await QuickLog.settingsUpdated(payload, updatedKeys, req);
+        
+        // Special logging for monetization toggle
+        if (updatedKeys.includes('monetization_enabled')) {
+          await logAdminAction({
+            adminId: (payload as any).id || (payload as any).adminId || 'unknown',
+            adminName: (payload as any).name || 'Unknown Admin',
+            adminEmail: (payload as any).email || 'unknown@admin.com',
+            adminRole: (payload as any).role || 'unknown',
+            action: 'toggled_monetization',
+            module: 'settings',
+            targetType: 'setting',
+            targetName: 'monetization_enabled',
+            details: { 
+              newValue: body.monetization_enabled,
+              setting: 'monetization_enabled'
+            },
+            description: `${body.monetization_enabled ? 'Enabled' : 'Disabled'} monetization`,
+            request: req
+          });
+        }
       }
       
       // Clear settings cache so new values are picked up immediately
