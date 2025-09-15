@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product-card";
 import { ProductService } from "@/app/services/Product.Service";
+import ProductListSkeleton from "@/components/ProductListSkeleton";
 
 // Cache the in-flight fetch to avoid duplicate requests in React Strict Mode (dev)
 let featuredProductsPromise: Promise<{ products?: any[] }> | null = null;
@@ -25,7 +26,7 @@ const fetchFeaturedProducts = (svc: ProductService) => {
 
 export function FeaturedListings() {
   const [products, setProducts] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const productService = new ProductService();
 
@@ -64,12 +65,10 @@ export function FeaturedListings() {
         </motion.div>
 
         {loading ? (
-          <div className="text-center py-20 text-lg text-muted-foreground">
-            Loading featured listings...
-          </div>
+          <ProductListSkeleton variant="grid" count={6} />
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-lg text-muted-foreground">
-            sorry right nmow there are nmo featured products at the moment
+            Sorry, there are no featured products at the moment.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

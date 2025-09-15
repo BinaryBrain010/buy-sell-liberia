@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePagination } from "@/hooks/use-pagination";
 import { useProductsApi } from "@/hooks/use-product-api";
+import ProductListSkeleton from "@/components/ProductListSkeleton";
 
 const ITEMS_PER_PAGE = 30;
 
@@ -195,11 +196,10 @@ export default function ProductsPage() {
           )}
 
           {/* Loading State */}
-          {isLoading ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading products...</p>
-            </div>
+          {isLoading || isSearching ? (
+            <>
+              <ProductListSkeleton variant={viewMode} count={ITEMS_PER_PAGE / 3} />
+            </>
           ) : products.length > 0 ? (
             <>
               {/* Products Grid/List */}
