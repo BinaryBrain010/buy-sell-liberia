@@ -5,9 +5,16 @@ import Product from "../../../models/Product";
 import { verifyToken } from "../modules/auth/middlewares/next-auth-middleware";
 import { parseFiles } from "@/lib/multer";
 import { uploadProductImagesToLocal, validateImageFilesForLocal } from "@/lib/local-file-upload";
+import { getSetting } from "@/lib/settings";
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if monetization is enabled
+    const monetizationEnabled = await getSetting('monetization_enabled');
+    if (!monetizationEnabled) {
+      return NextResponse.json({ error: "Payment features are currently unavailable" }, { status: 403 });
+    }
+
     // Require authentication
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.userId) {

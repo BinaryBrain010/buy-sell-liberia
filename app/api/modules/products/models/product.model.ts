@@ -204,7 +204,15 @@ const ProductSchema = new Schema<IProduct>(
     ],
     expiresAt: {
       type: Date,
-      default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+      default: async () => {
+        try {
+          const { getSetting } = await import('@/lib/settings');
+          const expiryDays = await getSetting('listing_expiration_days');
+          return new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+        } catch {
+          return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // fallback 30 days
+        }
+      },
     },
     featured: {
       type: Boolean,

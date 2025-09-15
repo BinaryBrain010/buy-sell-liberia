@@ -873,7 +873,14 @@ export class ProductService extends BaseService<IProduct> {
         );
       }
 
-      const newExpiryDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000); // 90 days
+      let newExpiryDate: Date;
+      try {
+        const { getSetting } = await import('@/lib/settings');
+        const expiryDays = await getSetting('listing_expiration_days');
+        newExpiryDate = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+      } catch {
+        newExpiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // fallback 30 days
+      }
 
       const updatedProduct = await this.updateById(productId, {
         status: "active",

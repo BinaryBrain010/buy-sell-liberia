@@ -256,8 +256,16 @@ const productSchema = new Schema<IProduct>(
     images: {
       type: [imageSchema],
       validate: {
-        validator: (images: IImage[]) => images.length <= 10 && images.length > 0,
-        message: "Product must have 1-10 images",
+        validator: async function(images: IImage[]) {
+          try {
+            const { getSetting } = await import('../lib/settings');
+            const maxImages = await getSetting('max_listing_photos');
+            return images.length <= maxImages && images.length > 0;
+          } catch {
+            return images.length <= 10 && images.length > 0; // fallback
+          }
+        },
+        message: "Product must have 1-{max_listing_photos} images",
       },
     },
     customFields: [customFieldValueSchema],
@@ -285,7 +293,15 @@ const productSchema = new Schema<IProduct>(
     },
     expires_at: {
       type: Date,
-      default: () => Date.now() + 180 * 24 * 60 * 60 * 1000,
+      default: async () => {
+        try {
+          const { getSetting } = await import('../lib/settings');
+          const expiryDays = await getSetting('listing_expiration_days');
+          return Date.now() + expiryDays * 24 * 60 * 60 * 1000;
+        } catch {
+          return Date.now() + 30 * 24 * 60 * 60 * 1000; // fallback 30 days
+        }
+      },
     },
     renewed_at: Date,
     tags: [
@@ -358,8 +374,14 @@ productSchema.methods.isExpired = function (): boolean {
   return this.expires_at < new Date()
 }
 
-productSchema.methods.renew = function (): Promise<IProduct> {
-  this.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+productSchema.methods.renew = async function (): Promise<IProduct> {
+  try {
+    const { getSetting } = await import('../lib/settings');
+    const expiryDays = await getSetting('listing_expiration_days');
+    this.expires_at = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+  } catch {
+    this.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // fallback
+  }
   this.renewed_at = new Date()
   this.status = "active"
   return this.save()

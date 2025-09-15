@@ -11,9 +11,10 @@ import ManualPayment from './ManualPayment';
 import Category from './Category';
 import Review from './Review';
 import Chat from './Chat';
+import Setting from './Setting';
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat };
+export { User, Product, ManualPayment, Category, Review, Chat, Setting };
 
 export const models = {
   User,
@@ -22,6 +23,7 @@ export const models = {
   Review,
   Chat,
   ManualPayment,
+  Setting,
 };
 
 export const utils = {
