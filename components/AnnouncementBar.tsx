@@ -31,7 +31,10 @@ export default function AnnouncementBar() {
     fetchAnnouncements();
   }, []);
 
-  const displayAnnouncements = announcements;
+  // Only show announcements that have the type 'banner'
+  const displayAnnouncements = announcements.filter((a) =>
+    (a.type || []).some((t) => t?.toLowerCase() === "banner")
+  );
 
   if (loading || displayAnnouncements.length === 0) return null;
 

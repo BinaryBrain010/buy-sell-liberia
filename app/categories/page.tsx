@@ -37,151 +37,12 @@ const categoryColors: { [key: string]: string } = {
   "entertainment-hobbies": "from-blue-600 to-indigo-500",
 };
 
-// Subcategory image mappings - you can replace these with actual images from your API
-const getSubcategoryImage = (subcategoryName: string, categorySlug: string) => {
-  const name = subcategoryName.toLowerCase();
-  const category = categorySlug.toLowerCase();
-
-  // Electronics subcategories
-  if (category === "electronics") {
-    if (name.includes("phone") || name.includes("mobile"))
-      return "/assets/mobile.jpg";
-    if (name.includes("laptop") || name.includes("computer"))
-      return "/assets/laptop.jpg";
-    if (name.includes("tv") || name.includes("television"))
-      return "/assets/tv.jpg";
-    if (name.includes("camera"))
-      return "/assets/drone.jpg";
-    if (name.includes("headphone") || name.includes("audio") || name.includes("accessories"))
-      return "/assets/headphones.jpg";
-    if (name.includes("tablet"))
-      return "/assets/tablets.jpg";
-    if (name.includes("watch") || name.includes("wearable"))
-      return "/assets/watch.jpg";
-  }
-
-  // Vehicles subcategories
-  if (category === "vehicles") {
-    if (name.includes("car") || name.includes("sedan") || name.includes("suv"))
-      return "/placeholder.svg?height=128&width=200&text=🚗+Cars";
-    if (name.includes("motorcycle") || name.includes("bike"))
-      return "/placeholder.svg?height=128&width=200&text=🏍️+Motorcycles";
-    if (name.includes("truck"))
-      return "/placeholder.svg?height=128&width=200&text=🚛+Trucks";
-    if (name.includes("boat") || name.includes("marine"))
-      return "/placeholder.svg?height=128&width=200&text=⛵+Boats";
-    if (name.includes("rv") || name.includes("camper"))
-      return "/placeholder.svg?height=128&width=200&text=🚐+RVs";
-    if (name.includes("part") || name.includes("accessory"))
-      return "/placeholder.svg?height=128&width=200&text=🔧+Parts";
-  }
-
-  // Real Estate subcategories
-  if (category === "real-estate") {
-    if (name.includes("house") || name.includes("home"))
-      return "/placeholder.svg?height=128&width=200&text=🏠+Houses";
-    if (name.includes("apartment") || name.includes("condo"))
-      return "/placeholder.svg?height=128&width=200&text=🏢+Apartments";
-    if (name.includes("commercial") || name.includes("office"))
-      return "/placeholder.svg?height=128&width=200&text=🏢+Commercial";
-    if (name.includes("land") || name.includes("lot"))
-      return "/placeholder.svg?height=128&width=200&text=🌳+Land";
-    if (name.includes("rental") || name.includes("rent"))
-      return "/placeholder.svg?height=128&width=200&text=🏠+Rentals";
-  }
-
-  // Home & Furniture subcategories
-  if (category === "home-furniture") {
-    if (name.includes("sofa") || name.includes("couch"))
-      return "/placeholder.svg?height=128&width=200&text=🛋️+Sofas";
-    if (name.includes("bed") || name.includes("mattress"))
-      return "/placeholder.svg?height=128&width=200&text=🛏️+Beds";
-    if (name.includes("table") || name.includes("desk"))
-      return "/placeholder.svg?height=128&width=200&text=🪑+Tables";
-    if (name.includes("chair"))
-      return "/placeholder.svg?height=128&width=200&text=🪑+Chairs";
-    if (name.includes("kitchen"))
-      return "/placeholder.svg?height=128&width=200&text=🍽️+Kitchen";
-    if (name.includes("decor") || name.includes("decoration"))
-      return "/placeholder.svg?height=128&width=200&text=🖼️+Decor";
-    if (name.includes("storage") || name.includes("cabinet"))
-      return "/placeholder.svg?height=128&width=200&text=🗄️+Storage";
-  }
-
-  // Fashion & Beauty subcategories
-  if (category === "fashion-beauty") {
-    if (name.includes("clothing") || name.includes("apparel"))
-      return "/placeholder.svg?height=128&width=200&text=👕+Clothing";
-    if (name.includes("shoes") || name.includes("footwear"))
-      return "/placeholder.svg?height=128&width=200&text=👟+Shoes";
-    if (name.includes("bag") || name.includes("handbag"))
-      return "/placeholder.svg?height=128&width=200&text=👜+Bags";
-    if (name.includes("jewelry") || name.includes("accessory"))
-      return "/placeholder.svg?height=128&width=200&text=💍+Jewelry";
-    if (name.includes("makeup") || name.includes("cosmetic"))
-      return "/placeholder.svg?height=128&width=200&text=💄+Makeup";
-    if (name.includes("skincare") || name.includes("beauty"))
-      return "/placeholder.svg?height=128&width=200&text=🧴+Skincare";
-    if (name.includes("fragrance") || name.includes("perfume"))
-      return "/placeholder.svg?height=128&width=200&text=🌸+Fragrance";
-  }
-
-  // Sports & Outdoors subcategories
-  if (category === "sports-outdoors") {
-    if (name.includes("fitness") || name.includes("gym"))
-      return "/placeholder.svg?height=128&width=200&text=🏋️+Fitness";
-    if (name.includes("camping") || name.includes("outdoor"))
-      return "/placeholder.svg?height=128&width=200&text=⛺+Camping";
-    if (name.includes("cycling") || name.includes("bike"))
-      return "/placeholder.svg?height=128&width=200&text=🚴+Cycling";
-    if (name.includes("water") || name.includes("swimming"))
-      return "/placeholder.svg?height=128&width=200&text=🏊+Water+Sports";
-    if (name.includes("team") || name.includes("ball"))
-      return "/placeholder.svg?height=128&width=200&text=⚽+Team+Sports";
-    if (name.includes("hunting") || name.includes("fishing"))
-      return "/placeholder.svg?height=128&width=200&text=🎣+Hunting";
-  }
-
-  // Babies & Kids subcategories
-  if (category === "babies-kids") {
-    if (name.includes("toy") || name.includes("game"))
-      return "/placeholder.svg?height=128&width=200&text=🧸+Toys";
-    if (name.includes("clothing") || name.includes("apparel"))
-      return "/placeholder.svg?height=128&width=200&text=👶+Clothing";
-    if (name.includes("stroller") || name.includes("gear"))
-      return "/placeholder.svg?height=128&width=200&text=🍼+Baby+Gear";
-    if (name.includes("furniture") || name.includes("crib"))
-      return "/placeholder.svg?height=128&width=200&text=🛏️+Furniture";
-    if (name.includes("book") || name.includes("educational"))
-      return "/placeholder.svg?height=128&width=200&text=📚+Books";
-  }
-
-  // Default fallback with category-specific emoji
-  const categoryEmojis: { [key: string]: string } = {
-    electronics: "📱",
-    vehicles: "🚗",
-    "real-estate": "🏠",
-    "home-furniture": "🛋️",
-    "fashion-beauty": "👗",
-    "babies-kids": "🧸",
-    "tools-equipment": "🔧",
-    services: "🛠️",
-    jobs: "💼",
-    "sports-outdoors": "⚽",
-    "computers-accessories": "💻",
-    "kitchen-appliances": "🍽️",
-    "agriculture-farming": "🌾",
-    "books-stationery": "📚",
-    "health-wellness": "💊",
-    "pets-animals": "🐕",
-    "entertainment-hobbies": "🎭",
-  };
-
-  const emoji = categoryEmojis[category] || "📦";
-  return `/placeholder.svg?height=128&width=200&text=${emoji}+${encodeURIComponent(
-    subcategoryName
-  )}`;
-};
+// Helper to match API's slug sanitize
+const slugify = (input: string): string =>
+  input
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -195,6 +56,50 @@ export default function CategoriesPage() {
   const subcategoriesSectionRef = useRef<HTMLDivElement>(null);
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const hasFetchedCategories = useRef(false);
+
+  // Subcategory image map fetched from API
+  type SubcatImageEntry = { slug: string; url: string; title?: string };
+  const [subcatImageMap, setSubcatImageMap] = useState<
+    Record<string, SubcatImageEntry>
+  >({});
+
+  useEffect(() => {
+    const loadImageMap = async () => {
+      try {
+        const res = await fetch("/api/subcategory-image-map", {
+          cache: "no-store",
+        });
+        if (!res.ok)
+          throw new Error(`Failed to fetch image map: ${res.status}`);
+        const json = await res.json();
+        const images: SubcatImageEntry[] = json?.data?.images || [];
+        const map: Record<string, SubcatImageEntry> = {};
+        for (const item of images) {
+          if (item?.slug) map[item.slug.toLowerCase()] = item;
+        }
+        setSubcatImageMap(map);
+      } catch (err) {
+        console.error(
+          "[CategoriesPage] Failed to load subcategory image map",
+          err
+        );
+        setSubcatImageMap({});
+      }
+    };
+    loadImageMap();
+  }, []);
+
+  const getMappedSubcategoryImage = (subcategory: any): string | undefined => {
+    // If API on subcategory already provides an image, prefer it
+    if (subcategory?.image?.url) return subcategory.image.url;
+    const slugKey = subcategory?.slug
+      ? String(subcategory.slug)
+      : subcategory?.name
+      ? slugify(String(subcategory.name))
+      : "";
+    if (!slugKey) return undefined;
+    return subcatImageMap[slugKey.toLowerCase()]?.url;
+  };
 
   // Fetch all categories on initial load
   useEffect(() => {
@@ -453,23 +358,12 @@ export default function CategoriesPage() {
                       <div className="relative w-full h-32 mb-3 overflow-hidden">
                         <Image
                           src={
-                            subcategory.image?.url ||
-                            getSubcategoryImage(
-                              subcategory.name,
-                              selectedCategory.slug
-                            ) ||
-                            "/placeholder.svg" ||
+                            getMappedSubcategoryImage(subcategory) ||
                             "/placeholder.svg"
                           }
                           alt={subcategory.name}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-300"
-                          onError={(e) => {
-                            e.currentTarget.src = getSubcategoryImage(
-                              subcategory.name,
-                              selectedCategory.slug
-                            );
-                          }}
                         />
                         {/* Overlay gradient for better text readability */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
