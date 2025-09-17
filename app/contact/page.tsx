@@ -26,9 +26,15 @@ async function fetchPage() {
         ? ({ next: { revalidate: 60 } } as any)
         : { cache: "no-store" };
     const hdrs = headers();
-    const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
-    const proto = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-    const envBase = (process.env.NEXT_PUBLIC_BASE_URL && process.env.NEXT_PUBLIC_BASE_URL.trim()) || "";
+    const host =
+      hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
+    const proto =
+      hdrs.get("x-forwarded-proto") ||
+      (host.startsWith("localhost") ? "http" : "https");
+    const envBase =
+      (process.env.NEXT_PUBLIC_BASE_URL &&
+        process.env.NEXT_PUBLIC_BASE_URL.trim()) ||
+      "";
     const base = envBase || `${proto}://${host}`;
     const res = await fetch(`${base}/api/pages/contact`, init);
     if (!res.ok) return null;
