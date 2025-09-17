@@ -12,7 +12,13 @@ type AboutData = {
 };
 
 export default function AboutPage() {
-  const [data, setData] = useState<{ title?: string; data?: AboutData } | null>(null);
+  type PagePayload = {
+    exists?: boolean;
+    title?: string;
+    content?: string;
+    data?: AboutData;
+  };
+  const [page, setPage] = useState<PagePayload | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -20,7 +26,7 @@ export default function AboutPage() {
         const res = await fetch("/api/pages/about", { cache: "no-store" });
         if (!res.ok) return;
         const json = await res.json();
-        if (json?.exists) setData({ title: json.title, data: json.data });
+        if (json?.exists) setPage(json);
       } catch {}
     };
     load();
@@ -33,23 +39,44 @@ export default function AboutPage() {
     handshake: <FaHandshake className="text-primary w-8 h-8 mx-auto mb-3" />,
   };
 
-  const heroTitle = data?.data?.hero?.title || (
+  // If CMS provided pure HTML content (no structured data), render that page instead
+  if (page && !page.data && page.content) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-12 md:py-16 prose prose-zinc dark:prose-invert">
+        <h1>{page.title || "About BuySell"}</h1>
+        <div dangerouslySetInnerHTML={{ __html: page.content }} />
+      </main>
+    );
+  }
+
+  const heroTitle = page?.data?.hero?.title || (
     <>
       About <span className="text-primary">BuySell</span>
     </>
   );
   const heroSubtitle =
-    data?.data?.hero?.subtitle ||
+    page?.data?.hero?.subtitle ||
     "BuySell is a modern marketplace platform where users can buy, sell, and explore a wide variety of products — all in one place.";
 
-  const sections =
-    data?.data?.sections || [
-      { icon: "rocket", title: "Our Mission", text: "To empower individuals and businesses to buy and sell safely, easily, and efficiently through an intuitive digital experience." },
-      { icon: "verified", title: "Our Vision", text: "To become the most trusted and accessible digital marketplace in the region, enabling growth and opportunity for all." },
-      { icon: "users", title: "Our Community", text: "We value transparency, trust, and inclusion — creating a safe and vibrant environment for all our users." },
-    ];
+  const sections = page?.data?.sections || [
+    {
+      icon: "rocket",
+      title: "Our Mission",
+      text: "To empower individuals and businesses to buy and sell safely, easily, and efficiently through an intuitive digital experience.",
+    },
+    {
+      icon: "verified",
+      title: "Our Vision",
+      text: "To become the most trusted and accessible digital marketplace in the region, enabling growth and opportunity for all.",
+    },
+    {
+      icon: "users",
+      title: "Our Community",
+      text: "We value transparency, trust, and inclusion — creating a safe and vibrant environment for all our users.",
+    },
+  ];
 
-  const coreValues = data?.data?.coreValues || [
+  const coreValues = page?.data?.coreValues || [
     "Integrity",
     "Innovation",
     "Customer First",
@@ -66,7 +93,9 @@ export default function AboutPage() {
         className="text-center mb-12"
       >
         <h1 className="text-4xl font-bold mb-4">{heroTitle}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{heroSubtitle}</p>
+        <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+          {heroSubtitle}
+        </p>
       </motion.div>
 
       <motion.div
