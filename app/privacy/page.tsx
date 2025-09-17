@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import NetworkProbe from "@/components/static-pages/NetworkProbe";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | BuySell Liberia",
@@ -6,9 +7,78 @@ export const metadata: Metadata = {
     "Learn how BuySell Liberia collects, uses, and protects your personal information.",
 };
 
-export default function PrivacyPage() {
+async function fetchPage() {
+  try {
+    const init: RequestInit =
+      process.env.NODE_ENV === "production"
+        ? ({ next: { revalidate: 60 } } as any)
+        : { cache: "no-store" };
+    const base =
+      (process.env.NEXT_PUBLIC_BASE_URL &&
+        process.env.NEXT_PUBLIC_BASE_URL.trim()) ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000");
+    const res = await fetch(`${base}/api/pages/privacy`, init);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.exists ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+type Section = {
+  title: string;
+  paragraphs?: string[];
+  list?: string[];
+};
+
+export default async function PrivacyPage() {
+  const cms = await fetchPage();
+  const sections: Section[] | null = cms?.data?.sections || null;
+
+  // If CMS provides an HTML content (no structured sections), render it directly
+  if (cms && !sections && cms.content) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <NetworkProbe slug="privacy" />
+        <h1>{cms.title || "Privacy Policy"}</h1>
+        <div dangerouslySetInnerHTML={{ __html: cms.content }} />
+      </main>
+    );
+  }
+
+  // If CMS provides structured sections
+  if (sections && sections.length > 0) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <NetworkProbe slug="privacy" />
+        <h1>{cms?.title || "Privacy Policy"}</h1>
+        <p>Last updated: {new Date().getFullYear()}</p>
+        {sections.map((s, idx) => (
+          <section key={idx}>
+            <h2>{s.title}</h2>
+            {s.paragraphs?.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            {s.list && s.list.length > 0 && (
+              <ul>
+                {s.list.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </main>
+    );
+  }
+
+  // Fallback: original hardcoded content
   return (
     <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+      <NetworkProbe slug="privacy" />
       <h1>Privacy Policy</h1>
       <p>Last updated: {new Date().getFullYear()}</p>
 

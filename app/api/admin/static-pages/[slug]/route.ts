@@ -5,16 +5,7 @@ import StaticPage from "@/models/StaticPage";
 
 type RouteParams = { params: { slug: string } };
 
-const ALLOWED_SLUGS = new Set([
-  "about",
-  "contact",
-  "help",
-  "safety",
-  "terms",
-  "privacy",
-  "faq",
-  "disclaimer",
-]);
+const ALLOWED_SLUGS = new Set(["about", "contact", "terms", "privacy", "faq"]);
 
 function unauthorized(message = "Unauthorized") {
   return NextResponse.json({ error: message }, { status: 401 });

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import NetworkProbe from "@/components/static-pages/NetworkProbe";
 import { Mail, Phone, MapPin, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ContactForm from "@/components/contact/ContactForm";
@@ -9,6 +11,9 @@ export const metadata: Metadata = {
     "Get in touch with the BuySell Liberia team for support, feedback, or inquiries.",
 };
 
+// Ensure dynamic rendering so CMS updates are reflected immediately
+export const dynamic = "force-dynamic";
+
 type ContactData = {
   hero?: { title?: string; subtitle?: string };
   details?: Array<{ type: string; label?: string; value: string }>;
@@ -16,10 +21,16 @@ type ContactData = {
 
 async function fetchPage() {
   try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/contact`,
-      { next: { revalidate: 60 } }
-    );
+    const init: RequestInit =
+      process.env.NODE_ENV === "production"
+        ? ({ next: { revalidate: 60 } } as any)
+        : { cache: "no-store" };
+    const hdrs = headers();
+    const host = hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
+    const proto = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+    const envBase = (process.env.NEXT_PUBLIC_BASE_URL && process.env.NEXT_PUBLIC_BASE_URL.trim()) || "";
+    const base = envBase || `${proto}://${host}`;
+    const res = await fetch(`${base}/api/pages/contact`, init);
     if (!res.ok) return null;
     const data = await res.json();
     return data?.exists ? data : null;
@@ -57,6 +68,7 @@ export default async function ContactPage() {
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-12 md:py-16">
+      <NetworkProbe slug="contact" />
       <div className="text-center mb-8 space-y-2">
         <h1 className="text-3xl md:text-4xl font-bold">{heroTitle}</h1>
         <p className="text-muted-foreground">{heroSubtitle}</p>
@@ -104,7 +116,7 @@ export default async function ContactPage() {
                   </a>
                 </li>
                 <li>
-                  <a className="underline" href="/help">
+                  <a className="underline" href="/faq">
                     Help Center
                   </a>
                 </li>

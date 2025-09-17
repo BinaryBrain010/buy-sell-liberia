@@ -25,12 +25,9 @@ import { useToast } from "@/components/ui/use-toast";
 const ALLOWED = [
   { value: "about", label: "About" },
   { value: "contact", label: "Contact" },
-  { value: "help", label: "Help" },
-  { value: "safety", label: "Safety Tips" },
   { value: "terms", label: "Terms" },
   { value: "privacy", label: "Privacy" },
   { value: "faq", label: "FAQ" },
-  { value: "disclaimer", label: "Disclaimer" },
 ];
 
 type PagePayload = {
@@ -172,11 +169,21 @@ export default function AdminStaticPages() {
       });
       await load();
     } catch (e: any) {
-      toast({
-        title: "Update failed",
-        description: e?.response?.data?.error || e.message,
-        variant: "destructive",
-      });
+      const status = e?.response?.status;
+      if (status === 404) {
+        setExists(false);
+        toast({
+          title: "Page doesn’t exist yet",
+          description: "Click Create to add this page first.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Update failed",
+          description: e?.response?.data?.error || e.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }

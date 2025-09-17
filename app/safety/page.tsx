@@ -74,7 +74,7 @@ export default function SafetyPage() {
             </p>
             <p>
               Visit our{" "}
-              <Link href="/help" className="underline">
+              <Link href="/faq" className="underline">
                 Help Center
               </Link>{" "}
               or{" "}
