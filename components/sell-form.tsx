@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import axios from "axios"
 import { CategoryService } from "@/app/services/Category.Service"
-import { getClientSettings, type PlatformSettings } from "@/lib/settings"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
@@ -19,14 +18,14 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Upload, X, Plus, MapPin, DollarSign, Tag } from "lucide-react"
 
-// Dynamic form schema factory
-const createFormSchema = (maxImages: number, defaultCurrency: string) => z.object({
+// Base form schema
+const baseFormSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(100, "Title too long"),
   description: z.string().min(20, "Description must be at least 20 characters").max(2000, "Description too long"),
   categoryId: z.string().min(1, "Please select a category"),
   subcategoryId: z.string().min(1, "Please select a subcategory"),
   price: z.number().min(0, "Price must be positive"),
-  currency: z.string().default(defaultCurrency),
+  currency: z.string().default("USD"),
   negotiable: z.boolean().default(true),
   city: z.string().min(1, "City is required"),
   state: z.string().optional(),
@@ -35,12 +34,12 @@ const createFormSchema = (maxImages: number, defaultCurrency: string) => z.objec
   whatsapp: z.string().optional(),
   email: z.string().email().optional(),
   preferredContact: z.enum(["phone", "whatsapp", "email"]).default("phone"),
-  images: z.array(z.string()).min(1, "At least one image is required").max(maxImages, `Maximum ${maxImages} images allowed`),
+  images: z.array(z.string()).min(1, "At least one image is required").max(10, "Maximum 10 images allowed"),
   tags: z.array(z.string()).optional(),
   customFields: z.record(z.any()).optional()
 })
 
-type FormData = z.infer<ReturnType<typeof createFormSchema>>
+type FormData = z.infer<typeof baseFormSchema>
 
 interface Category {
   _id: string
@@ -87,12 +86,11 @@ export function SellForm({ user }: SellFormProps) {
   const [imageUploading, setImageUploading] = useState(false)
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
-  const [settings, setSettings] = useState<PlatformSettings | null>(null)
 
   const form = useForm<FormData>({
-    resolver: settings ? zodResolver(createFormSchema(settings.max_listing_photos, settings.platform_currency)) : undefined,
+    resolver: zodResolver(baseFormSchema),
     defaultValues: {
-      currency: settings?.platform_currency || "LRD",
+      currency: "USD",
       negotiable: true,
       country: "Liberia",
       preferredContact: "phone",
@@ -103,25 +101,10 @@ export function SellForm({ user }: SellFormProps) {
     }
   })
 
-  // Load settings and categories on component mount
+  // Load categories on component mount
   useEffect(() => {
-    loadSettingsAndCategories()
+    loadCategories()
   }, [])
-
-  const loadSettingsAndCategories = async () => {
-    try {
-      const [settingsData] = await Promise.all([
-        getClientSettings(),
-        loadCategories()
-      ])
-      setSettings(settingsData)
-      
-      // Update form defaults once settings are loaded
-      form.setValue('currency', settingsData.platform_currency)
-    } catch (error) {
-      console.error('Failed to load settings:', error)
-    }
-  }
 
   const loadCategories = async () => {
     try {
@@ -180,8 +163,7 @@ export function SellForm({ user }: SellFormProps) {
       // In real implementation, upload to Firebase Storage
       const uploadedUrls: string[] = []
       
-      const maxImages = settings?.max_listing_photos || 10
-      for (let i = 0; i < files.length && images.length + uploadedUrls.length < maxImages; i++) {
+      for (let i = 0; i < files.length && images.length + uploadedUrls.length < 10; i++) {
         // Mock upload - replace with actual Firebase Storage upload
         const mockUrl = `/placeholder.svg?height=300&width=300&text=Image+${images.length + uploadedUrls.length + 1}`
         uploadedUrls.push(mockUrl)
@@ -613,10 +595,10 @@ export function SellForm({ user }: SellFormProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="LRD">LRD (L$)</SelectItem>
                             <SelectItem value="USD">USD ($)</SelectItem>
                             <SelectItem value="EUR">EUR (€)</SelectItem>
                             <SelectItem value="GBP">GBP (£)</SelectItem>
+                            <SelectItem value="LRD">LRD (L$)</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -769,7 +751,7 @@ export function SellForm({ user }: SellFormProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Upload className="h-5 w-5" />
-                  Images (1-{settings?.max_listing_photos || 10}) *
+                  Images (1-10) *
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -789,7 +771,7 @@ export function SellForm({ user }: SellFormProps) {
                       accept="image/*"
                       className="hidden"
                       onChange={handleImageUpload}
-                      disabled={imageUploading || images.length >= (settings?.max_listing_photos || 10)}
+                      disabled={imageUploading || images.length >= 10}
                     />
                   </label>
                 </div>

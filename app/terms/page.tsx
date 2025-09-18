@@ -1,10 +1,34 @@
 import { Metadata } from "next";
+import { headers } from "next/headers";
+import NetworkProbe from "@/components/static-pages/NetworkProbe";
 
-async function fetchPage(slug: string) {
+export const metadata: Metadata = {
+  title: "Terms of Use | BuySell Liberia",
+  description:
+    "Read the Terms of Use for BuySell Liberia. Learn about acceptable use, listings, payments, safety, and more.",
+};
+
+// Ensure this page is rendered dynamically so it always reflects CMS updates
+export const dynamic = "force-dynamic";
+
+async function fetchPage() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/pages/${slug}`, {
-      next: { revalidate: 60 },
-    });
+    const init: RequestInit =
+      process.env.NODE_ENV === "production"
+        ? { next: { revalidate: 60 } as any }
+        : { cache: "no-store" };
+    const hdrs = headers();
+    const host =
+      hdrs.get("x-forwarded-host") || hdrs.get("host") || "localhost:3000";
+    const proto =
+      hdrs.get("x-forwarded-proto") ||
+      (host.startsWith("localhost") ? "http" : "https");
+    const envBase =
+      (process.env.NEXT_PUBLIC_BASE_URL &&
+        process.env.NEXT_PUBLIC_BASE_URL.trim()) ||
+      "";
+    const base = envBase || `${proto}://${host}`;
+    const res = await fetch(`${base}/api/pages/terms`, init);
     if (!res.ok) return null;
     const data = await res.json();
     return data?.exists ? data : null;
@@ -13,24 +37,84 @@ async function fetchPage(slug: string) {
   }
 }
 
-export const metadata: Metadata = {
-  title: "Terms of Use | BuySell Liberia",
-  description:
-    "Read the Terms of Use for BuySell Liberia. Learn about acceptable use, listings, payments, safety, and more.",
+type Section = {
+  title: string;
+  paragraphs?: string[];
+  list?: string[];
 };
 
 export default async function TermsPage() {
-  const data = await fetchPage("terms");
-  if (data) {
+  const cms = await fetchPage();
+  // Normalize possible data shapes
+  let sections: Section[] | null = null;
+  const data = cms?.data;
+  if (Array.isArray(data)) {
+    sections = data as Section[];
+  } else if (data?.sections && Array.isArray(data.sections)) {
+    sections = data.sections as Section[];
+  } else if (
+    data &&
+    (Array.isArray((data as any).list) ||
+      Array.isArray((data as any).paragraphs))
+  ) {
+    const s: Section = {
+      title: (data as any).title || "Terms",
+      paragraphs: (data as any).paragraphs || undefined,
+      list: (data as any).list || undefined,
+    };
+    sections = [s];
+  }
+
+  const htmlFromData: string | null =
+    (typeof data?.content === "string" && data.content.trim()
+      ? data.content
+      : typeof (data as any)?.html === "string" && (data as any).html.trim()
+      ? (data as any).html
+      : null) || null;
+
+  // If CMS provides an HTML content (no structured sections), render it directly
+  if (cms && !sections && (cms.content || htmlFromData)) {
     return (
       <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
-        <h1>{data.title}</h1>
-        <div dangerouslySetInnerHTML={{ __html: data.content }} />
+        <NetworkProbe slug="terms" />
+        <h1>{cms.title || "Terms of Use"}</h1>
+        <div
+          dangerouslySetInnerHTML={{ __html: htmlFromData || cms.content }}
+        />
       </main>
     );
   }
+
+  // If CMS provides structured sections
+  if (sections && sections.length > 0) {
+    return (
+      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+        <NetworkProbe slug="terms" />
+        <h1>{cms?.title || "Terms of Use"}</h1>
+        <p>Last updated: {new Date().getFullYear()}</p>
+        {sections.map((s, idx) => (
+          <section key={idx}>
+            <h2>{s.title}</h2>
+            {s.paragraphs?.map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+            {s.list && s.list.length > 0 && (
+              <ul>
+                {s.list.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </main>
+    );
+  }
+
+  // Fallback: original hardcoded content
   return (
     <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+      <NetworkProbe slug="terms" />
       <h1>Terms of Use</h1>
       <p>Last updated: {new Date().getFullYear()}</p>
 
@@ -59,7 +143,9 @@ export default async function TermsPage() {
 
       <h2>4. Listings & Transactions</h2>
       <ul>
-        <li>Listings must be accurate, lawful, and placed in the correct category.</li>
+        <li>
+          Listings must be accurate, lawful, and placed in the correct category.
+        </li>
         <li>
           Prohibited items/services are not allowed. We may remove listings that
           violate our policies.
@@ -72,15 +158,19 @@ export default async function TermsPage() {
 
       <h2>5. Safety</h2>
       <ul>
-        <li>Meet in public places where possible and verify items before paying.</li>
-        <li>Report suspicious behavior using the reporting tools on listings.</li>
+        <li>
+          Meet in public places where possible and verify items before paying.
+        </li>
+        <li>
+          Report suspicious behavior using the reporting tools on listings.
+        </li>
       </ul>
 
       <h2>6. Intellectual Property</h2>
       <p>
         You retain ownership of the content you post, but grant us a license to
-        host and display it on the Platform. Do not post content you do not
-        have rights to use.
+        host and display it on the Platform. Do not post content you do not have
+        rights to use.
       </p>
 
       <h2>7. Disclaimers</h2>

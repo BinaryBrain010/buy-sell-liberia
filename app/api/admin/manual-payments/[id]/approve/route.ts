@@ -5,7 +5,6 @@ import Product from '../../../../../../models/Product';
 import User from '../../../../../../models/User';
 import Chat from '../../../../../../models/Chat';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
-import { QuickLog } from '@/lib/admin-logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -82,9 +81,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     chat.lastMessageAt = new Date();
     console.log('Pushed message to chat:', chat._id, 'Sender:', senderId);
     await chat.save();
-
-    // Log payment approval
-    await QuickLog.paymentApproved(payload, params.id, payment.amount, request);
 
     return NextResponse.json({ success: true, message: 'Payment approved and user notified.' });
   } catch (error: any) {

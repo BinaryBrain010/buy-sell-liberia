@@ -3,7 +3,6 @@ import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.s
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
 import bcrypt from "bcryptjs";
-import { logAdminAction } from "@/lib/admin-logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -66,25 +65,6 @@ export async function PATCH(
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    // Log password reset action
-    await logAdminAction({
-      adminId: (payload as any).id || (payload as any).adminId || 'unknown',
-      adminName: (payload as any).name || 'Unknown Admin',
-      adminEmail: (payload as any).email || 'unknown@admin.com',
-      adminRole: (payload as any).role || 'unknown',
-      action: 'reset_user_password',
-      module: 'users',
-      targetType: 'user',
-      targetId: params.id,
-      targetName: user.fullName || user.email,
-      details: { 
-        resetBy: 'admin',
-        passwordLength: newPassword.length
-      },
-      description: `Reset password for user ${user.fullName || user.email} (ID: ${params.id})`,
-      request
-    });
 
     return NextResponse.json({ message: "Password reset successfully", user });
   } catch (error: any) {

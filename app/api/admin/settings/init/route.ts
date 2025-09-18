@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
-import { clearSettingsCache } from '@/lib/settings';
+import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
+import { SettingsService } from '@/app/api/modules/shared/services/settings.service';
 
+// POST: Initialize default settings in database
 export async function POST(req: NextRequest) {
   try {
-    // Auth: Only admin/super_admin can clear cache
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
@@ -15,15 +15,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Clear settings cache
-    clearSettingsCache();
+    await SettingsService.initializeDefaultSettings();
     
+    const settings = await SettingsService.getAllSettings();
     return NextResponse.json({ 
       success: true, 
-      message: 'Settings cache cleared successfully',
-      timestamp: new Date().toISOString()
+      message: 'Default settings initialized successfully',
+      settings 
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to clear cache' }, { status: 500 });
+    console.error('Error in /api/admin/settings/init POST:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

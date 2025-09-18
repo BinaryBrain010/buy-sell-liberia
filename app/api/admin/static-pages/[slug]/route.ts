@@ -3,85 +3,179 @@ import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.ser
 import { connectDB } from "@/lib/mongoose";
 import StaticPage from "@/models/StaticPage";
 
-// POST: Create a static page (super_admin only)
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
-  try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "No token" }, { status: 401 });
-    const token = authHeader.split(" ")[1];
-    const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== "object" || (payload as any).role !== "super_admin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+type RouteParams = { params: { slug: string } };
 
-    const { title, content, data } = await req.json();
-    if (!title || (!content && !data)) {
-      return NextResponse.json({ error: "Provide title and either content or data" }, { status: 400 });
-    }
+const ALLOWED_SLUGS = new Set(["about", "contact", "terms", "privacy", "faq"]);
+
+function unauthorized(message = "Unauthorized") {
+  return NextResponse.json({ error: message }, { status: 401 });
+}
+
+function forbidden(message = "Forbidden") {
+  return NextResponse.json({ error: message }, { status: 403 });
+}
+
+function badRequest(message: string) {
+  return NextResponse.json({ error: message }, { status: 400 });
+}
+
+function notFound(message = "Page not found") {
+  return NextResponse.json({ error: message }, { status: 404 });
+}
+
+async function requireAdmin(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader)
+    return { ok: false as const, error: unauthorized("No token") };
+  const token = authHeader.split(" ")[1];
+  const payload = AdminAuthService.verifyAccessToken(token) as any;
+  if (!payload || typeof payload !== "object") {
+    return { ok: false as const, error: unauthorized("Invalid token") };
+  }
+  if (!AdminAuthService.isAllowedRole(payload.role)) {
+    return { ok: false as const, error: forbidden() };
+  }
+  return { ok: true as const };
+}
+
+function validateSlug(raw: string) {
+  const slug = (raw || "").toLowerCase();
+  if (!ALLOWED_SLUGS.has(slug)) {
+    return {
+      ok: false as const,
+      error: badRequest(
+        `Unsupported slug '${raw}'. Allowed: ${[...ALLOWED_SLUGS].join(", ")}`
+      ),
+    };
+  }
+  return { ok: true as const, slug };
+}
+
+// Create a static page for the given slug
+export async function POST(request: NextRequest, ctx: RouteParams) {
+  try {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.error;
+
+    const v = validateSlug(ctx.params.slug);
+    if (!v.ok) return v.error;
+    const slug = v.slug;
 
     await connectDB();
-    const slug = params.slug.toLowerCase();
-    const exists = await StaticPage.findOne({ slug });
-    if (exists) return NextResponse.json({ error: "Page already exists" }, { status: 409 });
 
-    const page = await StaticPage.create({ slug, title, content: content || "", data });
-    return NextResponse.json({
-      slug: page.slug,
-      title: page.title,
-      content: page.content,
-      data: page.data ?? null,
-      createdAt: page.createdAt,
+    const body = await request.json().catch(() => ({}));
+    const { title, content, data } = body || {};
+    if (!title) return badRequest("'title' is required");
+    if ((content == null || content === "") && data == null) {
+      return badRequest("Provide either 'content' (string) or 'data' (object)");
+    }
+
+    const existing = await StaticPage.findOne({ slug });
+    if (existing) {
+      return NextResponse.json(
+        { error: "Page already exists", exists: true },
+        { status: 409 }
+      );
+    }
+
+    const created = await StaticPage.create({
+      slug,
+      title,
+      content: content ?? "",
+      data,
     });
+    return NextResponse.json(
+      {
+        message: "Static page created",
+        page: {
+          slug: created.slug,
+          title: created.title,
+          content: created.content,
+          data: created.data ?? null,
+          createdAt: created.createdAt,
+          updatedAt: created.updatedAt,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Failed to create page" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Failed to create page" },
+      { status: 500 }
+    );
   }
 }
 
-// PATCH: Update a static page (super_admin and admin allowed)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+// Update an existing static page for the given slug (partial update)
+export async function PATCH(request: NextRequest, ctx: RouteParams) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "No token" }, { status: 401 });
-    const token = authHeader.split(" ")[1];
-    const payload = AdminAuthService.verifyAccessToken(token);
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      !["super_admin", "admin"].includes((payload as any).role)
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.error;
 
-    const { title, content, data } = await req.json();
-    if (!title && !content && data === undefined) {
-      return NextResponse.json({ error: "Provide title, content or data to update" }, { status: 400 });
-    }
+    const v = validateSlug(ctx.params.slug);
+    if (!v.ok) return v.error;
+    const slug = v.slug;
 
     await connectDB();
-    const slug = params.slug.toLowerCase();
-    const updated = await StaticPage.findOneAndUpdate(
+
+    const body = await request.json().catch(() => ({}));
+    const update: any = {};
+    if (typeof body.title === "string") update.title = body.title;
+    if (typeof body.content === "string") update.content = body.content;
+    if (body.data !== undefined) update.data = body.data; // allow null to clear
+
+    if (Object.keys(update).length === 0) {
+      return badRequest(
+        "No valid fields to update. Allowed: title, content, data"
+      );
+    }
+
+    const page = await StaticPage.findOneAndUpdate(
       { slug },
-      { $set: { ...(title ? { title } : {}), ...(content !== undefined ? { content } : {}), ...(data !== undefined ? { data } : {}) } },
+      { $set: update },
       { new: true }
     );
-    if (!updated) return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    if (!page) return notFound();
 
     return NextResponse.json({
-      slug: updated.slug,
-      title: updated.title,
-      content: updated.content,
-      data: updated.data ?? null,
-      updatedAt: updated.updatedAt,
+      message: "Static page updated",
+      page: {
+        slug: page.slug,
+        title: page.title,
+        content: page.content,
+        data: page.data ?? null,
+        createdAt: page.createdAt,
+        updatedAt: page.updatedAt,
+      },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || "Failed to update page" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Failed to update page" },
+      { status: 500 }
+    );
   }
 }
 
+// Delete a static page for the given slug
+export async function DELETE(request: NextRequest, ctx: RouteParams) {
+  try {
+    const auth = await requireAdmin(request);
+    if (!auth.ok) return auth.error;
 
+    const v = validateSlug(ctx.params.slug);
+    if (!v.ok) return v.error;
+    const slug = v.slug;
+
+    await connectDB();
+
+    const deleted = await StaticPage.findOneAndDelete({ slug });
+    if (!deleted) return notFound();
+
+    return NextResponse.json({ message: "Static page deleted", slug });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || "Failed to delete page" },
+      { status: 500 }
+    );
+  }
+}

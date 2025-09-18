@@ -1,33 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Setting from '@/models/Setting';
 import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
-import { connectDB } from '@/lib/mongoose';
-import { clearSettingsCache } from '@/lib/settings';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { parseFiles } from '@/lib/multer';
-import { existsSync } from 'fs';
-import { logAdminAction, QuickLog } from '@/lib/admin-logger';
+import { SettingsService, SystemSettings } from '@/app/api/modules/shared/services/settings.service';
 
-const MONETIZATION_KEY = 'monetization_enabled';
-const SETTINGS_KEYS = [
-  'platform_currency',
-  'listing_expiration_days',
-  'max_listing_photos',
-  'payment_mobile_numbers',
-  'payment_bank_info',
-  'logo_path',
-  'monetization_enabled',
-  'registration_enabled',
-  'maintenance_mode',
-];
-
-// GET: Get monetization status
+// GET: Get all system settings
 export async function GET(req: NextRequest) {
   try {
-    // Ensure database connection
-    await connectDB();
-    
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
@@ -37,22 +14,18 @@ export async function GET(req: NextRequest) {
     if (!payload || typeof payload !== 'object' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    const docs = await Setting.find({ key: { $in: SETTINGS_KEYS } });
-    const map: Record<string, any> = {};
-    docs.forEach((d) => (map[d.key] = d.value));
-    return NextResponse.json(map);
+
+    const settings = await SettingsService.getAllSettings();
+    return NextResponse.json({ settings });
   } catch (error: any) {
     console.error('Error in /api/admin/settings GET:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST: Set monetization status (admin only)
+// POST: Update system settings (admin only)
 export async function POST(req: NextRequest) {
   try {
-    // Ensure database connection
-    await connectDB();
-    
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
@@ -62,177 +35,76 @@ export async function POST(req: NextRequest) {
     if (!payload || typeof payload !== 'object' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    // Accept JSON or multipart/form-data for logo upload
-    const contentType = req.headers.get('content-type') || '';
-    if (contentType.includes('multipart/form-data')) {
-      // Use the project's file parser
-      const { files, fields } = await parseFiles(req);
-      
-      console.log('Parsed files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
-      console.log('Parsed fields:', Object.keys(fields));
-      
-      // Handle logo upload - check both 'logo' and any image file
-      let logoFile = files.find(f => f.name === 'logo');
-      if (!logoFile && files.length > 0) {
-        // If no file named 'logo', take the first image file
-        logoFile = files.find(f => f.type.startsWith('image/'));
-      }
-      
-      if (logoFile) {
-        console.log('Processing logo file:', { name: logoFile.name, size: logoFile.size, type: logoFile.type });
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!allowedTypes.includes(logoFile.type)) {
-          return NextResponse.json(
-            { error: 'Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.' },
-            { status: 400 }
-          );
-        }
 
-        // Validate file size (max 5MB)
-        if (logoFile.size > 5 * 1024 * 1024) {
-          return NextResponse.json(
-            { error: 'File too large. Maximum size is 5MB.' },
-            { status: 400 }
-          );
-        }
-
-        // Create logo directory if it doesn't exist
-        const logoDir = join(process.cwd(), 'public', 'logo');
-        if (!existsSync(logoDir)) {
-          await mkdir(logoDir, { recursive: true });
-        }
-
-        // Generate filename with timestamp to avoid caching issues
-        const timestamp = Date.now();
-        const extension = logoFile.name.split('.').pop() || 'png';
-        const filename = `site-logo-${timestamp}.${extension}`;
-        const filepath = join(logoDir, filename);
-
-        // Write file
-        const buffer = Buffer.from(await logoFile.arrayBuffer());
-        await writeFile(filepath, buffer);
-
-        // Update database
-        const logoPath = `/logo/${filename}`;
-        await Setting.findOneAndUpdate(
-          { key: 'logo_path' }, 
-          { value: logoPath }, 
-          { upsert: true, new: true }
-        );
-
-        console.log(`Logo uploaded successfully: ${logoPath}`);
-        
-        // Log logo upload
-        await logAdminAction({
-          adminId: (payload as any).id || (payload as any).adminId || 'unknown',
-          adminName: (payload as any).name || 'Unknown Admin',
-          adminEmail: (payload as any).email || 'unknown@admin.com',
-          adminRole: (payload as any).role || 'unknown',
-          action: 'uploaded_logo',
-          module: 'settings',
-          targetType: 'logo',
-          targetName: logoFile.name,
-          details: { 
-            originalName: logoFile.name,
-            size: logoFile.size,
-            type: logoFile.type,
-            savedPath: logoPath
-          },
-          description: `Uploaded new logo: ${logoFile.name}`,
-          request: req
-        });
-      } else {
-        console.log('No logo file found in request');
-      }
-
-      // Handle other form fields
-      const updates: Record<string, any> = {};
-      for (const [key, value] of Object.entries(fields)) {
-        if (SETTINGS_KEYS.includes(key) && key !== 'logo_path') {
-          try {
-            updates[key] = JSON.parse(value as string);
-          } catch {
-            updates[key] = value;
-          }
-        }
-      }
-
-      // Update other settings
-      for (const [key, value] of Object.entries(updates)) {
-        await Setting.findOneAndUpdate(
-          { key }, 
-          { value }, 
-          { upsert: true, new: true }
-        );
-      }
-
-      // Log settings updates if any
-      if (Object.keys(updates).length > 0) {
-        await QuickLog.settingsUpdated(payload, Object.keys(updates), req);
-      }
-      
-      // Clear settings cache so new values are picked up immediately
-      clearSettingsCache();
-      
-      // Return different response based on whether logo was uploaded
-      if (logoFile) {
-        const logoPath = `/logo/site-logo-${Date.now()}.${logoFile.name.split('.').pop()}`;
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Logo uploaded successfully',
-          logoPath: logoPath,
-          updatedSettings: { ...updates, logo_path: logoPath }
-        });
-      } else {
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Settings updated',
-          updatedSettings: updates
-        });
-      }
-    } else {
-      const body = await req.json();
-      const updatedKeys: string[] = [];
-      
-      for (const key of Object.keys(body)) {
-        if (!SETTINGS_KEYS.includes(key)) continue;
-        await Setting.findOneAndUpdate({ key }, { value: body[key] }, { upsert: true, new: true });
-        updatedKeys.push(key);
-      }
-      
-      // Log settings updates
-      if (updatedKeys.length > 0) {
-        await QuickLog.settingsUpdated(payload, updatedKeys, req);
-        
-        // Special logging for monetization toggle
-        if (updatedKeys.includes('monetization_enabled')) {
-          await logAdminAction({
-            adminId: (payload as any).id || (payload as any).adminId || 'unknown',
-            adminName: (payload as any).name || 'Unknown Admin',
-            adminEmail: (payload as any).email || 'unknown@admin.com',
-            adminRole: (payload as any).role || 'unknown',
-            action: 'toggled_monetization',
-            module: 'settings',
-            targetType: 'setting',
-            targetName: 'monetization_enabled',
-            details: { 
-              newValue: body.monetization_enabled,
-              setting: 'monetization_enabled'
-            },
-            description: `${body.monetization_enabled ? 'Enabled' : 'Disabled'} monetization`,
-            request: req
-          });
-        }
-      }
-      
-      // Clear settings cache so new values are picked up immediately
-      clearSettingsCache();
-      
-      return NextResponse.json({ success: true });
+    const updates = await req.json();
+    
+    // Validate required fields
+    if (updates.platformCurrency && !['LRD', 'USD'].includes(updates.platformCurrency)) {
+      return NextResponse.json({ error: 'Invalid platform currency. Must be LRD or USD' }, { status: 400 });
     }
+    
+    if (updates.listingExpirationDays && (updates.listingExpirationDays < 1 || updates.listingExpirationDays > 365)) {
+      return NextResponse.json({ error: 'Listing expiration days must be between 1 and 365' }, { status: 400 });
+    }
+    
+    if (updates.maxListingPhotos && (updates.maxListingPhotos < 1 || updates.maxListingPhotos > 20)) {
+      return NextResponse.json({ error: 'Max listing photos must be between 1 and 20' }, { status: 400 });
+    }
+
+    await SettingsService.updateSettings(updates);
+    
+    const updatedSettings = await SettingsService.getAllSettings();
+    return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (error: any) {
     console.error('Error in /api/admin/settings POST:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PATCH: Update individual setting (admin only)
+export async function PATCH(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'No token' }, { status: 401 });
+    }
+    const token = authHeader.split(' ')[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (!payload || typeof payload !== 'object' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { key, value } = await req.json();
+    
+    if (!key) {
+      return NextResponse.json({ error: 'Setting key is required' }, { status: 400 });
+    }
+
+    // Validate specific settings
+    if (key === 'platformCurrency' && !['LRD', 'USD'].includes(value)) {
+      return NextResponse.json({ error: 'Invalid platform currency. Must be LRD or USD' }, { status: 400 });
+    }
+    
+    if (key === 'listingExpirationDays' && (value < 1 || value > 365)) {
+      return NextResponse.json({ error: 'Listing expiration days must be between 1 and 365' }, { status: 400 });
+    }
+    
+    if (key === 'maxListingPhotos' && (value < 1 || value > 20)) {
+      return NextResponse.json({ error: 'Max listing photos must be between 1 and 20' }, { status: 400 });
+    }
+
+    // Map property name to database key
+    const dbKey = SettingsService.getSettingKey(key as keyof SystemSettings);
+    if (!dbKey) {
+      return NextResponse.json({ error: 'Invalid setting key' }, { status: 400 });
+    }
+    
+    await SettingsService.updateSetting(dbKey, value);
+    
+    const updatedSettings = await SettingsService.getAllSettings();
+    return NextResponse.json({ success: true, settings: updatedSettings });
+  } catch (error: any) {
+    console.error('Error in /api/admin/settings PATCH:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

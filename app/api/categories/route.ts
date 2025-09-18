@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import Category, { ICategory, ISubcategory } from '../../../models/Category';
-import { IProduct } from '../../../models/Product';
+import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import Category, { ICategory, ISubcategory } from "../../../models/Category";
+import { IProduct } from "../../../models/Product";
+import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
 
 // Force dynamic rendering for all routes
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Define a lean version of IProduct to match lean() output
 type LeanProduct = Omit<IProduct, keyof Document> & {
@@ -12,106 +13,146 @@ type LeanProduct = Omit<IProduct, keyof Document> & {
   __v?: number;
 };
 
-interface ICategoryWithProducts extends Omit<ICategory, 'subcategories'> {
-  subcategories: Array<ISubcategory & { products?: LeanProduct[]; productsPagination?: { total: number; page: number; limit: number; totalPages: number } }>;
+interface ICategoryWithProducts extends Omit<ICategory, "subcategories"> {
+  subcategories: Array<
+    ISubcategory & {
+      products?: LeanProduct[];
+      productsPagination?: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+    }
+  >;
 }
 
 // Connect to MongoDB
 async function connectDB() {
   if (mongoose.connection.readyState !== 1) {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/buysell', {
-      serverSelectionTimeoutMS: 5000,
-    });
+    await mongoose.connect(
+      process.env.MONGODB_URI || "mongodb://localhost:27017/buysell",
+      {
+        serverSelectionTimeoutMS: 5000,
+      }
+    );
   }
+}
+
+// Authorization: require super admin for mutating routes
+function requireSuperAdmin(request: NextRequest): NextResponse | null {
+  const authHeader =
+    request.headers.get("authorization") ||
+    request.headers.get("Authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+  const token = authHeader.slice(7).trim();
+  const payload = AdminAuthService.verifyAccessToken(token) as any;
+  const role = payload?.role?.toString?.().toLowerCase?.();
+  if (!payload) {
+    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
+  }
+  if (role !== "super_admin") {
+    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+  }
+  return null;
 }
 
 // GET: Fetch all categories or a specific category with pagination
 export async function GET(request: NextRequest) {
   try {
-    console.log('Starting GET request for categories');
+    console.log("Starting GET request for categories");
     await connectDB();
-    console.log('Connected to MongoDB');
+    console.log("Connected to MongoDB");
 
     const { searchParams } = new URL(request.url);
-    const includeProducts = searchParams.get('includeProducts') === 'true';
-    const limit = parseInt(searchParams.get('limit') || '17') || 17;
-    const page = parseInt(searchParams.get('page') || '1') || 1;
+    const includeProducts = searchParams.get("includeProducts") === "true";
+    const limit = parseInt(searchParams.get("limit") || "17") || 17;
+    const page = parseInt(searchParams.get("page") || "1") || 1;
     const skip = (page - 1) * limit;
-    const categoryId = searchParams.get('categoryId');
-    const slug = searchParams.get('slug');
-    console.log('Query params:', { includeProducts, limit, page, skip, categoryId, slug });
+    const categoryId = searchParams.get("categoryId");
+    const slug = searchParams.get("slug");
+    console.log("Query params:", {
+      includeProducts,
+      limit,
+      page,
+      skip,
+      categoryId,
+      slug,
+    });
 
     if (categoryId) {
       if (!mongoose.Types.ObjectId.isValid(categoryId)) {
         return NextResponse.json(
-          { message: 'Invalid category ID' },
+          { message: "Invalid category ID" },
           { status: 400 }
         );
       }
     }
 
     if (categoryId || slug) {
-      console.log('Fetching single category');
+      console.log("Fetching single category");
       const query = categoryId ? { _id: categoryId } : { slug, isActive: true };
       const category = await Category.findOne(query).lean();
-      console.log('Category query result:', category);
+      console.log("Category query result:", category);
 
       if (!category) {
         return NextResponse.json(
-          { message: 'Category not found' },
+          { message: "Category not found" },
           { status: 404 }
         );
       }
 
       if (includeProducts) {
-        console.log('Fetching products for category');
-        const Product = mongoose.model('Product');
+        console.log("Fetching products for category");
+        const Product = mongoose.model("Product");
         for (const subcategory of category.subcategories) {
-          subcategory.products = await Product.find({
+          subcategory.products = (await Product.find({
             category_id: category._id,
             subcategory_id: subcategory._id,
-            status: 'active',
+            status: "active",
             expires_at: { $gt: new Date() },
           })
             .limit(limit)
             .skip(skip)
-            .lean() as LeanProduct[];
+            .lean()) as LeanProduct[];
         }
-        console.log('Products fetched for category');
+        console.log("Products fetched for category");
       }
 
       return NextResponse.json({
         category,
-        message: 'Category fetched successfully',
+        message: "Category fetched successfully",
       });
     }
 
-    console.log('Fetching all categories');
+    console.log("Fetching all categories");
     const query = Category.find({ isActive: true }).sort({ sortOrder: 1 });
     const total = await Category.countDocuments({ isActive: true });
     const categories: ICategoryWithProducts[] = await query
       .skip(skip)
       .limit(limit)
       .lean();
-    console.log('Categories fetched:', categories.length);
+    console.log("Categories fetched:", categories.length);
 
     if (includeProducts) {
-      console.log('Fetching products for all categories');
-      const Product = mongoose.model('Product');
+      console.log("Fetching products for all categories");
+      const Product = mongoose.model("Product");
       for (const category of categories) {
         for (const subcategory of category.subcategories) {
-          subcategory.products = await Product.find({
+          subcategory.products = (await Product.find({
             category_id: category._id,
             subcategory_id: subcategory._id,
-            status: 'active',
+            status: "active",
             expires_at: { $gt: new Date() },
           })
             .limit(limit)
             .skip(skip)
-            .lean() as LeanProduct[];
+            .lean()) as LeanProduct[];
         }
       }
-      console.log('Products fetched for all categories');
+      console.log("Products fetched for all categories");
     }
 
     return NextResponse.json({
@@ -122,14 +163,14 @@ export async function GET(request: NextRequest) {
         limit,
         totalPages: Math.ceil(total / limit),
       },
-      message: 'Categories fetched successfully',
+      message: "Categories fetched successfully",
     });
   } catch (error) {
-    console.error('Categories API error:', error);
+    console.error("Categories API error:", error);
     return NextResponse.json(
       {
         categories: [],
-        message: 'Error fetching categories',
+        message: "Error fetching categories",
         error: (error as Error).message,
       },
       { status: 500 }
@@ -140,13 +181,17 @@ export async function GET(request: NextRequest) {
 // POST: Create a new category
 export async function POST(request: NextRequest) {
   try {
+    // Super admin only
+    const authErr = requireSuperAdmin(request);
+    if (authErr) return authErr;
+
     await connectDB();
     const body = await request.json();
 
     // Validate required fields
     if (!body.name || !body.slug || !body.icon || !body.subcategories) {
       return NextResponse.json(
-        { message: 'Name, slug, icon, and subcategories are required' },
+        { message: "Name, slug, icon, and subcategories are required" },
         { status: 400 }
       );
     }
@@ -154,7 +199,7 @@ export async function POST(request: NextRequest) {
     // Validate subcategories format
     if (!Array.isArray(body.subcategories) || body.subcategories.length === 0) {
       return NextResponse.json(
-        { message: 'Subcategories must be a non-empty array' },
+        { message: "Subcategories must be a non-empty array" },
         { status: 400 }
       );
     }
@@ -163,7 +208,7 @@ export async function POST(request: NextRequest) {
     const existingCategory = await Category.findOne({ slug: body.slug });
     if (existingCategory) {
       return NextResponse.json(
-        { message: 'Category with this slug already exists' },
+        { message: "Category with this slug already exists" },
         { status: 400 }
       );
     }
@@ -172,7 +217,7 @@ export async function POST(request: NextRequest) {
     const subcategorySlugs = body.subcategories.map((sub: any) => sub.slug);
     if (new Set(subcategorySlugs).size !== subcategorySlugs.length) {
       return NextResponse.json(
-        { message: 'Subcategory slugs must be unique within the category' },
+        { message: "Subcategory slugs must be unique within the category" },
         { status: 400 }
       );
     }
@@ -182,13 +227,13 @@ export async function POST(request: NextRequest) {
       name: body.name,
       slug: body.slug,
       icon: body.icon,
-      description: body.description || '',
+      description: body.description || "",
       isActive: body.isActive !== undefined ? body.isActive : true,
       sortOrder: body.sortOrder || 0,
       subcategories: body.subcategories.map((sub: any) => ({
         name: sub.name,
         slug: sub.slug,
-        description: sub.description || '',
+        description: sub.description || "",
         isActive: sub.isActive !== undefined ? sub.isActive : true,
         sortOrder: sub.sortOrder || 0,
         customFields: sub.customFields || [],
@@ -197,15 +242,18 @@ export async function POST(request: NextRequest) {
 
     await category.save();
 
-    return NextResponse.json({
-      category: category.toObject(),
-      message: 'Category created successfully',
-    }, { status: 201 });
-  } catch (error) {
-    console.error('Create category error:', error);
     return NextResponse.json(
       {
-        message: 'Error creating category',
+        category: category.toObject(),
+        message: "Category created successfully",
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Create category error:", error);
+    return NextResponse.json(
+      {
+        message: "Error creating category",
         error: (error as Error).message,
       },
       { status: 500 }
@@ -216,40 +264,55 @@ export async function POST(request: NextRequest) {
 // PUT: Update an existing category
 export async function PUT(request: NextRequest) {
   try {
+    // Super admin only
+    const authErr = requireSuperAdmin(request);
+    if (authErr) return authErr;
+
     await connectDB();
     const body = await request.json();
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId');
-    const slug = searchParams.get('slug');
+    const categoryId = searchParams.get("categoryId");
+    const slug = searchParams.get("slug");
 
     if (!categoryId && !slug) {
       return NextResponse.json(
-        { message: 'Category ID or slug is required' },
+        { message: "Category ID or slug is required" },
         { status: 400 }
       );
     }
 
     if (categoryId && !mongoose.Types.ObjectId.isValid(categoryId)) {
       return NextResponse.json(
-        { message: 'Invalid category ID' },
+        { message: "Invalid category ID" },
         { status: 400 }
       );
     }
 
     // Validate input
-    if (!body.name && !body.slug && !body.icon && !body.description && !body.subcategories && body.isActive === undefined && body.sortOrder === undefined) {
+    if (
+      !body.name &&
+      !body.slug &&
+      !body.icon &&
+      !body.description &&
+      !body.subcategories &&
+      body.isActive === undefined &&
+      body.sortOrder === undefined
+    ) {
       return NextResponse.json(
-        { message: 'At least one field to update is required' },
+        { message: "At least one field to update is required" },
         { status: 400 }
       );
     }
 
     // Check for duplicate slug if updating slug
     if (body.slug) {
-      const existingCategory = await Category.findOne({ slug: body.slug, ...(categoryId ? { _id: { $ne: categoryId } } : {}) });
+      const existingCategory = await Category.findOne({
+        slug: body.slug,
+        ...(categoryId ? { _id: { $ne: categoryId } } : {}),
+      });
       if (existingCategory) {
         return NextResponse.json(
-          { message: 'Category with this slug already exists' },
+          { message: "Category with this slug already exists" },
           { status: 400 }
         );
       }
@@ -268,14 +331,14 @@ export async function PUT(request: NextRequest) {
       const subcategorySlugs = body.subcategories.map((sub: any) => sub.slug);
       if (new Set(subcategorySlugs).size !== subcategorySlugs.length) {
         return NextResponse.json(
-          { message: 'Subcategory slugs must be unique within the category' },
+          { message: "Subcategory slugs must be unique within the category" },
           { status: 400 }
         );
       }
       updateData.subcategories = body.subcategories.map((sub: any) => ({
         name: sub.name,
         slug: sub.slug,
-        description: sub.description || '',
+        description: sub.description || "",
         isActive: sub.isActive !== undefined ? sub.isActive : true,
         sortOrder: sub.sortOrder || 0,
         customFields: sub.customFields || [],
@@ -291,20 +354,20 @@ export async function PUT(request: NextRequest) {
 
     if (!category) {
       return NextResponse.json(
-        { message: 'Category not found' },
+        { message: "Category not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
       category,
-      message: 'Category updated successfully',
+      message: "Category updated successfully",
     });
   } catch (error) {
-    console.error('Update category error:', error);
+    console.error("Update category error:", error);
     return NextResponse.json(
       {
-        message: 'Error updating category',
+        message: "Error updating category",
         error: (error as Error).message,
       },
       { status: 500 }
@@ -315,58 +378,66 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete a category
 export async function DELETE(request: NextRequest) {
   try {
+    // Super admin only
+    const authErr = requireSuperAdmin(request);
+    if (authErr) return authErr;
+
     await connectDB();
     const { searchParams } = new URL(request.url);
-    const categoryId = searchParams.get('categoryId');
-    const slug = searchParams.get('slug');
+    const categoryId = searchParams.get("categoryId");
+    const slug = searchParams.get("slug");
 
     if (!categoryId && !slug) {
       return NextResponse.json(
-        { message: 'Category ID or slug is required' },
+        { message: "Category ID or slug is required" },
         { status: 400 }
       );
     }
 
     if (categoryId && !mongoose.Types.ObjectId.isValid(categoryId)) {
       return NextResponse.json(
-        { message: 'Invalid category ID' },
+        { message: "Invalid category ID" },
         { status: 400 }
       );
     }
 
     // Check if category has active products
-    const Product = mongoose.model('Product');
-    const query = categoryId ? { category_id: categoryId } : { category_id: (await Category.findOne({ slug }))?._id };
+    const Product = mongoose.model("Product");
+    const query = categoryId
+      ? { category_id: categoryId }
+      : { category_id: (await Category.findOne({ slug }))?._id };
     const hasProducts = await Product.exists({
       ...query,
-      status: 'active',
+      status: "active",
       expires_at: { $gt: new Date() },
     });
 
     if (hasProducts) {
       return NextResponse.json(
-        { message: 'Cannot delete category with active products' },
+        { message: "Cannot delete category with active products" },
         { status: 400 }
       );
     }
 
-    const category = await Category.findOneAndDelete(categoryId ? { _id: categoryId } : { slug }).lean();
+    const category = await Category.findOneAndDelete(
+      categoryId ? { _id: categoryId } : { slug }
+    ).lean();
 
     if (!category) {
       return NextResponse.json(
-        { message: 'Category not found' },
+        { message: "Category not found" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({
-      message: 'Category deleted successfully',
+      message: "Category deleted successfully",
     });
   } catch (error) {
-    console.error('Delete category error:', error);
+    console.error("Delete category error:", error);
     return NextResponse.json(
       {
-        message: 'Error deleting category',
+        message: "Error deleting category",
         error: (error as Error).message,
       },
       { status: 500 }
