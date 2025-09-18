@@ -1,0 +1,1 @@
+static pages pull request generated
