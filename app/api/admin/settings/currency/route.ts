@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AdminAuthService } from '../../modules/auth/services/admin-auth.service';
+import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
 import { SettingsService } from '@/app/api/modules/shared/services/settings.service';
 
-// GET: Get all monetization settings (prices and payment details)
+// GET: Get platform currency
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -15,19 +15,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const settings = await SettingsService.getAllSettings();
-    return NextResponse.json({
-      prices: settings.monetizationPrices || {},
-      paymentDetails: settings.monetizationPaymentDetails || {},
-      enabled: settings.monetizationEnabled
-    });
+    const currency = await SettingsService.getPlatformCurrency();
+    return NextResponse.json({ currency });
   } catch (error: any) {
-    console.error('Error in /api/admin/monetization GET:', error);
+    console.error('Error in /api/admin/settings/currency GET:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST: Update monetization settings (prices or payment details)
+// POST: Update platform currency
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -40,25 +36,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { prices, paymentDetails, enabled } = await req.json();
+    const { currency } = await req.json();
     
-    const updates: any = {};
-    
-    if (prices !== undefined) {
-      updates.monetizationPrices = prices;
-    }
-    if (paymentDetails !== undefined) {
-      updates.monetizationPaymentDetails = paymentDetails;
-    }
-    if (typeof enabled === 'boolean') {
-      updates.monetizationEnabled = enabled;
+    if (!['LRD', 'USD'].includes(currency)) {
+      return NextResponse.json({ error: 'Invalid currency. Must be LRD or USD' }, { status: 400 });
     }
 
-    await SettingsService.updateSettings(updates);
+    await SettingsService.updateSetting('platform_currency', currency);
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, currency });
   } catch (error: any) {
-    console.error('Error in /api/admin/monetization POST:', error);
+    console.error('Error in /api/admin/settings/currency POST:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
+}
+
+// PATCH: Update platform currency (same as POST for individual updates)
+export async function PATCH(req: NextRequest) {
+  return POST(req);
 }
