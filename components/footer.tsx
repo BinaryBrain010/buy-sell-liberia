@@ -1,12 +1,19 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from "lucide-react"
-import { NewsletterSubscribe } from "./footer/newsLetterSubscribe"
-import Logo from "./ui/logo"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
+import { NewsletterSubscribe } from "./footer/newsLetterSubscribe";
+import Logo from "./ui/logo";
 
 export function Footer() {
   return (
@@ -17,16 +24,29 @@ export function Footer() {
           <div>
             <Logo />
             <p className="text-muted-foreground mb-4">
-              The leading marketplace connecting buyers and sellers. Safe, secure, and trusted by thousands.
+              The leading marketplace connecting buyers and sellers. Safe,
+              secure, and trusted by thousands.
             </p>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="glass border-0 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass border-0 bg-transparent"
+              >
                 <Facebook className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="glass border-0 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass border-0 bg-transparent"
+              >
                 <Twitter className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="glass border-0 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass border-0 bg-transparent"
+              >
                 <Instagram className="h-4 w-4" />
               </Button>
             </div>
@@ -37,27 +57,35 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/categories" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/categories"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Categories
                 </Link>
               </li>
               <li>
-                <Link href="/sell" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/sell"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Sell Item
                 </Link>
               </li>
               <li>
-                <Link href="/safety" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/safety"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Safety Tips
                 </Link>
               </li>
+              {/* Help Center removed as requested */}
               <li>
-                <Link href="/help" className="text-muted-foreground hover:text-primary">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/contact"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Contact Us
                 </Link>
               </li>
@@ -69,22 +97,34 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/terms" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/terms"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/privacy"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/cookies" className="text-muted-foreground hover:text-primary">
-                  Cookie Policy
+                <Link
+                  href="/faq"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/disclaimer" className="text-muted-foreground hover:text-primary">
+                <Link
+                  href="/disclaimer"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Disclaimer
                 </Link>
               </li>
@@ -118,10 +158,14 @@ export function Footer() {
         <Separator className="my-8" />
 
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-muted-foreground text-sm">© 2025 BuySell. All rights reserved.</p>
-          <p className="text-muted-foreground text-sm">Made with ❤️ for everyone</p>
+          <p className="text-muted-foreground text-sm">
+            © 2025 BuySell. All rights reserved.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Made with ❤️ for everyone
+          </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }
