@@ -35,8 +35,37 @@ const fetchFeaturedProducts = (svc: ProductService) => {
 export function FeaturedListings() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [canHover, setCanHover] = useState(false);
   const router = useRouter();
   const productService = new ProductService();
+
+  // Simple media query hook for responsiveness
+  function useMediaQuery(query: string) {
+    const [matches, setMatches] = useState(false);
+    useEffect(() => {
+      if (typeof window === "undefined") return;
+      const mql = window.matchMedia(query);
+      const onChange = () => setMatches(mql.matches);
+      onChange();
+      mql.addEventListener?.("change", onChange);
+      return () => mql.removeEventListener?.("change", onChange);
+    }, [query]);
+    return matches;
+  }
+
+  const isSm = useMediaQuery("(min-width: 640px)");
+  const isMd = useMediaQuery("(min-width: 768px)");
+  const isLg = useMediaQuery("(min-width: 1024px)");
+
+  const slidesToScroll = isLg ? 4 : isMd ? 3 : isSm ? 2 : 1;
+  const skeletonCount = isLg ? 10 : isMd ? 8 : isSm ? 6 : 4;
+
+  useEffect(() => {
+    setCanHover(
+      typeof window !== "undefined" &&
+        window.matchMedia("(hover: hover)").matches
+    );
+  }, []);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -55,44 +84,50 @@ export function FeaturedListings() {
   }, []);
 
   return (
-    <section className="py-20">
+    <section className="py-16 md:py-20">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="text-center mb-8 md:mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 md:mb-4">
             Featured Listings
           </h2>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
             Discover the best deals available
           </p>
         </motion.div>
 
         {loading ? (
-          <FeaturedCarouselSkeleton count={10} />
+          <FeaturedCarouselSkeleton
+            count={skeletonCount}
+            slidesToScroll={slidesToScroll}
+          />
         ) : products.length === 0 ? (
-          <div className="text-center py-20 text-lg text-muted-foreground">
+          <div className="text-center py-16 md:py-20 text-base md:text-lg text-muted-foreground">
             Sorry, there are no featured products at the moment.
           </div>
         ) : (
-          <Carousel className="w-full">
+          <Carousel
+            className="w-full"
+            opts={{ align: "start", loop: true, slidesToScroll }}
+          >
             <CarouselContent>
               {products.map((product: any, index: number) => (
                 <CarouselItem
                   key={product._id}
-                  className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                  className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
                 >
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.05 }}
-                    viewport={{ once: true }}
-                    whileHover={{ scale: 1.02 }}
-                    className="cursor-pointer"
+                    viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+                    whileHover={canHover ? { scale: 1.02 } : undefined}
+                    className="cursor-pointer h-full"
                     onClick={() => router.push(`/products/${product._id}`)}
                   >
                     <ProductCard
@@ -106,23 +141,24 @@ export function FeaturedListings() {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="hidden sm:flex" />
+            <CarouselNext className="hidden sm:flex" />
           </Carousel>
         )}
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
           viewport={{ once: true }}
-          className="text-center mt-12"
+          className="text-center mt-10 md:mt-12"
         >
           <Button
             size="lg"
             variant="outline"
             className="glass border-0 bg-transparent"
             onClick={() => router.push("/products")}
+            aria-label="View all product listings"
           >
             View All Listings
           </Button>
@@ -132,18 +168,27 @@ export function FeaturedListings() {
   );
 }
 
-function FeaturedCarouselSkeleton({ count = 8 }: { count?: number }) {
+function FeaturedCarouselSkeleton({
+  count = 8,
+  slidesToScroll = 1,
+}: {
+  count?: number;
+  slidesToScroll?: number;
+}) {
   return (
-    <Carousel className="w-full">
+    <Carousel
+      className="w-full"
+      opts={{ align: "start", loop: true, slidesToScroll }}
+    >
       <CarouselContent>
         {Array.from({ length: count }).map((_, idx) => (
           <CarouselItem
             key={idx}
-            className="basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+            className="basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
           >
             <Card className="border-0">
               <CardContent className="p-4">
-                <Skeleton className="h-48 w-full mb-4 rounded-lg" />
+                <Skeleton className="h-40 sm:h-44 md:h-48 lg:h-56 w-full mb-4 rounded-lg" />
                 <div className="flex items-center justify-between mb-2">
                   <Skeleton className="h-5 w-2/3" />
                   <Skeleton className="h-6 w-6 rounded-full" />
@@ -162,8 +207,8 @@ function FeaturedCarouselSkeleton({ count = 8 }: { count?: number }) {
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
+      <CarouselPrevious className="hidden sm:flex" />
+      <CarouselNext className="hidden sm:flex" />
     </Carousel>
   );
 }
