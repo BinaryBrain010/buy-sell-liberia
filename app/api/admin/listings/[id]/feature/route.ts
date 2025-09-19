@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import mongoose from "mongoose";
 import Product from "../../../../../../models/Product";
+import { createAdminAuditLogger } from "../../../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
 
 // PATCH /api/admin/listings/[id]/feature endpoint
 export async function PATCH(
@@ -23,6 +25,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const { id } = params;
     if (!id || !mongoose.isValidObjectId(id)) {
       return NextResponse.json(
@@ -34,6 +37,9 @@ export async function PATCH(
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId);
 
     // Determine desired featured state from body or query
     let desired: boolean | undefined;
@@ -75,8 +81,22 @@ export async function PATCH(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const previousFeatured = product.featured;
     product.featured = desired;
     await product.save();
+
+    // Log the listing feature operation
+    const operation = desired ? OperationType.LISTING_FEATURE : OperationType.LISTING_UNFEATURE;
+    await logger.logListingOperation(operation, id, {
+      adminUserId,
+      productTitle: product.title,
+      productOwner: product.user_id.toString(),
+      previousFeatured,
+      newFeatured: desired,
+      productCategory: product.category_id.toString(),
+      productSubcategory: product.subcategory_id.toString()
+    });
+
     return NextResponse.json({
       success: true,
       message: desired ? "Product featured" : "Product unfeatured",
