@@ -301,19 +301,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     <Star className="h-3 w-3 mr-1" /> Featured
                   </Badge>
                 )}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setLiked(!liked)}
-                  className="hover:bg-red-50 h-8 w-8"
-                >
-                  <Heart
-                    className={cn(
-                      "h-4 w-4",
-                      liked ? "fill-red-500 text-red-500" : "text-gray-600"
-                    )}
-                  />
-                </Button>
+
               </div>
             </div>
 
@@ -445,6 +433,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     productTitle={productData.title || "Untitled Product"}
                     showPhoneNumber={productData.showPhoneNumber ?? true}
                     sellerName={displayName}
+                    contactInfo={productData.contactInfo}
                     variant="both"
                     size="md"
                   />
