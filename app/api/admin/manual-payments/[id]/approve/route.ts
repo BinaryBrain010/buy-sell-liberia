@@ -5,6 +5,8 @@ import Product from '../../../../../../models/Product';
 import User from '../../../../../../models/User';
 import Chat from '../../../../../../models/Chat';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
+import { createAdminAuditLogger } from '../../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../../lib/audit-logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -23,6 +25,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI!);
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminId);
 
     const payment = await ManualPayment.findById(params.id).populate('user').populate('listing');
     if (!payment) {
@@ -81,6 +86,19 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     chat.lastMessageAt = new Date();
     console.log('Pushed message to chat:', chat._id, 'Sender:', senderId);
     await chat.save();
+
+    // Log the payment approval operation
+    await logger.logPaymentOperation(OperationType.PAYMENT_APPROVE, params.id, {
+      adminNotes,
+      productId: productId.toString(),
+      productTitle,
+      userId: userId.toString(),
+      userEmail: payment.user.email,
+      amount: payment.amount,
+      adminUserId: adminId,
+      previousStatus: 'pending',
+      newStatus: 'approved'
+    });
 
     return NextResponse.json({ success: true, message: 'Payment approved and user notified.' });
   } catch (error: any) {

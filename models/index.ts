@@ -11,9 +11,12 @@ import ManualPayment from './ManualPayment';
 import Category from './Category';
 import Review from './Review';
 import Chat from './Chat';
+import ActivityLog from './ActivityLog';
+import Employee from './Employee';
+import WithdrawalLog from './WithdrawalLog';
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat };
+export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog };
 
 export const models = {
   User,
@@ -22,6 +25,9 @@ export const models = {
   Review,
   Chat,
   ManualPayment,
+  ActivityLog,
+  Employee,
+  WithdrawalLog,
 };
 
 export const utils = {
