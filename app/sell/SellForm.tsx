@@ -29,7 +29,7 @@ export default function SellForm() {
     condition: "good",
     images: [],
     titleImageIndex: 0,
-    location: { city: "", state: "", country: "Nigeria" },
+    location: { city: "", state: "", country: "Liberia" },
     contactInfo: { phone: "", email: "", whatsapp: "" },
     tags: [],
     specifications: {},

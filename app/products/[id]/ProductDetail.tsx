@@ -30,6 +30,8 @@ interface ProductDetailProps {
 
 export default function ProductDetail(productData: ProductDetailProps) {
   const [liked, setLiked] = useState(false);
+  const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
+  const currencySymbol = currency === "LRD" ? "L$" : "$";
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -39,13 +41,41 @@ export default function ProductDetail(productData: ProductDetailProps) {
   const descRef = useRef<HTMLDivElement | null>(null);
 
   const formatPrice = (price: any): string => {
-    if (typeof price === "number") return `USD ${price.toLocaleString()}`;
+    if (typeof price === "number")
+      return `${currencySymbol} ${price.toLocaleString()}`;
     if (!price || typeof price.amount !== "number")
       return "Price not available";
-    const currency = "$";
-    const formatted = `${currency} ${price.amount.toLocaleString()}`;
+    const formatted = `${currencySymbol} ${Number(
+      price.amount
+    ).toLocaleString()}`;
     return price.negotiable ? `${formatted} (Negotiable)` : formatted;
   };
+
+  // Fetch platform currency (fallback to USD if unauthorized/unavailable)
+  useEffect(() => {
+    let cancelled = false;
+    const getCurrency = async () => {
+      try {
+        const res = await fetch("/api/admin/settings/currency", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (
+          !cancelled &&
+          (data?.currency === "USD" || data?.currency === "LRD")
+        ) {
+          setCurrency(data.currency);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    getCurrency();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getTimeAgo = (dateString: string): string => {
     if (!dateString) return "Unknown date";
@@ -301,7 +331,6 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     <Star className="h-3 w-3 mr-1" /> Featured
                   </Badge>
                 )}
-
               </div>
             </div>
 
