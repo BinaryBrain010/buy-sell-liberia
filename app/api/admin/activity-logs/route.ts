@@ -63,15 +63,15 @@ export async function GET(req: NextRequest) {
         
         if (originalUserId.includes('@')) {
           adminEmail = originalUserId;
-          adminName = originalUserId.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          adminName = originalUserId.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
         } else if (originalUserId.startsWith('admin-')) {
           const parts = originalUserId.split('-');
           if (parts.length >= 2) {
             adminEmail = parts[1].includes('@') ? parts[1] : `${parts[1]}@admin.system`;
-            adminName = parts[1].replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            adminName = parts[1].replace(/[._-]/g, ' ').replace(/\b\w/g, (l:any) => l.toUpperCase());
           }
         }
-        
+
         return {
           ...log.toObject(),
           user: {

@@ -7,11 +7,12 @@
 
 import { createAuditLogger, OperationType, ModuleType, withAuditLog } from './audit-logger';
 import { createAdminAuditLogger } from './admin-audit-middleware';
+import { NextRequest } from 'next/server';
 
 /**
  * Example 1: Basic Usage in Admin Route
  */
-export async function exampleUserBanRoute(request: Request, adminUserId: string) {
+export async function exampleUserBanRoute(request: NextRequest, adminUserId: string, userId: string) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   // Perform the ban operation
@@ -31,7 +32,7 @@ export async function exampleUserBanRoute(request: Request, adminUserId: string)
 /**
  * Example 2: Using the withAuditLog wrapper
  */
-export async function examplePaymentApproval(request: Request, adminUserId: string, paymentId: string) {
+export async function examplePaymentApproval(request: NextRequest, adminUserId: string, paymentId: string) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   return await withAuditLog(
@@ -58,7 +59,7 @@ export async function examplePaymentApproval(request: Request, adminUserId: stri
 /**
  * Example 3: Custom Operation Logging
  */
-export async function exampleCustomOperation(request: Request, adminUserId: string) {
+export async function exampleCustomOperation(request: NextRequest, adminUserId: string) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   // Log a custom system operation
@@ -78,7 +79,7 @@ export async function exampleCustomOperation(request: Request, adminUserId: stri
 /**
  * Example 4: Batch Operations
  */
-export async function exampleBatchOperations(request: Request, adminUserId: string, userIds: string[]) {
+export async function exampleBatchOperations(request: NextRequest, adminUserId: string, userIds: string[]) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   // Log each operation individually
@@ -94,7 +95,7 @@ export async function exampleBatchOperations(request: Request, adminUserId: stri
 /**
  * Example 5: Error Handling
  */
-export async function exampleWithErrorHandling(request: Request, adminUserId: string, listingId: string) {
+export async function exampleWithErrorHandling(request: NextRequest, adminUserId: string, listingId: string) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   try {
@@ -130,7 +131,7 @@ export async function exampleWithErrorHandling(request: Request, adminUserId: st
 /**
  * Example 6: Settings Update with Detailed Logging
  */
-export async function exampleSettingsUpdate(request: Request, adminUserId: string, settings: any) {
+export async function exampleSettingsUpdate(request: NextRequest, adminUserId: string, settings: any) {
   const logger = createAdminAuditLogger(request, adminUserId);
   
   // Get previous settings for comparison

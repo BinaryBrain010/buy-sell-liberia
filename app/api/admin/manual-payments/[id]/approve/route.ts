@@ -29,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // Create audit logger
     const logger = createAdminAuditLogger(request, adminId);
 
-    const payment = await ManualPayment.findById(params.id).populate('user').populate('listing');
+    const payment:any = await ManualPayment.findById(params.id).populate('user').populate('listing');
     if (!payment) {
       return NextResponse.json({ error: 'Manual payment not found' }, { status: 404 });
     }
@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       else senderId = userId; // fallback to userId to avoid validation error
     }
     const productTitle = productDoc && typeof productDoc === 'object' && productDoc !== null && 'title' in productDoc ? productDoc.title : '';
-    const productId = productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing;
+    const productId: any = productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing;
     let chat = await Chat.findOne({ product: productId, user2: userId });
     if (!chat) {
       chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
