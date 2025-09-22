@@ -1,27 +1,27 @@
-import { Setting } from '../models/setting.model';
-import { connectDB } from '@/lib/mongoose';
+import { Setting } from "../models/setting.model";
+import { connectDB } from "@/lib/mongoose";
 
 export interface SystemSettings {
   // Platform Configuration
-  platformCurrency: 'LRD' | 'USD';
+  platformCurrency: "LRD" | "USD";
   platformLogo?: string;
-  
+
   // Listing Configuration
   listingExpirationDays: number;
   maxListingPhotos: number;
-  
+
   // Feature Toggles
   monetizationEnabled: boolean;
   registrationEnabled: boolean;
   maintenanceMode: boolean;
-  
+
   // Payment Configuration
   paymentContactInfo: {
     mobile?: string;
     bank?: string;
     email?: string;
   };
-  
+
   // Monetization Settings
   monetizationPrices?: any;
   monetizationPaymentDetails?: any;
@@ -29,16 +29,16 @@ export interface SystemSettings {
 
 export class SettingsService {
   private static readonly SETTING_KEYS = {
-    PLATFORM_CURRENCY: 'platform_currency',
-    PLATFORM_LOGO: 'platform_logo',
-    LISTING_EXPIRATION_DAYS: 'listing_expiration_days',
-    MAX_LISTING_PHOTOS: 'max_listing_photos',
-    MONETIZATION_ENABLED: 'monetization_enabled',
-    REGISTRATION_ENABLED: 'registration_enabled',
-    MAINTENANCE_MODE: 'maintenance_mode',
-    PAYMENT_CONTACT_INFO: 'payment_contact_info',
-    MONETIZATION_PRICES: 'monetization_prices',
-    MONETIZATION_PAYMENT_DETAILS: 'monetization_payment_details',
+    PLATFORM_CURRENCY: "platform_currency",
+    PLATFORM_LOGO: "platform_logo",
+    LISTING_EXPIRATION_DAYS: "listing_expiration_days",
+    MAX_LISTING_PHOTOS: "max_listing_photos",
+    MONETIZATION_ENABLED: "monetization_enabled",
+    REGISTRATION_ENABLED: "registration_enabled",
+    MAINTENANCE_MODE: "maintenance_mode",
+    PAYMENT_CONTACT_INFO: "payment_contact_info",
+    MONETIZATION_PRICES: "monetization_prices",
+    MONETIZATION_PAYMENT_DETAILS: "monetization_payment_details",
   };
 
   /**
@@ -46,24 +46,13 @@ export class SettingsService {
    */
   static async initializeDefaultSettings(): Promise<void> {
     await connectDB();
-    
-    const defaultSettings = {
-      [this.SETTING_KEYS.PLATFORM_CURRENCY]: 'USD',
-      [this.SETTING_KEYS.PLATFORM_LOGO]: '',
-      [this.SETTING_KEYS.LISTING_EXPIRATION_DAYS]: 90,
-      [this.SETTING_KEYS.MAX_LISTING_PHOTOS]: 10,
-      [this.SETTING_KEYS.MONETIZATION_ENABLED]: false,
-      [this.SETTING_KEYS.REGISTRATION_ENABLED]: true,
-      [this.SETTING_KEYS.MAINTENANCE_MODE]: false,
-      [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
-      [this.SETTING_KEYS.MONETIZATION_PRICES]: {},
-      [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {},
-    };
+
+    const defaultSettings = this.getDefaultSettings();
 
     for (const [key, value] of Object.entries(defaultSettings)) {
       await Setting.findOneAndUpdate(
         { key },
-        { key, value },
+        { $setOnInsert: { key, value } },
         { upsert: true, new: true }
       );
     }
@@ -74,30 +63,45 @@ export class SettingsService {
    */
   static async getAllSettings(): Promise<SystemSettings> {
     await connectDB();
-    
+
     // Initialize defaults if not present
     await this.initializeDefaultSettings();
-    
+
     const settings = await Setting.find({
-      key: { $in: Object.values(this.SETTING_KEYS) }
+      key: { $in: Object.values(this.SETTING_KEYS) },
     });
+
+    console.log(
+      `[GET SETTINGS] Found ${settings.length} settings in DB:`,
+      settings
+    );
 
     const settingsMap = settings.reduce((acc, setting) => {
       acc[setting.key] = setting.value;
       return acc;
     }, {} as Record<string, any>);
 
+    console.log(`[GET SETTINGS] Settings map:`, settingsMap);
+
     return {
-      platformCurrency: settingsMap[this.SETTING_KEYS.PLATFORM_CURRENCY] || 'USD',
-      platformLogo: settingsMap[this.SETTING_KEYS.PLATFORM_LOGO] || '',
-      listingExpirationDays: settingsMap[this.SETTING_KEYS.LISTING_EXPIRATION_DAYS] || 90,
-      maxListingPhotos: settingsMap[this.SETTING_KEYS.MAX_LISTING_PHOTOS] || 10,
-      monetizationEnabled: settingsMap[this.SETTING_KEYS.MONETIZATION_ENABLED] || false,
-      registrationEnabled: settingsMap[this.SETTING_KEYS.REGISTRATION_ENABLED] !== false, // Default true
-      maintenanceMode: settingsMap[this.SETTING_KEYS.MAINTENANCE_MODE] || false,
-      paymentContactInfo: settingsMap[this.SETTING_KEYS.PAYMENT_CONTACT_INFO] || {},
-      monetizationPrices: settingsMap[this.SETTING_KEYS.MONETIZATION_PRICES] || {},
-      monetizationPaymentDetails: settingsMap[this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS] || {},
+      platformCurrency:
+        settingsMap[this.SETTING_KEYS.PLATFORM_CURRENCY] || "USD",
+      platformLogo: settingsMap[this.SETTING_KEYS.PLATFORM_LOGO] || "",
+      listingExpirationDays:
+        settingsMap[this.SETTING_KEYS.LISTING_EXPIRATION_DAYS] ?? 90,
+      maxListingPhotos: settingsMap[this.SETTING_KEYS.MAX_LISTING_PHOTOS] ?? 10,
+      monetizationEnabled: Boolean(
+        settingsMap[this.SETTING_KEYS.MONETIZATION_ENABLED]
+      ),
+      registrationEnabled:
+        settingsMap[this.SETTING_KEYS.REGISTRATION_ENABLED] !== false,
+      maintenanceMode: Boolean(settingsMap[this.SETTING_KEYS.MAINTENANCE_MODE]),
+      paymentContactInfo:
+        settingsMap[this.SETTING_KEYS.PAYMENT_CONTACT_INFO] || {},
+      monetizationPrices:
+        settingsMap[this.SETTING_KEYS.MONETIZATION_PRICES] || {},
+      monetizationPaymentDetails:
+        settingsMap[this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS] || {},
     };
   }
 
@@ -106,25 +110,28 @@ export class SettingsService {
    */
   static async updateSetting(key: string, value: any): Promise<void> {
     await connectDB();
-    
+
     console.log(`[UPDATE SETTING] Updating ${key} with value:`, value);
-    
+
+    // First check if setting exists
+    const existing = await Setting.findOne({ key });
+    console.log(`[UPDATE SETTING] Existing setting:`, existing);
+
     const result = await Setting.findOneAndUpdate(
       { key },
-      { $set: { value } },
-      { 
-        upsert: true, 
+      { $set: { key, value } },
+      {
+        upsert: true,
         new: true,
         runValidators: true,
-        setDefaultsOnInsert: true
       }
     );
-    
+
     console.log(`[UPDATE SETTING] Update result:`, result);
-    
+
     // Verify the update
     const verify = await Setting.findOne({ key });
-    console.log(`[UPDATE SETTING] Verification:`, verify);
+    console.log(`[UPDATE SETTING] Verification after update:`, verify);
   }
 
   /**
@@ -132,7 +139,7 @@ export class SettingsService {
    */
   static async updateSettings(updates: Partial<SystemSettings>): Promise<void> {
     await connectDB();
-    
+
     const updatePromises = Object.entries(updates).map(async ([key, value]) => {
       const settingKey = this.getSettingKey(key as keyof SystemSettings);
       if (settingKey) {
@@ -148,7 +155,7 @@ export class SettingsService {
    */
   static async getSetting(key: string): Promise<any> {
     await connectDB();
-    
+
     const setting = await Setting.findOne({ key });
     return setting?.value;
   }
@@ -157,7 +164,9 @@ export class SettingsService {
    * Check if monetization is enabled
    */
   static async isMonetizationEnabled(): Promise<boolean> {
-    const enabled = await this.getSetting(this.SETTING_KEYS.MONETIZATION_ENABLED);
+    const enabled = await this.getSetting(
+      this.SETTING_KEYS.MONETIZATION_ENABLED
+    );
     return !!enabled;
   }
 
@@ -165,8 +174,10 @@ export class SettingsService {
    * Check if registration is enabled
    */
   static async isRegistrationEnabled(): Promise<boolean> {
-    const enabled = await this.getSetting(this.SETTING_KEYS.REGISTRATION_ENABLED);
-    return enabled !== false; // Default true
+    const enabled = await this.getSetting(
+      this.SETTING_KEYS.REGISTRATION_ENABLED
+    );
+    return enabled ?? true; // Default true
   }
 
   /**
@@ -180,17 +191,19 @@ export class SettingsService {
   /**
    * Get platform currency
    */
-  static async getPlatformCurrency(): Promise<'LRD' | 'USD'> {
+  static async getPlatformCurrency(): Promise<"LRD" | "USD"> {
     const currency = await this.getSetting(this.SETTING_KEYS.PLATFORM_CURRENCY);
-    return currency || 'USD';
+    return currency ?? "USD";
   }
 
   /**
    * Get listing expiration days
    */
   static async getListingExpirationDays(): Promise<number> {
-    const days = await this.getSetting(this.SETTING_KEYS.LISTING_EXPIRATION_DAYS);
-    return days || 90;
+    const days = await this.getSetting(
+      this.SETTING_KEYS.LISTING_EXPIRATION_DAYS
+    );
+    return days ?? 90;
   }
 
   /**
@@ -198,7 +211,63 @@ export class SettingsService {
    */
   static async getMaxListingPhotos(): Promise<number> {
     const max = await this.getSetting(this.SETTING_KEYS.MAX_LISTING_PHOTOS);
-    return max || 10;
+    return max ?? 10;
+  }
+
+  /**
+   * Get default settings for initialization and resets
+   */
+  private static getDefaultSettings(): Record<string, any> {
+    return {
+      [this.SETTING_KEYS.PLATFORM_CURRENCY]: "USD",
+      [this.SETTING_KEYS.PLATFORM_LOGO]: "",
+      [this.SETTING_KEYS.LISTING_EXPIRATION_DAYS]: 90,
+      [this.SETTING_KEYS.MAX_LISTING_PHOTOS]: 10,
+      [this.SETTING_KEYS.MONETIZATION_ENABLED]: false,
+      [this.SETTING_KEYS.REGISTRATION_ENABLED]: true,
+      [this.SETTING_KEYS.MAINTENANCE_MODE]: false,
+      [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
+      [this.SETTING_KEYS.MONETIZATION_PRICES]: {},
+      [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {},
+    };
+  }
+
+  /**
+   * Clear all settings and reinitialize (for debugging)
+   */
+  static async clearAndReinitialize(): Promise<void> {
+    await connectDB();
+
+    console.log("[CLEAR] Clearing all settings...");
+    await Setting.deleteMany({});
+
+    console.log("[CLEAR] Reinitializing with defaults...");
+    await this.initializeDefaultSettings();
+
+    const allSettings = await Setting.find({});
+    console.log("[CLEAR] Settings after reinitialization:", allSettings);
+  }
+
+  /**
+   * Reset specific settings to their default values
+   */
+  static async resetSettings(props: (keyof SystemSettings)[]): Promise<void> {
+    await connectDB();
+
+    const defaults = this.getDefaultSettings();
+    const keys = props
+      .map((p) => this.getSettingKey(p))
+      .filter((k): k is string => !!k);
+
+    if (keys.length === 0) return;
+
+    for (const key of keys) {
+      await Setting.findOneAndUpdate(
+        { key },
+        { $set: { value: defaults[key] } },
+        { upsert: true, new: true }
+      );
+    }
   }
 
   /**
@@ -215,7 +284,8 @@ export class SettingsService {
       maintenanceMode: this.SETTING_KEYS.MAINTENANCE_MODE,
       paymentContactInfo: this.SETTING_KEYS.PAYMENT_CONTACT_INFO,
       monetizationPrices: this.SETTING_KEYS.MONETIZATION_PRICES,
-      monetizationPaymentDetails: this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS,
+      monetizationPaymentDetails:
+        this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS,
     };
 
     return keyMap[property] || null;
