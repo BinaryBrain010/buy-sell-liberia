@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       else senderId = userId; // fallback to userId to avoid validation error
     }
     const productTitle = productDoc && typeof productDoc === 'object' && productDoc !== null && 'title' in productDoc ? productDoc.title : '';
-    const productId = productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing;
+    const productId = (productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing) as string | mongoose.Types.ObjectId;
     let chat = await Chat.findOne({ product: productId, user2: userId });
     if (!chat) {
       chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       productId: productId.toString(),
       productTitle,
       userId: userId.toString(),
-      userEmail: payment.user.email,
+      userEmail: (payment.user as any)?.email || 'unknown@email.com',
       amount: payment.amount,
       adminUserId: adminId,
       previousStatus: 'pending',
