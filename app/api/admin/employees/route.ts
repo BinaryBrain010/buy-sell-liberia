@@ -2,10 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import Employee from "@/models/Employee";
 import dbConnect from "@/lib/mongoose";
 import bcrypt from "bcryptjs";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
+import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
 
 // POST: Add new employee
 export async function POST(req: NextRequest) {
   try {
+    // Auth: Only super_admin can access
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'No token' }, { status: 401 });
+    }
+    const token = authHeader.split(' ')[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (!payload || typeof payload !== 'object' || payload.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const adminUserId = payload._id || payload.id || 'unknown';
+
     await dbConnect();
     const { fullName, email, password, role, phone, country, department } =
       await req.json();
@@ -22,6 +38,10 @@ export async function POST(req: NextRequest) {
         { status: 409 }
       );
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(req, adminUserId);
+
     const hash = await bcrypt.hash(password, 10);
     const employee = await Employee.create({
       fullName,
@@ -32,6 +52,20 @@ export async function POST(req: NextRequest) {
       country,
       department,
     });
+
+    // Log employee creation operation
+    await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.EMPLOYEE_CREATE, (employee._id as any).toString(), 'Employee', {
+      adminUserId,
+      employeeEmail: employee.email,
+      employeeName: employee.fullName,
+      employeeRole: employee.role,
+      employeePhone: employee.phone,
+      employeeCountry: employee.country,
+      employeeDepartment: employee.department,
+      createdBy: adminUserId,
+      summary: `Created new employee: ${employee.fullName} (${employee.email}) with role: ${employee.role}`
+    });
+
     return NextResponse.json({ employee });
   } catch (error: any) {
     console.error("Employee creation error:", error);

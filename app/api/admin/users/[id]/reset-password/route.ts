@@ -3,6 +3,8 @@ import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.s
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
 import bcrypt from "bcryptjs";
+import { createAdminAuditLogger } from "../../../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
 
 export async function PATCH(
   request: NextRequest,
@@ -48,8 +50,19 @@ export async function PATCH(
       );
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
+    }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId);
+
+    // Get user before updating for audit logging
+    const userBeforeUpdate = await User.findById(params.id);
+    if (!userBeforeUpdate) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const hashed = await bcrypt.hash(newPassword, 10);
@@ -65,6 +78,15 @@ export async function PATCH(
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Log password reset operation
+    await logger.logUserOperation(OperationType.USER_PASSWORD_RESET, params.id, {
+      adminUserId,
+      userEmail: user.email,
+      userName: user.fullName,
+      resetBy: adminUserId,
+      summary: `Reset password for user: ${user.fullName} (${user.email})`
+    });
 
     return NextResponse.json({ message: "Password reset successfully", user });
   } catch (error: any) {

@@ -23,6 +23,16 @@ export enum OperationType {
   USER_UNBLOCK = "user_unblock",
   USER_PASSWORD_RESET = "user_password_reset",
   
+  // Admin Management
+  ADMIN_CREATE = "admin_create",
+  ADMIN_UPDATE = "admin_update",
+  ADMIN_DELETE = "admin_delete",
+  
+  // Employee Management
+  EMPLOYEE_CREATE = "employee_create",
+  EMPLOYEE_UPDATE = "employee_update",
+  EMPLOYEE_DELETE = "employee_delete",
+  
   // Listing Management
   LISTING_APPROVE = "listing_approve",
   LISTING_REJECT = "listing_reject",
@@ -334,6 +344,12 @@ export class AuditLogger {
       [OperationType.USER_BLOCK]: 'Blocked user',
       [OperationType.USER_UNBLOCK]: 'Unblocked user',
       [OperationType.USER_PASSWORD_RESET]: 'Reset user password',
+      [OperationType.ADMIN_CREATE]: 'Created admin',
+      [OperationType.ADMIN_UPDATE]: 'Updated admin',
+      [OperationType.ADMIN_DELETE]: 'Deleted admin',
+      [OperationType.EMPLOYEE_CREATE]: 'Created employee',
+      [OperationType.EMPLOYEE_UPDATE]: 'Updated employee',
+      [OperationType.EMPLOYEE_DELETE]: 'Deleted employee',
       [OperationType.LISTING_APPROVE]: 'Approved listing',
       [OperationType.LISTING_REJECT]: 'Rejected listing',
       [OperationType.LISTING_FEATURE]: 'Featured listing',
