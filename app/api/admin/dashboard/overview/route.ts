@@ -3,10 +3,9 @@ import { AdminAuthService } from "../../../modules/auth/services/admin-auth.serv
 import mongoose from "mongoose";
 import User from "../../../../../models/User";
 import Product from "../../../../../models/Product";
+import Report from "../../../../../models/Report";
+import ManualPayment from "../../../../../models/ManualPayment";
 import { Admin } from "../../../modules/auth/models/admin.model";
-// Placeholder: Replace with real models when implemented
-// import Report from '../../../../../../models/Report';
-// import ManualPayment from '../../../../../../models/ManualPayment';
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     // Connect to DB if not already
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(process.env.MONGO_URI!);
+      await mongoose.connect(process.env.MONGODB_URI!);
     }
 
     // Stats
@@ -46,9 +45,9 @@ export async function GET(request: NextRequest) {
     const totalAdmins = await Admin.countDocuments({
       role: { $ne: "super_admin" },
     });
-    // Placeholder counts for reports and manual payments
-    const reports = 0; // await Report.countDocuments({ status: 'pending' });
-    const manualPaymentRequests = 0; // await ManualPayment.countDocuments({ status: 'pending' });
+    // Get real counts for reports and manual payments
+    const reports = await Report.countDocuments({ status: 'pending' });
+    const manualPaymentRequests = await ManualPayment.countDocuments({ status: 'pending' });
 
     return NextResponse.json({
       totalUsers,
