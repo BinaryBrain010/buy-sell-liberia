@@ -54,9 +54,12 @@ export enum OperationType {
   
   // Settings Management
   SETTINGS_UPDATE = "settings_update",
+  SETTINGS_RESET = "settings_reset",
   MONETIZATION_TOGGLE = "monetization_toggle",
   CURRENCY_UPDATE = "currency_update",
   BRANDING_UPDATE = "branding_update",
+  LOGO_UPLOAD = "logo_upload",
+  LOGO_DELETE = "logo_delete",
   
   // System Management
   SYSTEM_MAINTENANCE = "system_maintenance",
@@ -364,9 +367,12 @@ export class AuditLogger {
       [OperationType.CATEGORY_ACTIVATE]: 'Activated category',
       [OperationType.CATEGORY_DEACTIVATE]: 'Deactivated category',
       [OperationType.SETTINGS_UPDATE]: 'Updated settings',
+      [OperationType.SETTINGS_RESET]: 'Reset settings',
       [OperationType.MONETIZATION_TOGGLE]: 'Toggled monetization',
       [OperationType.CURRENCY_UPDATE]: 'Updated currency',
       [OperationType.BRANDING_UPDATE]: 'Updated branding',
+      [OperationType.LOGO_UPLOAD]: 'Uploaded logo',
+      [OperationType.LOGO_DELETE]: 'Deleted logo',
       [OperationType.SYSTEM_MAINTENANCE]: 'Performed system maintenance',
       [OperationType.DATA_EXPORT]: 'Exported data',
       [OperationType.DATA_IMPORT]: 'Imported data',

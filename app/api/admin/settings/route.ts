@@ -4,6 +4,8 @@ import {
   SettingsService,
   SystemSettings,
 } from "@/app/api/modules/shared/services/settings.service";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const updates = await req.json();
 
     // Validate required fields
@@ -85,9 +88,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get current settings before update for audit logging
+    const currentSettings = await SettingsService.getAllSettings();
+    
     await SettingsService.updateSettings(updates);
 
     const updatedSettings = await SettingsService.getAllSettings();
+
+    // Create audit logger and log settings update
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
+      adminUserId,
+      changes: updates,
+      previousSettings: currentSettings,
+      newSettings: updatedSettings,
+      summary: `Updated system settings: ${Object.keys(updates).join(', ')}`
+    });
+
     return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (error: any) {
     console.error("Error in /api/admin/settings POST:", error);
@@ -115,6 +132,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const { key, value } = await req.json();
 
     if (!key) {
@@ -155,9 +173,24 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // Get current settings before update for audit logging
+    const currentSettings = await SettingsService.getAllSettings();
+    
     await SettingsService.updateSetting(dbKey, value);
 
     const updatedSettings = await SettingsService.getAllSettings();
+
+    // Create audit logger and log settings update
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
+      adminUserId,
+      settingKey: key,
+      settingValue: value,
+      previousValue: currentSettings[key as keyof SystemSettings],
+      newValue: value,
+      summary: `Updated setting '${key}' from '${currentSettings[key as keyof SystemSettings]}' to '${value}'`
+    });
+
     return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (error: any) {
     console.error("Error in /api/admin/settings PATCH:", error);
@@ -185,6 +218,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const body = await req.json();
     const { platformLogo, platformCurrency, toggles } = body || {};
 
@@ -256,8 +290,22 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Get current settings before update for audit logging
+    const currentSettings = await SettingsService.getAllSettings();
+    
     await SettingsService.updateSettings(updates);
     const updatedSettings = await SettingsService.getAllSettings();
+
+    // Create audit logger and log settings update
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
+      adminUserId,
+      changes: updates,
+      previousSettings: currentSettings,
+      newSettings: updatedSettings,
+      summary: `Bulk updated settings: ${Object.keys(updates).join(', ')}`
+    });
+
     return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (error: any) {
     console.error("Error in /api/admin/settings PUT:", error);
@@ -285,6 +333,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const body = await req.json().catch(() => ({}));
     const { logo = false, currency = false, toggles = false } = body || {};
 
@@ -347,8 +396,22 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    // Get current settings before reset for audit logging
+    const currentSettings = await SettingsService.getAllSettings();
+    
     await SettingsService.resetSettings(propsToReset);
     const updatedSettings = await SettingsService.getAllSettings();
+
+    // Create audit logger and log settings reset
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_RESET, 'system_settings', 'Settings', {
+      adminUserId,
+      resetFields: propsToReset,
+      previousSettings: currentSettings,
+      newSettings: updatedSettings,
+      summary: `Reset settings to defaults: ${propsToReset.join(', ')}`
+    });
+
     return NextResponse.json({ success: true, settings: updatedSettings });
   } catch (error: any) {
     console.error("Error in /api/admin/settings DELETE:", error);
