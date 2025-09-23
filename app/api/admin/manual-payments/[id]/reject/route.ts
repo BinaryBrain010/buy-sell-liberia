@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       paymentAmount: payment.amount,
       paymentMethod: payment.method,
       paymentTransactionId: payment.transactionId,
-      userEmail: payment.user.email,
+      userEmail: (payment.user as any)?.email || 'Unknown',
       productTitle: payment.listing && typeof payment.listing === 'object' && 'title' in payment.listing ? (payment.listing as any)?.title : '',
       previousStatus,
       newStatus: 'rejected',

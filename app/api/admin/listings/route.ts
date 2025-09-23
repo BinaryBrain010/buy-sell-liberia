@@ -3,8 +3,8 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
-import { createAdminAuditLogger } from "../../../../../lib/admin-audit-middleware";
-import { OperationType, ModuleType } from "../../../../../lib/audit-logger";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
 import { SettingsService } from '@/app/api/modules/shared/services/settings.service';
-import { createAdminAuditLogger } from '../../../../lib/admin-audit-middleware';
-import { OperationType, ModuleType } from '../../../../lib/audit-logger';
+import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 // GET: Get all toggle settings
 export async function GET(req: NextRequest) {

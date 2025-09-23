@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import Report from "../../../../models/Report";
 import Product from "../../../../models/Product";
 import User from "../../../../models/User";
-import { createAdminAuditLogger } from "../../../../../lib/admin-audit-middleware";
-import { OperationType, ModuleType } from "../../../../../lib/audit-logger";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // GET: View all reports, filter by reason, status, product, user
 export async function GET(request: NextRequest) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
 import mongoose from 'mongoose';
 import Chat from '../../../../../models/Chat';
+import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 export async function DELETE(request: NextRequest, { params }: { params: { messageId: string } }) {
   try {
@@ -31,9 +33,23 @@ export async function DELETE(request: NextRequest, { params }: { params: { messa
       return NextResponse.json({ error: 'Message not found in any chat' }, { status: 404 });
     }
 
+    // Find the message to get its content for logging
+    const messageToDelete = chat.messages.find((msg: any) => msg._id.toString() === messageId);
+    
     // Remove the message from the chat
     chat.messages = chat.messages.filter((msg: any) => msg._id.toString() !== messageId);
     await chat.save();
+
+    // Create audit logger and log message deletion
+    const logger = createAdminAuditLogger(request, payload._id || payload.id || 'unknown');
+    await logger.logCustomOperation(ModuleType.MESSAGE_MANAGEMENT, OperationType.MESSAGE_DELETE, messageId, 'Message', {
+      adminUserId: payload._id || payload.id || 'unknown',
+      messageId,
+      chatId: chat._id.toString(),
+      messageContent: messageToDelete?.content?.substring(0, 100) || 'Unknown content',
+      messageSender: messageToDelete?.sender?.toString() || 'Unknown',
+      summary: `Deleted message from chat ${chat._id}`
+    });
 
     return NextResponse.json({ success: true, message: 'Message deleted successfully' });
   } catch (error: any) {

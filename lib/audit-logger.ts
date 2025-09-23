@@ -18,7 +18,7 @@ export enum LogLevel {
 export enum OperationType {
   // User Management
   USER_BAN = "user_ban",
-  USER_UNBAN = "user_unban", 
+  USER_UNBAN = "user_unban",
   USER_BLOCK = "user_block",
   USER_UNBLOCK = "user_unblock",
   USER_PASSWORD_RESET = "user_password_reset",
@@ -69,7 +69,24 @@ export enum OperationType {
   // Reports Management
   REPORT_VIEW = "report_view",
   REPORT_ACTION = "report_action",
-  REPORT_RESOLVE = "report_resolve"
+  REPORT_RESOLVE = "report_resolve",
+  
+  // Announcement Management
+  ANNOUNCEMENT_CREATE = "announcement_create",
+  ANNOUNCEMENT_UPDATE = "announcement_update",
+  ANNOUNCEMENT_DELETE = "announcement_delete",
+  ANNOUNCEMENT_SEND = "announcement_send",
+  
+  // Withdrawal Management
+  WITHDRAWAL_CREATE = "withdrawal_create",
+  
+  // Message Management
+  MESSAGE_DELETE = "message_delete",
+  
+  // Static Pages Management
+  STATIC_PAGE_CREATE = "static_page_create",
+  STATIC_PAGE_UPDATE = "static_page_update",
+  STATIC_PAGE_DELETE = "static_page_delete"
 }
 
 /**
@@ -82,7 +99,10 @@ export enum ModuleType {
   CATEGORY_MANAGEMENT = "category_management",
   SETTINGS_MANAGEMENT = "settings_management",
   SYSTEM_MANAGEMENT = "system_management",
-  REPORT_MANAGEMENT = "report_management"
+  REPORT_MANAGEMENT = "report_management",
+  ANNOUNCEMENT_MANAGEMENT = "announcement_management",
+  MESSAGE_MANAGEMENT = "message_management",
+  DATA_MANAGEMENT = "data_management"
 }
 
 /**
@@ -378,7 +398,16 @@ export class AuditLogger {
       [OperationType.DATA_IMPORT]: 'Imported data',
       [OperationType.REPORT_VIEW]: 'Viewed report',
       [OperationType.REPORT_ACTION]: 'Took action on report',
-      [OperationType.REPORT_RESOLVE]: 'Resolved report'
+      [OperationType.REPORT_RESOLVE]: 'Resolved report',
+      [OperationType.ANNOUNCEMENT_CREATE]: 'Created announcement',
+      [OperationType.ANNOUNCEMENT_UPDATE]: 'Updated announcement',
+      [OperationType.ANNOUNCEMENT_DELETE]: 'Deleted announcement',
+      [OperationType.ANNOUNCEMENT_SEND]: 'Sent announcement',
+      [OperationType.WITHDRAWAL_CREATE]: 'Created withdrawal log',
+      [OperationType.MESSAGE_DELETE]: 'Deleted message',
+      [OperationType.STATIC_PAGE_CREATE]: 'Created static page',
+      [OperationType.STATIC_PAGE_UPDATE]: 'Updated static page',
+      [OperationType.STATIC_PAGE_DELETE]: 'Deleted static page'
     };
 
     const action = actionMap[operation] || 'Performed action';
