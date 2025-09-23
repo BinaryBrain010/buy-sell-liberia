@@ -40,8 +40,18 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const toggleMobileMenu = () => {
+  const toggleMobileMenu = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    console.log('Toggle mobile menu clicked, current state:', mobileMenuOpen);
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const closeMobileMenu = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    console.log('Close mobile menu clicked');
+    setMobileMenuOpen(false);
   };
 
   const handleAuthClick = (mode: "login" | "signup") => {
@@ -116,14 +126,22 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={toggleMobileMenu}
-                className="p-2 btn-shadow ml-1"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Button clicked, mobileMenuOpen:', mobileMenuOpen);
+                  const newState = !mobileMenuOpen;
+                  console.log('Setting menu state to:', newState);
+                  setMobileMenuOpen(newState);
+                }}
+                className="p-2 btn-shadow ml-1 relative z-50"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                type="button"
               >
                 {mobileMenuOpen ? (
-                  <X className="h-5 w-5" />
+                  <X className="h-5 w-5 pointer-events-none" />
                 ) : (
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-5 w-5 pointer-events-none" />
                 )}
               </Button>
             </div>
@@ -134,7 +152,10 @@ export function Navbar() {
       {/* Mobile Menu - Animated */}
       <MobileMenuAnimated
         isOpen={mobileMenuOpen}
-        setIsOpen={setMobileMenuOpen}
+        setIsOpen={(open) => {
+          console.log('MobileMenuAnimated setIsOpen called with:', open);
+          setMobileMenuOpen(open);
+        }}
         onAuthClick={handleAuthClick}
         onSellClick={() => {
           setMobileMenuOpen(false);

@@ -26,14 +26,31 @@ export default function MobileMenu({
   useEffect(() => {
     if (!isOpen) return;
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node;
+      const target = e.target as Element;
+
+      // Don't close if clicking on the hamburger menu button
+      const isHamburgerButton =
+        target.closest('[aria-label*="menu"]') ||
+        target.closest('button[aria-label*="Close menu"]') ||
+        target.closest('button[aria-label*="Open menu"]');
+
+      if (isHamburgerButton) {
+        return;
+      }
+
       if (containerRef.current && !containerRef.current.contains(target)) {
         onClose();
       }
     };
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
+
+    // Add a small delay before attaching listeners to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handlePointerDown);
+      document.addEventListener("touchstart", handlePointerDown);
+    }, 100);
+
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("touchstart", handlePointerDown);
     };
