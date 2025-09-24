@@ -34,9 +34,13 @@ interface UserProfile {
 
 interface ProfileFormProps {
   userId: string;
+  onProfileUpdate?: () => void;
 }
 
-export default function ProfileForm({ userId }: ProfileFormProps) {
+export default function ProfileForm({
+  userId,
+  onProfileUpdate,
+}: ProfileFormProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -156,6 +160,11 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
 
       // Refresh profile data
       await fetchProfile();
+
+      // Call the parent callback to refresh dashboard user data
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
 
       setEditing(false);
 
@@ -285,7 +294,10 @@ export default function ProfileForm({ userId }: ProfileFormProps) {
           {/* Compact summary */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
             <span className="font-medium text-foreground">
-              {profile.fullName} <span className="text-xs text-muted-foreground">({profile.username})</span>
+              {profile.fullName}{" "}
+              <span className="text-xs text-muted-foreground">
+                ({profile.username})
+              </span>
             </span>
             <span className="truncate">{profile.email}</span>
           </div>

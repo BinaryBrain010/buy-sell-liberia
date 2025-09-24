@@ -34,8 +34,8 @@ const decodeJWT = (token: string) => {
 };
 
 // Child Components
-const ProfileTab = ({ userId }: { userId: string }) => (
-  <ProfileForm userId={userId} />
+const ProfileTab = ({ userId, onProfileUpdate }: { userId: string; onProfileUpdate?: () => void }) => (
+  <ProfileForm userId={userId} onProfileUpdate={onProfileUpdate} />
 );
 
 const ListingsTab = ({ userId }: { userId: string }) => (
@@ -86,7 +86,7 @@ export default function DashboardPage() {
         sellerId,
         productId,
         productTitle,
-        fullUrl: window.location.href
+        fullUrl: window.location.href,
       });
 
       if (tab === "messages") {
@@ -99,13 +99,49 @@ export default function DashboardPage() {
           productId: productId || undefined,
           productTitle: productTitle || undefined,
         });
-        
+
         console.log("🔍 Dashboard Debug - Set chat params:", {
           sellerId: sellerId || undefined,
           productId: productId || undefined,
           productTitle: productTitle || undefined,
         });
       }
+    }
+  };
+
+  // Function to refresh user data after profile updates
+  const refreshUserData = async () => {
+    try {
+      const accessToken = localStorage.getItem("accessToken");
+      if (!accessToken || !user?.id) return;
+
+      console.log("🔄 Refreshing user data for:", user.id);
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const apiUserData = await response.json();
+        console.log("✅ Successfully refreshed user data:", apiUserData);
+        
+        setUser({
+          id: apiUserData._id || apiUserData.id,
+          fullName: apiUserData.fullName || apiUserData.name,
+          username: apiUserData.username,
+          email: apiUserData.email,
+          profile: { 
+            avatar: apiUserData.profile?.avatar || apiUserData.avatar || "/placeholder-user.jpg" 
+          },
+        });
+      } else {
+        console.warn("❌ Failed to refresh user data");
+      }
+    } catch (error) {
+      console.error("❌ Error refreshing user data:", error);
     }
   };
 
@@ -154,58 +190,125 @@ export default function DashboardPage() {
           }
         }
 
-        if (storedUserData) {
-          // Use the stored user data from auth provider
-          setUser({
+        // Get user ID from JWT token first
+        let userId = null;
+        let userData = null;
+
+        if (accessToken) {
+          userData = decodeJWT(accessToken);
+          console.log("Decoded access token:", userData);
+          userId =
+            userData?.user?.id || userData?.user?._id || userData?.userId;
+        } else if (refreshToken) {
+          userData = decodeJWT(refreshToken);
+          console.log("Decoded refresh token:", userData);
+          userId =
+            userData?.user?.id || userData?.user?._id || userData?.userId;
+        }
+
+        // If we have stored user data with the same ID, use it as fallback
+        let fallbackUser = null;
+        if (storedUserData && storedUserData._id === userId) {
+          fallbackUser = {
             id: storedUserData._id,
             fullName: storedUserData.fullName,
             username: storedUserData.username,
             email: storedUserData.email,
-            profile: { avatar: storedUserData.profile?.avatar || "/placeholder-user.jpg" },
-          });
-          setIsAuthenticated(true);
-          return;
+            profile: {
+              avatar: storedUserData.profile?.avatar || "/placeholder-user.jpg",
+            },
+          };
         }
 
-        // If no stored user data, try to decode JWT token
-        let userData = null;
-        if (accessToken) {
-          userData = decodeJWT(accessToken);
-          console.log("Decoded access token:", userData);
-        } else if (refreshToken) {
-          userData = decodeJWT(refreshToken);
-          console.log("Decoded refresh token:", userData);
+        // Fetch fresh user data from API if we have userId
+        if (userId) {
+          try {
+            console.log("🔄 Fetching user data from API for userId:", userId);
+            const response = await fetch(`/api/users/${userId}`, {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+            });
+
+            if (response.ok) {
+              const apiUserData = await response.json();
+              console.log(
+                "✅ Successfully fetched user data from API:",
+                apiUserData
+              );
+
+              setUser({
+                id: apiUserData._id || apiUserData.id,
+                fullName: apiUserData.fullName || apiUserData.name,
+                username: apiUserData.username,
+                email: apiUserData.email,
+                profile: {
+                  avatar:
+                    apiUserData.profile?.avatar ||
+                    apiUserData.avatar ||
+                    "/placeholder-user.jpg",
+                },
+              });
+              setIsAuthenticated(true);
+              return;
+            } else {
+              console.warn(
+                "❌ API call failed, using fallback data. Status:",
+                response.status
+              );
+              if (fallbackUser) {
+                setUser(fallbackUser);
+                setIsAuthenticated(true);
+                return;
+              }
+            }
+          } catch (apiError) {
+            console.error("❌ Error fetching user data from API:", apiError);
+            if (fallbackUser) {
+              console.log("🔄 Using fallback user data from localStorage");
+              setUser(fallbackUser);
+              setIsAuthenticated(true);
+              return;
+            }
+          }
         }
 
+        // If API call failed, fall back to JWT data or stored data
         if (userData && userData.user) {
           // Extract user data from JWT payload
-          console.log("🔐 Found user data in token:", userData.user);
+          console.log("🔐 Using user data from JWT token:", userData.user);
           setUser({
             id: userData.user.id || userData.user._id,
             fullName: userData.user.fullName,
             username: userData.user.username,
             email: userData.user.email,
-            profile: { avatar: userData.user.profile?.avatar || "/placeholder-user.jpg" },
+            profile: {
+              avatar: userData.user.profile?.avatar || "/placeholder-user.jpg",
+            },
           });
-        } else if (userData && userData.userId) {
-          // JWT only contains userId, we need to get user data from somewhere else
-          console.log("🔐 JWT only contains userId:", userData.userId);
-          // Since we don't have user data, we'll use a generic approach
+        } else if (userData && userId) {
+          // JWT only contains userId, use basic data
+          console.log(
+            "🔐 JWT only contains userId, using basic data for:",
+            userId
+          );
           setUser({
-            id: userData.userId,
+            id: userId,
             fullName: "User",
             username: "Account",
             email: "user@example.com",
             profile: { avatar: "/placeholder-user.jpg" },
           });
         } else {
-          // Fallback to mock data if JWT decoding fails
-          console.log("No user data found in token, using fallback");
+          // Fallback to basic data if all else fails
+          console.log("⚠️ No user data available, using minimal fallback");
           setUser({
-            id: "user123",
+            id: "unknown",
             fullName: "",
-            username: "Account",
-            email: "user@example.com",
+            username: "User",
+            email: "",
             profile: { avatar: "/placeholder-user.jpg" },
           });
         }
@@ -274,7 +377,15 @@ export default function DashboardPage() {
                   variant="secondary"
                   className="ml-1 h-6 px-2 text-xs whitespace-nowrap"
                 >
-                  Welcome back{user?.fullName ? `, ${user.fullName}` : user?.username ? `, ${user.username}` : ""}!
+                  Welcome back
+                  {user?.fullName
+                    ? `, ${user.fullName}`
+                    : user?.username
+                    ? `, ${user.username}`
+                    : user?.email
+                    ? `, ${user.email.split("@")[0]}`
+                    : ""}
+                  !
                 </Badge>
               </div>
               <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
@@ -321,7 +432,7 @@ export default function DashboardPage() {
         <div className="container mx-auto px-4 py-4">
           <TabsContent value="profile" className="space-y-4">
             {user?.id || user?._id ? (
-              <ProfileTab userId={user?.id || user?._id} />
+              <ProfileTab userId={user?.id || user?._id} onProfileUpdate={refreshUserData} />
             ) : (
               <div className="text-center py-12">
                 <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
