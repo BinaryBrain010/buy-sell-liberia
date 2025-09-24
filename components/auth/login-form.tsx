@@ -1,81 +1,111 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { useAuth } from "@/components/auth-provider"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
-import { motion } from "framer-motion"
-import { useToast } from "@/hooks/use-toast"
+import type React from "react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/components/auth-provider";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginFormProps {
-  onForgotPassword: () => void
-  onSignup: (googleData?: any) => void
-  onClose: () => void
+  onForgotPassword: () => void;
+  onSignup: (googleData?: any) => void;
+  onClose: () => void;
+  onBanned?: (message?: string) => void;
 }
 
-export function LoginForm({ onForgotPassword, onSignup, onClose }: LoginFormProps) {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const { login, loginWithGoogle } = useAuth()
-  const { toast } = useToast()
+export function LoginForm({
+  onForgotPassword,
+  onSignup,
+  onClose,
+  onBanned,
+}: LoginFormProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { login, loginWithGoogle } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      await login(email, password)
+      await login(email, password);
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
-      })
-      onClose()
+      });
+      onClose();
     } catch (error: any) {
-      toast({
-        title: "Login failed",
-        description: error.message || "Please check your credentials and try again.",
-        variant: "destructive",
-      })
+      const message = String(error?.message || "Login failed");
+      if (/banned/i.test(message)) {
+        // Notify parent modal to switch to banned popup
+        onBanned?.(message);
+        toast({
+          title: "Account banned",
+          description:
+            "You are banned. Kindly contact the help team to resolve the issue.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login failed",
+          description:
+            message || "Please check your credentials and try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true)
+    setIsGoogleLoading(true);
     try {
-      const result = await loginWithGoogle()
-      
+      const result = await loginWithGoogle();
+
       if (result.needsRegistration) {
         toast({
           title: "Complete registration",
           description: "Please complete your registration to continue.",
-        })
-        onSignup(result.userData)
+        });
+        onSignup(result.userData);
       } else {
         toast({
           title: "Welcome back!",
           description: "You have successfully signed in with Google.",
-        })
-        onClose()
+        });
+        onClose();
       }
     } catch (error: any) {
-      toast({
-        title: "Google login failed",
-        description: error.message || "Please try again.",
-        variant: "destructive",
-      })
+      const message = String(error?.message || "Google login failed");
+      if (/banned/i.test(message)) {
+        onBanned?.(message);
+        toast({
+          title: "Account banned",
+          description:
+            "You are banned. Kindly contact the help team to resolve the issue.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Google login failed",
+          description: message || "Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setIsGoogleLoading(false)
+      setIsGoogleLoading(false);
     }
-  }
+  };
 
   return (
     <motion.div
@@ -133,12 +163,21 @@ export function LoginForm({ onForgotPassword, onSignup, onClose }: LoginFormProp
         </div>
 
         <div className="flex justify-end">
-          <Button type="button" variant="link" className="px-0 text-sm h-auto" onClick={onForgotPassword}>
+          <Button
+            type="button"
+            variant="link"
+            className="px-0 text-sm h-auto"
+            onClick={onForgotPassword}
+          >
             Forgot password?
           </Button>
         </div>
 
-        <Button type="submit" className="w-full h-11 btn-shadow" disabled={isLoading}>
+        <Button
+          type="submit"
+          className="w-full h-11 btn-shadow"
+          disabled={isLoading}
+        >
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
       </form>
@@ -148,7 +187,9 @@ export function LoginForm({ onForgotPassword, onSignup, onClose }: LoginFormProp
           <Separator className="w-full" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          <span className="bg-background px-2 text-muted-foreground">
+            Or continue with
+          </span>
         </div>
       </div>
 
@@ -187,5 +228,5 @@ export function LoginForm({ onForgotPassword, onSignup, onClose }: LoginFormProp
         </Button>
       </div>
     </motion.div>
-  )
+  );
 }
