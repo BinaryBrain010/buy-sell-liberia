@@ -5,6 +5,8 @@ import mongoose from 'mongoose';
 import User from '@/models/User';
 import { Parser as Json2csvParser } from 'json2csv';
 import PDFDocument from 'pdfkit';
+import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +38,15 @@ export async function GET(request: NextRequest) {
     // 📄 Get format from query (?format=csv or pdf)
     const { searchParams } = new URL(request.url);
     const format = (searchParams.get('format') || 'csv').toLowerCase();
+
+    // Create audit logger and log data export
+    const logger = createAdminAuditLogger(request, payload._id || payload.id || 'unknown');
+    await logger.logCustomOperation(ModuleType.DATA_MANAGEMENT, OperationType.DATA_EXPORT, 'user_data', 'User', {
+      adminUserId: payload._id || payload.id || 'unknown',
+      exportFormat: format,
+      recordCount: users.length,
+      summary: `Exported ${users.length} user records in ${format.toUpperCase()} format`
+    });
 
     if (format === 'csv') {
       // Convert to CSV

@@ -3,6 +3,8 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -149,6 +151,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
     const { productId, action } = await request.json();
     if (!productId || !action) {
       return NextResponse.json(
@@ -161,32 +164,109 @@ export async function PATCH(request: NextRequest) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId);
+
     const product = await Product.findById(productId);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const previousStatus = product.status;
+    const previousFeatured = product.featured;
+
     switch (action) {
       case "approve":
         product.status = "active";
+        // Log listing approval
+        await logger.logListingOperation(OperationType.LISTING_APPROVE, productId, {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousStatus,
+          newStatus: "active",
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       case "reject":
         product.status = "removed";
+        // Log listing rejection
+        await logger.logListingOperation(OperationType.LISTING_REJECT, productId, {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousStatus,
+          newStatus: "removed",
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       case "delete":
+        // Log listing deletion before deleting
+        await logger.logListingOperation(OperationType.LISTING_DELETE, productId, {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousStatus,
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         await product.deleteOne();
         return NextResponse.json({ success: true, message: "Product deleted" });
       case "hide":
         product.status = "removed";
+        // Log listing hide action
+        await logger.logCustomOperation(ModuleType.LISTING_MANAGEMENT, OperationType.LISTING_REJECT, productId, 'Product', {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousStatus,
+          newStatus: "removed",
+          action: "hide",
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       case "markAsSold":
         product.status = "sold";
+        // Log mark as sold action
+        await logger.logCustomOperation(ModuleType.LISTING_MANAGEMENT, OperationType.LISTING_APPROVE, productId, 'Product', {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousStatus,
+          newStatus: "sold",
+          action: "markAsSold",
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       case "feature":
         product.featured = true;
+        // Log listing feature action
+        await logger.logListingOperation(OperationType.LISTING_FEATURE, productId, {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousFeatured,
+          newFeatured: true,
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       case "unfeature":
         product.featured = false;
+        // Log listing unfeature action
+        await logger.logListingOperation(OperationType.LISTING_UNFEATURE, productId, {
+          adminUserId,
+          productTitle: product.title,
+          productOwner: product.user_id.toString(),
+          previousFeatured,
+          newFeatured: false,
+          productCategory: product.category_id?.toString(),
+          productSubcategory: product.subcategory_id?.toString()
+        });
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });

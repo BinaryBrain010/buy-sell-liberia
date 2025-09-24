@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Category, { ICategory, ISubcategory } from "../../../models/Category";
 import { IProduct } from "../../../models/Product";
 import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
+import { createAdminAuditLogger } from "../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../lib/audit-logger";
 
 // Force dynamic rendering for all routes
 export const dynamic = "force-dynamic";
@@ -268,6 +270,12 @@ export async function PUT(request: NextRequest) {
     const authErr = requireSuperAdmin(request);
     if (authErr) return authErr;
 
+    // Extract admin user ID from token
+    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+    const token = authHeader?.slice(7).trim();
+    const payload = AdminAuthService.verifyAccessToken(token || '') as any;
+    const adminUserId = (payload as any)?._id || (payload as any)?.id || 'unknown';
+
     await connectDB();
     const body = await request.json();
     const { searchParams } = new URL(request.url);
@@ -318,6 +326,19 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Get current category for audit logging
+    const query = categoryId ? { _id: categoryId } : { slug };
+    const currentCategory = await Category.findOne(query).lean();
+    if (!currentCategory) {
+      return NextResponse.json(
+        { message: "Category not found" },
+        { status: 404 }
+      );
+    }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId);
+
     // Prepare update object
     const updateData: Partial<ICategory> = {};
     if (body.name) updateData.name = body.name;
@@ -345,7 +366,6 @@ export async function PUT(request: NextRequest) {
       }));
     }
 
-    const query = categoryId ? { _id: categoryId } : { slug };
     const category = await Category.findOneAndUpdate(
       query,
       { $set: updateData },
@@ -358,6 +378,32 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Log category update operation
+    await logger.logCategoryOperation(OperationType.CATEGORY_UPDATE, category._id.toString(), {
+      adminUserId,
+      categoryName: category.name,
+      categorySlug: category.slug,
+      changes: updateData,
+      previousData: {
+        name: currentCategory.name,
+        slug: currentCategory.slug,
+        icon: currentCategory.icon,
+        description: currentCategory.description,
+        isActive: currentCategory.isActive,
+        sortOrder: currentCategory.sortOrder,
+        subcategoriesCount: currentCategory.subcategories?.length || 0
+      },
+      newData: {
+        name: category.name,
+        slug: category.slug,
+        icon: category.icon,
+        description: category.description,
+        isActive: category.isActive,
+        sortOrder: category.sortOrder,
+        subcategoriesCount: category.subcategories?.length || 0
+      }
+    });
 
     return NextResponse.json({
       category,

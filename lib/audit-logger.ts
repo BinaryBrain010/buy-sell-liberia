@@ -18,10 +18,20 @@ export enum LogLevel {
 export enum OperationType {
   // User Management
   USER_BAN = "user_ban",
-  USER_UNBAN = "user_unban", 
+  USER_UNBAN = "user_unban",
   USER_BLOCK = "user_block",
   USER_UNBLOCK = "user_unblock",
   USER_PASSWORD_RESET = "user_password_reset",
+  
+  // Admin Management
+  ADMIN_CREATE = "admin_create",
+  ADMIN_UPDATE = "admin_update",
+  ADMIN_DELETE = "admin_delete",
+  
+  // Employee Management
+  EMPLOYEE_CREATE = "employee_create",
+  EMPLOYEE_UPDATE = "employee_update",
+  EMPLOYEE_DELETE = "employee_delete",
   
   // Listing Management
   LISTING_APPROVE = "listing_approve",
@@ -44,9 +54,12 @@ export enum OperationType {
   
   // Settings Management
   SETTINGS_UPDATE = "settings_update",
+  SETTINGS_RESET = "settings_reset",
   MONETIZATION_TOGGLE = "monetization_toggle",
   CURRENCY_UPDATE = "currency_update",
   BRANDING_UPDATE = "branding_update",
+  LOGO_UPLOAD = "logo_upload",
+  LOGO_DELETE = "logo_delete",
   
   // System Management
   SYSTEM_MAINTENANCE = "system_maintenance",
@@ -56,7 +69,24 @@ export enum OperationType {
   // Reports Management
   REPORT_VIEW = "report_view",
   REPORT_ACTION = "report_action",
-  REPORT_RESOLVE = "report_resolve"
+  REPORT_RESOLVE = "report_resolve",
+  
+  // Announcement Management
+  ANNOUNCEMENT_CREATE = "announcement_create",
+  ANNOUNCEMENT_UPDATE = "announcement_update",
+  ANNOUNCEMENT_DELETE = "announcement_delete",
+  ANNOUNCEMENT_SEND = "announcement_send",
+  
+  // Withdrawal Management
+  WITHDRAWAL_CREATE = "withdrawal_create",
+  
+  // Message Management
+  MESSAGE_DELETE = "message_delete",
+  
+  // Static Pages Management
+  STATIC_PAGE_CREATE = "static_page_create",
+  STATIC_PAGE_UPDATE = "static_page_update",
+  STATIC_PAGE_DELETE = "static_page_delete"
 }
 
 /**
@@ -69,7 +99,10 @@ export enum ModuleType {
   CATEGORY_MANAGEMENT = "category_management",
   SETTINGS_MANAGEMENT = "settings_management",
   SYSTEM_MANAGEMENT = "system_management",
-  REPORT_MANAGEMENT = "report_management"
+  REPORT_MANAGEMENT = "report_management",
+  ANNOUNCEMENT_MANAGEMENT = "announcement_management",
+  MESSAGE_MANAGEMENT = "message_management",
+  DATA_MANAGEMENT = "data_management"
 }
 
 /**
@@ -334,6 +367,12 @@ export class AuditLogger {
       [OperationType.USER_BLOCK]: 'Blocked user',
       [OperationType.USER_UNBLOCK]: 'Unblocked user',
       [OperationType.USER_PASSWORD_RESET]: 'Reset user password',
+      [OperationType.ADMIN_CREATE]: 'Created admin',
+      [OperationType.ADMIN_UPDATE]: 'Updated admin',
+      [OperationType.ADMIN_DELETE]: 'Deleted admin',
+      [OperationType.EMPLOYEE_CREATE]: 'Created employee',
+      [OperationType.EMPLOYEE_UPDATE]: 'Updated employee',
+      [OperationType.EMPLOYEE_DELETE]: 'Deleted employee',
       [OperationType.LISTING_APPROVE]: 'Approved listing',
       [OperationType.LISTING_REJECT]: 'Rejected listing',
       [OperationType.LISTING_FEATURE]: 'Featured listing',
@@ -348,15 +387,27 @@ export class AuditLogger {
       [OperationType.CATEGORY_ACTIVATE]: 'Activated category',
       [OperationType.CATEGORY_DEACTIVATE]: 'Deactivated category',
       [OperationType.SETTINGS_UPDATE]: 'Updated settings',
+      [OperationType.SETTINGS_RESET]: 'Reset settings',
       [OperationType.MONETIZATION_TOGGLE]: 'Toggled monetization',
       [OperationType.CURRENCY_UPDATE]: 'Updated currency',
       [OperationType.BRANDING_UPDATE]: 'Updated branding',
+      [OperationType.LOGO_UPLOAD]: 'Uploaded logo',
+      [OperationType.LOGO_DELETE]: 'Deleted logo',
       [OperationType.SYSTEM_MAINTENANCE]: 'Performed system maintenance',
       [OperationType.DATA_EXPORT]: 'Exported data',
       [OperationType.DATA_IMPORT]: 'Imported data',
       [OperationType.REPORT_VIEW]: 'Viewed report',
       [OperationType.REPORT_ACTION]: 'Took action on report',
-      [OperationType.REPORT_RESOLVE]: 'Resolved report'
+      [OperationType.REPORT_RESOLVE]: 'Resolved report',
+      [OperationType.ANNOUNCEMENT_CREATE]: 'Created announcement',
+      [OperationType.ANNOUNCEMENT_UPDATE]: 'Updated announcement',
+      [OperationType.ANNOUNCEMENT_DELETE]: 'Deleted announcement',
+      [OperationType.ANNOUNCEMENT_SEND]: 'Sent announcement',
+      [OperationType.WITHDRAWAL_CREATE]: 'Created withdrawal log',
+      [OperationType.MESSAGE_DELETE]: 'Deleted message',
+      [OperationType.STATIC_PAGE_CREATE]: 'Created static page',
+      [OperationType.STATIC_PAGE_UPDATE]: 'Updated static page',
+      [OperationType.STATIC_PAGE_DELETE]: 'Deleted static page'
     };
 
     const action = actionMap[operation] || 'Performed action';

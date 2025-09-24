@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import Report from "../../../../models/Report";
 import Product from "../../../../models/Product";
 import User from "../../../../models/User";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // GET: View all reports, filter by reason, status, product, user
 export async function GET(request: NextRequest) {
@@ -88,9 +90,16 @@ export async function PATCH(request: NextRequest) {
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
+
+    const adminUserId = payload._id || payload.id || 'unknown';
+    
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId);
+
     const { reportId, action, adminNotes } = await request.json();
     if (!reportId || !action) {
       return NextResponse.json(
@@ -101,11 +110,25 @@ export async function PATCH(request: NextRequest) {
     const report = await Report.findById(reportId);
     if (!report)
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
+
+    const previousStatus = report.status;
     let product, user;
+    
     switch (action) {
       case "approve":
         report.status = "approved";
         report.adminAction = "approve";
+        // Log report approval
+        await logger.logReportOperation(OperationType.REPORT_ACTION, reportId, {
+          adminUserId,
+          reportReason: report.reason,
+          reportedBy: report.reported_by.toString(),
+          productId: report.product_id.toString(),
+          previousStatus,
+          newStatus: "approved",
+          action: "approve",
+          adminNotes
+        });
         break;
       case "remove":
         report.status = "removed";
@@ -115,6 +138,18 @@ export async function PATCH(request: NextRequest) {
           product.status = "removed";
           await product.save();
         }
+        // Log report removal action
+        await logger.logReportOperation(OperationType.REPORT_ACTION, reportId, {
+          adminUserId,
+          reportReason: report.reason,
+          reportedBy: report.reported_by.toString(),
+          productId: report.product_id.toString(),
+          previousStatus,
+          newStatus: "removed",
+          action: "remove",
+          productRemoved: true,
+          adminNotes
+        });
         break;
       case "warn":
         report.status = "resolved";
@@ -124,6 +159,18 @@ export async function PATCH(request: NextRequest) {
           user.isBlocked = true;
           await user.save();
         }
+        // Log report warn action
+        await logger.logReportOperation(OperationType.REPORT_ACTION, reportId, {
+          adminUserId,
+          reportReason: report.reason,
+          reportedBy: report.reported_by.toString(),
+          productId: report.product_id.toString(),
+          previousStatus,
+          newStatus: "resolved",
+          action: "warn",
+          userBlocked: true,
+          adminNotes
+        });
         break;
       case "ban":
         report.status = "resolved";
@@ -135,6 +182,19 @@ export async function PATCH(request: NextRequest) {
           user.bannedAt = new Date();
           await user.save();
         }
+        // Log report ban action
+        await logger.logReportOperation(OperationType.REPORT_ACTION, reportId, {
+          adminUserId,
+          reportReason: report.reason,
+          reportedBy: report.reported_by.toString(),
+          productId: report.product_id.toString(),
+          previousStatus,
+          newStatus: "resolved",
+          action: "ban",
+          userBanned: true,
+          banReason: "Flagged by admin via report",
+          adminNotes
+        });
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });

@@ -5,6 +5,8 @@ import Product from '../../../../../../models/Product';
 import User from '../../../../../../models/User';
 import Chat from '../../../../../../models/Chat';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
+import { createAdminAuditLogger } from '../../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../../lib/audit-logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -24,6 +26,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI!);
     }
 
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminId);
+
     const payment = await ManualPayment.findById(params.id).populate('user').populate('listing');
     if (!payment) {
       return NextResponse.json({ error: 'Manual payment not found' }, { status: 404 });
@@ -41,11 +46,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       // No body or not JSON, ignore
     }
 
+    const previousStatus = payment.status;
     payment.status = 'rejected';
     payment.adminNotes = adminNotes;
     payment.reviewedBy = adminId;
     payment.reviewedAt = new Date();
     await payment.save();
+
+    // Log payment rejection operation
+    await logger.logPaymentOperation(OperationType.PAYMENT_REJECT, params.id, {
+      adminUserId: adminId,
+      paymentAmount: payment.amount,
+      paymentMethod: payment.method,
+      paymentTransactionId: payment.transactionId,
+      userEmail: (payment.user as any)?.email || 'Unknown',
+      productTitle: payment.listing && typeof payment.listing === 'object' && 'title' in payment.listing ? (payment.listing as any)?.title : '',
+      previousStatus,
+      newStatus: 'rejected',
+      rejectionReason: adminNotes,
+      adminNotes
+    });
 
     // Send message to user via chat
     const userId = payment.user._id;

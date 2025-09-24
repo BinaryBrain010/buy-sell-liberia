@@ -5,6 +5,8 @@ import { AdminAuthService } from '@/app/api/modules/auth/services/admin-auth.ser
 import User from '@/models/User';
 import Chat from '@/models/Chat';
 import { EmailService } from '@/app/api/modules/auth/services/email.service';
+import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 // Helper to send a generic email
 async function sendGenericEmail(emailService: EmailService, to: string, subject: string, html: string) {
@@ -25,6 +27,8 @@ export async function POST(request: NextRequest) {
     if (!payload || typeof payload !== 'object' || !AdminAuthService.isAllowedRole((payload as any).role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const adminUserId = payload._id || payload.id || 'unknown';
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
@@ -106,6 +110,18 @@ export async function POST(request: NextRequest) {
         await chat.save();
       }
     }
+
+    // Create audit logger and log announcement send
+    const logger = createAdminAuditLogger(request, adminUserId);
+    await logger.logCustomOperation(ModuleType.ANNOUNCEMENT_MANAGEMENT, OperationType.ANNOUNCEMENT_SEND, announcement._id.toString(), 'Announcement', {
+      adminUserId,
+      announcementTitle: announcement.title,
+      announcementType: announcement.type,
+      deliveryMethods: type,
+      targetAudience: announcement.targetAudience,
+      summary: `Sent announcement: ${announcement.title} via ${type.join(', ')}`
+    });
+
     return NextResponse.json({ message: 'Announcement sent and delivered', announcement });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to send announcement' }, { status: 500 });

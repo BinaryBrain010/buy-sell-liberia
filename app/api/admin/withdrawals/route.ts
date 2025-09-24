@@ -4,6 +4,8 @@ import WithdrawalLog from "../../../../models/WithdrawalLog";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
 import { connectDB } from "@/lib/mongoose";
 import { Admin } from "../../modules/auth/models/admin.model";
+import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // GET: List all withdrawal logs (admin only)
 export async function GET(req: NextRequest) {
@@ -132,6 +134,18 @@ export async function POST(req: NextRequest) {
     if (adminTitle) logData.adminTitle = adminTitle;
 
     const log = await WithdrawalLog.create(logData);
+
+    // Create audit logger and log withdrawal creation
+    const logger = createAdminAuditLogger(req, adminId || adminTitle || 'unknown');
+    await logger.logCustomOperation(ModuleType.PAYMENT_MANAGEMENT, OperationType.WITHDRAWAL_CREATE, (log._id as any).toString(), 'WithdrawalLog', {
+      adminUserId: adminId || adminTitle || 'unknown',
+      withdrawalAmount: amount,
+      withdrawalDestination: destination,
+      withdrawalDate: new Date(date),
+      withdrawalNote: note,
+      summary: `Created withdrawal log: $${amount} to ${destination}`
+    });
+
     return NextResponse.json({ success: true, log });
   } catch (error: any) {
     console.error("Error in /api/admin/withdrawals POST:", error);
