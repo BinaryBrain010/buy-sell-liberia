@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongoose";
 import { requireAuth } from "@/app/api/modules/auth/middlewares/next-auth-middleware";
-import { User } from "@/app/api/modules/auth/models/user.model";
+import User from "@/models/User";
 
 // Force dynamic rendering for this route
 export const dynamic = "force-dynamic";

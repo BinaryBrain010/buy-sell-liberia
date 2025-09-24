@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "../../../modules/auth/middlewares/next-auth-middleware";
-import { User } from "../../../modules/auth/models/user.model";
+import User from "@/models/User";
 import mongoose from "mongoose";
 
 export const dynamic = 'force-dynamic';

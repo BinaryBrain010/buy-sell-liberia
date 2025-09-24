@@ -46,6 +46,15 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error("[GOOGLE LOGIN ROUTE] Google login error:", error.message)
+    
+    // Check if it's a ban-related error
+    if (error.message && error.message.includes("banned")) {
+      return NextResponse.json({ 
+        error: error.message,
+        isBanned: true 
+      }, { status: 403 })
+    }
+    
     return NextResponse.json({ error: error.message || "Google login failed" }, { status: 400 })
   }
 }

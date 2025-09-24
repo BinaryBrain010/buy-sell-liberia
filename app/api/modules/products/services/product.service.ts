@@ -1,5 +1,5 @@
 import { Product, type IProduct } from "../models/product.model";
-import { User } from "../../auth/models/user.model";
+import User from "@/models/User";
 import {
   BaseService,
   type PaginationOptions,

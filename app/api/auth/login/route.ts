@@ -49,6 +49,15 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error: any) {
     console.error("[LOGIN ROUTE] Login error:", error.message)
+    
+    // Check if it's a ban-related error
+    if (error.message && error.message.includes("banned")) {
+      return NextResponse.json({ 
+        error: error.message,
+        isBanned: true 
+      }, { status: 403 })
+    }
+    
     return NextResponse.json({ error: error.message || "Login failed" }, { status: 400 })
   }
 }

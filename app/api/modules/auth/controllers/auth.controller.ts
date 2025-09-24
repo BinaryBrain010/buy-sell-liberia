@@ -26,6 +26,14 @@ export const login = async (req: Request, res: Response) => {
     const { user, accessToken, refreshToken } = await authService.login(req.body.email, req.body.password);
     res.json({ user, accessToken, refreshToken });
   } catch (err: any) {
+    // Check if it's a ban-related error
+    if (err.message && err.message.includes("banned")) {
+      return res.status(403).json({ 
+        error: err.message,
+        isBanned: true 
+      });
+    }
+    
     res.status(400).json({ error: err.message });
   }
 };
