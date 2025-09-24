@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Report from "../../../../models/Report";
 import Product from "../../../../models/Product";
 import User from "../../../../models/User";
-import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../lib/admin-audit-middleware';
 import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // GET: View all reports, filter by reason, status, product, user
@@ -91,14 +91,14 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
     
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId);
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
 
     const { reportId, action, adminNotes } = await request.json();
     if (!reportId || !action) {

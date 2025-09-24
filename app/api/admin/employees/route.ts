@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Employee from "@/models/Employee";
 import dbConnect from "@/lib/mongoose";
 import bcrypt from "bcryptjs";
-import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from "../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
 
     await dbConnect();
     const { fullName, email, password, role, phone, country, department } =
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create audit logger
-    const logger = createAdminAuditLogger(req, adminUserId);
+    // Create audit logger with user information
+    const logger = createAdminAuditLogger(req, adminUserId, adminRole, adminEmail, adminName);
 
     const hash = await bcrypt.hash(password, 10);
     const employee = await Employee.create({
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
     // Log employee creation operation
     await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.EMPLOYEE_CREATE, (employee._id as any).toString(), 'Employee', {
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       employeeEmail: employee.email,
       employeeName: employee.fullName,
       employeeRole: employee.role,
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
       employeeCountry: employee.country,
       employeeDepartment: employee.department,
       createdBy: adminUserId,
-      summary: `Created new employee: ${employee.fullName} (${employee.email}) with role: ${employee.role}`
+      summary: `Created new employee: ${employee.fullName} (${employee.email}) with role: ${employee.role} by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json({ employee });

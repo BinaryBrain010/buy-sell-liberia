@@ -21,11 +21,13 @@ export class AdminAuthService {
           email,
           name: "BinaryBrains",
           role: "super_admin",
+          _id: "super_admin_system",
         },
         ...this.generateTokens({
           email,
           role: "super_admin",
           name: "BinaryBrains",
+          _id: "super_admin_system",
         }),
       };
     }
@@ -39,11 +41,13 @@ export class AdminAuthService {
           email: admin.email,
           name: admin.name,
           role: admin.role,
+          _id: (admin._id as any).toString(),
         },
         ...this.generateTokens({
           email: admin.email,
           role: admin.role,
           name: admin.name,
+          _id: (admin._id as any).toString(),
         }),
       };
     }
@@ -58,11 +62,13 @@ export class AdminAuthService {
         email: employee.email,
         name: employee.fullName,
         role: employee.role,
+        _id: (employee._id as any).toString(),
       },
       ...this.generateTokens({
         email: employee.email,
         role: employee.role,
         name: employee.fullName,
+        _id: (employee._id as any).toString(),
       }),
     };
   }

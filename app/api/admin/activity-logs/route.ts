@@ -5,6 +5,21 @@ import dbConnect from "@/lib/mongoose";
 import { ensureModelsRegistered } from "@/lib/ensure-models";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
 import { Admin } from "../../modules/auth/models/admin.model";
+import { Types } from "mongoose";
+import crypto from "crypto";
+
+// Helper function to generate deterministic ObjectId from any string
+function generateObjectIdFromUser(userId: string | Types.ObjectId): Types.ObjectId {
+  if (Types.ObjectId.isValid(userId)) {
+    return new Types.ObjectId(userId);
+  } else {
+    // For non-ObjectId user IDs, create a deterministic ObjectId based on the user identifier
+    const userString = String(userId);
+    const hash = crypto.createHash('md5').update(userString).digest('hex');
+    const objectIdString = hash.substring(0, 24);
+    return new Types.ObjectId(objectIdString);
+  }
+}
 
 // GET: List activity logs, filterable by user or action
 export async function GET(req: NextRequest) {
@@ -63,7 +78,7 @@ export async function GET(req: NextRequest) {
       if (!log.user || typeof log.user === "string") {
         // If user doesn't exist or is a string, try to extract from details
         const details = JSON.parse(log.details || "{}");
-        const originalUserId = details.originalUserId || "Unknown Admin";
+        const originalUserId = details.originalUserId || "unknown";
 
         // Try to find admin by ID or email
         let adminName = "Admin User";
@@ -108,7 +123,7 @@ export async function GET(req: NextRequest) {
         return {
           ...log.toObject(),
           user: {
-            _id: log.user || "unknown",
+            _id: generateObjectIdFromUser(log.user || "unknown"),
             fullName: adminName,
             email: adminEmail,
             role: adminRole,

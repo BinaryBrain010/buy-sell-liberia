@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AdminAuthService } from '../../../../modules/auth/services/admin-auth.service';
 import mongoose from 'mongoose';
 import User from '../../../../../../models/User';
-import { createAdminAuditLogger } from '../../../../../../lib/admin-audit-middleware';
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../../../lib/admin-audit-middleware';
 import { OperationType, ModuleType } from '../../../../../../lib/audit-logger';
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
     const { isBanned, banReason } = await request.json();
     if (typeof isBanned !== 'boolean') {
       return NextResponse.json({ error: 'isBanned (boolean) is required' }, { status: 400 });
@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId);
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
 
     const update: any = { isBanned };
     if (isBanned) {
@@ -53,8 +53,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       previousStatus: !isBanned ? 'banned' : 'active',
       newStatus: isBanned ? 'banned' : 'active',
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       userEmail: user.email,
-      userName: user.fullName
+      userName: user.fullName,
+      summary: `${isBanned ? 'Banned' : 'Unbanned'} user ${user.fullName} (${user.email}) by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json(user);

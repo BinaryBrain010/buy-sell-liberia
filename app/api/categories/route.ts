@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import Category, { ICategory, ISubcategory } from "../../../models/Category";
 import { IProduct } from "../../../models/Product";
 import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
-import { createAdminAuditLogger } from "../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../lib/admin-audit-middleware';
 import { OperationType, ModuleType } from "../../../lib/audit-logger";
 
 // Force dynamic rendering for all routes
@@ -274,7 +274,7 @@ export async function PUT(request: NextRequest) {
     const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
     const token = authHeader?.slice(7).trim();
     const payload = AdminAuthService.verifyAccessToken(token || '') as any;
-    const adminUserId = (payload as any)?._id || (payload as any)?.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
 
     await connectDB();
     const body = await request.json();
@@ -337,7 +337,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId);
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
 
     // Prepare update object
     const updateData: Partial<ICategory> = {};
@@ -382,6 +382,9 @@ export async function PUT(request: NextRequest) {
     // Log category update operation
     await logger.logCategoryOperation(OperationType.CATEGORY_UPDATE, category._id.toString(), {
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       categoryName: category.name,
       categorySlug: category.slug,
       changes: updateData,
@@ -402,7 +405,8 @@ export async function PUT(request: NextRequest) {
         isActive: category.isActive,
         sortOrder: category.sortOrder,
         subcategoriesCount: category.subcategories?.length || 0
-      }
+      },
+      summary: `Updated category "${category.name}" by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json({

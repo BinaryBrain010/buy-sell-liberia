@@ -4,7 +4,7 @@ import {
   SettingsService,
   SystemSettings,
 } from "@/app/api/modules/shared/services/settings.service";
-import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from "../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
     const updates = await req.json();
 
     // Validate required fields
@@ -96,13 +96,33 @@ export async function POST(req: NextRequest) {
     const updatedSettings = await SettingsService.getAllSettings();
 
     // Create audit logger and log settings update
-    const logger = createAdminAuditLogger(req, adminUserId);
-    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
+    const logger = createAdminAuditLogger(req, adminUserId, adminRole, adminEmail, adminName);
+    
+    // Determine specific operation type based on what was updated
+    let operationType = OperationType.SETTINGS_UPDATE;
+    if (updates.platformCurrency) {
+      operationType = OperationType.CURRENCY_UPDATE;
+    } else if (updates.monetizationEnabled !== undefined) {
+      operationType = OperationType.MONETIZATION_TOGGLE;
+    } else if (updates.listingExpirationDays) {
+      operationType = OperationType.LISTING_EXPIRATION_UPDATE;
+    } else if (updates.maxListingPhotos) {
+      operationType = OperationType.MAX_PHOTOS_UPDATE;
+    } else if (updates.registrationEnabled !== undefined) {
+      operationType = OperationType.REGISTRATION_TOGGLE;
+    } else if (updates.maintenanceMode !== undefined) {
+      operationType = OperationType.MAINTENANCE_MODE_TOGGLE;
+    }
+    
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, operationType, 'system_settings', 'Settings', {
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       changes: updates,
       previousSettings: currentSettings,
       newSettings: updatedSettings,
-      summary: `Updated system settings: ${Object.keys(updates).join(', ')}`
+      summary: `Updated system settings: ${Object.keys(updates).join(', ')} by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json({ success: true, settings: updatedSettings });
@@ -132,7 +152,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const adminUserId = payload._id || payload.id || payload.email || 'unknown';
     const { key, value } = await req.json();
 
     if (!key) {
@@ -218,7 +238,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const adminUserId = payload._id || payload.id || payload.email || 'unknown';
     const body = await req.json();
     const { platformLogo, platformCurrency, toggles } = body || {};
 
@@ -333,7 +353,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const adminUserId = payload._id || payload.id || payload.email || 'unknown';
     const body = await req.json().catch(() => ({}));
     const { logo = false, currency = false, toggles = false } = body || {};
 

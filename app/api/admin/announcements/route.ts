@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import Announcement from "@/models/Announcement";
 import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
-import { createAdminAuditLogger } from "../../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from "../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // To test real-time sockets:
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
@@ -92,14 +92,17 @@ export async function POST(request: NextRequest) {
     await announcement.save();
 
     // Create audit logger and log announcement creation
-    const logger = createAdminAuditLogger(request, adminUserId);
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
     await logger.logCustomOperation(ModuleType.ANNOUNCEMENT_MANAGEMENT, OperationType.ANNOUNCEMENT_CREATE, announcement._id.toString(), 'Announcement', {
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       announcementTitle: announcement.title,
       announcementType: announcement.type,
       announcementStatus: announcement.status,
       targetAudience: announcement.targetAudience,
-      summary: `Created announcement: ${announcement.title} (${announcement.type.join(', ')})`
+      summary: `Created announcement: ${announcement.title} (${announcement.type.join(', ')}) by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json(

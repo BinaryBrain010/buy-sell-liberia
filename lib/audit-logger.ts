@@ -1,6 +1,7 @@
 import ActivityLog from "@/models/ActivityLog";
 import User from "@/models/User";
 import { Types } from "mongoose";
+import crypto from "crypto";
 
 /**
  * Audit Log Levels
@@ -56,10 +57,16 @@ export enum OperationType {
   SETTINGS_UPDATE = "settings_update",
   SETTINGS_RESET = "settings_reset",
   MONETIZATION_TOGGLE = "monetization_toggle",
+  MONETIZATION_PRICES_UPDATE = "monetization_prices_update",
+  MONETIZATION_PAYMENT_DETAILS_UPDATE = "monetization_payment_details_update",
   CURRENCY_UPDATE = "currency_update",
   BRANDING_UPDATE = "branding_update",
   LOGO_UPLOAD = "logo_upload",
   LOGO_DELETE = "logo_delete",
+  LISTING_EXPIRATION_UPDATE = "listing_expiration_update",
+  MAX_PHOTOS_UPDATE = "max_photos_update",
+  REGISTRATION_TOGGLE = "registration_toggle",
+  MAINTENANCE_MODE_TOGGLE = "maintenance_mode_toggle",
   
   // System Management
   SYSTEM_MAINTENANCE = "system_maintenance",
@@ -122,6 +129,9 @@ export interface IAuditLogEntry {
   userAgent?: string;
   metadata?: Record<string, any>;
   originalUserId?: string | Types.ObjectId;
+  userRole?: string;
+  userEmail?: string;
+  userName?: string;
 }
 
 /**
@@ -131,23 +141,38 @@ export class AuditLogger {
   private userId: string | Types.ObjectId;
   private ipAddress?: string;
   private userAgent?: string;
+  private userRole?: string;
+  private userEmail?: string;
+  private userName?: string;
 
-  constructor(userId: string | Types.ObjectId, ipAddress?: string, userAgent?: string) {
+  constructor(
+    userId: string | Types.ObjectId, 
+    ipAddress?: string, 
+    userAgent?: string,
+    userRole?: string,
+    userEmail?: string,
+    userName?: string
+  ) {
     this.userId = userId;
     this.ipAddress = ipAddress;
     this.userAgent = userAgent;
+    this.userRole = userRole;
+    this.userEmail = userEmail;
+    this.userName = userName;
   }
 
   /**
    * Create a new audit log entry
    */
-  async log(entry: Omit<IAuditLogEntry, 'userId' | 'ipAddress' | 'userAgent'>): Promise<void> {
+  async log(entry: Omit<IAuditLogEntry, 'userId' | 'ipAddress' | 'userAgent' | 'userRole' | 'userEmail' | 'userName'>): Promise<void> {
     try {
       console.log('Creating audit log entry:', {
         userId: this.userId,
         module: entry.module,
         operation: entry.operation,
-        entityId: entry.entityId
+        entityId: entry.entityId,
+        userRole: this.userRole,
+        userEmail: this.userEmail
       });
 
       // Ensure userId is a valid ObjectId
@@ -155,9 +180,13 @@ export class AuditLogger {
       if (Types.ObjectId.isValid(this.userId)) {
         userId = new Types.ObjectId(this.userId);
       } else {
-        // Create a new ObjectId for non-ObjectId user IDs (like admin emails)
-        userId = new Types.ObjectId();
-        console.log('Created new ObjectId for user:', this.userId, '->', userId.toString());
+        // For non-ObjectId user IDs, create a deterministic ObjectId based on the user identifier
+        // This ensures the same user always gets the same ObjectId
+        const userString = String(this.userId);
+        const hash = crypto.createHash('md5').update(userString).digest('hex');
+        const objectIdString = hash.substring(0, 24);
+        userId = new Types.ObjectId(objectIdString);
+        console.log('Created deterministic ObjectId for user:', this.userId, '->', userId.toString());
       }
 
       const logEntry = {
@@ -166,6 +195,9 @@ export class AuditLogger {
         details: this.formatDetails({
           ...entry,
           originalUserId: this.userId, // Store the original user identifier
+          userRole: this.userRole,
+          userEmail: this.userEmail,
+          userName: this.userName,
         }),
         createdAt: new Date(),
         ...(this.ipAddress && { ipAddress: this.ipAddress }),
@@ -389,10 +421,16 @@ export class AuditLogger {
       [OperationType.SETTINGS_UPDATE]: 'Updated settings',
       [OperationType.SETTINGS_RESET]: 'Reset settings',
       [OperationType.MONETIZATION_TOGGLE]: 'Toggled monetization',
+      [OperationType.MONETIZATION_PRICES_UPDATE]: 'Updated monetization prices',
+      [OperationType.MONETIZATION_PAYMENT_DETAILS_UPDATE]: 'Updated payment details',
       [OperationType.CURRENCY_UPDATE]: 'Updated currency',
       [OperationType.BRANDING_UPDATE]: 'Updated branding',
       [OperationType.LOGO_UPLOAD]: 'Uploaded logo',
       [OperationType.LOGO_DELETE]: 'Deleted logo',
+      [OperationType.LISTING_EXPIRATION_UPDATE]: 'Updated listing expiration',
+      [OperationType.MAX_PHOTOS_UPDATE]: 'Updated max photos',
+      [OperationType.REGISTRATION_TOGGLE]: 'Toggled registration',
+      [OperationType.MAINTENANCE_MODE_TOGGLE]: 'Toggled maintenance mode',
       [OperationType.SYSTEM_MAINTENANCE]: 'Performed system maintenance',
       [OperationType.DATA_EXPORT]: 'Exported data',
       [OperationType.DATA_IMPORT]: 'Imported data',
@@ -422,9 +460,12 @@ export class AuditLogger {
 export function createAuditLogger(
   userId: string | Types.ObjectId,
   ipAddress?: string,
-  userAgent?: string
+  userAgent?: string,
+  userRole?: string,
+  userEmail?: string,
+  userName?: string
 ): AuditLogger {
-  return new AuditLogger(userId, ipAddress, userAgent);
+  return new AuditLogger(userId, ipAddress, userAgent, userRole, userEmail, userName);
 }
 
 /**
