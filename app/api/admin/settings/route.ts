@@ -115,10 +115,9 @@ export async function POST(req: NextRequest) {
     }
     
     await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, operationType, 'system_settings', 'Settings', {
-      adminUserId,
+      adminName,
       adminRole,
       adminEmail,
-      adminName,
       changes: updates,
       previousSettings: currentSettings,
       newSettings: updatedSettings,
@@ -203,12 +202,14 @@ export async function PATCH(req: NextRequest) {
     // Create audit logger and log settings update
     const logger = createAdminAuditLogger(req, adminUserId);
     await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
-      adminUserId,
+      adminName: payload.name || payload.fullName || payload.email || 'Unknown',
+      adminRole: payload.role || 'Unknown',
+      adminEmail: payload.email || 'Unknown',
       settingKey: key,
       settingValue: value,
       previousValue: currentSettings[key as keyof SystemSettings],
       newValue: value,
-      summary: `Updated setting '${key}' from '${currentSettings[key as keyof SystemSettings]}' to '${value}'`
+      summary: `Updated setting '${key}' from '${currentSettings[key as keyof SystemSettings]}' to '${value}' by ${payload.name || payload.fullName || payload.email || 'Unknown'} (${payload.role || 'Unknown'})`
     });
 
     return NextResponse.json({ success: true, settings: updatedSettings });
@@ -319,11 +320,13 @@ export async function PUT(req: NextRequest) {
     // Create audit logger and log settings update
     const logger = createAdminAuditLogger(req, adminUserId);
     await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_UPDATE, 'system_settings', 'Settings', {
-      adminUserId,
+      adminName: payload.name || payload.fullName || payload.email || 'Unknown',
+      adminRole: payload.role || 'Unknown',
+      adminEmail: payload.email || 'Unknown',
       changes: updates,
       previousSettings: currentSettings,
       newSettings: updatedSettings,
-      summary: `Bulk updated settings: ${Object.keys(updates).join(', ')}`
+      summary: `Bulk updated settings: ${Object.keys(updates).join(', ')} by ${payload.name || payload.fullName || payload.email || 'Unknown'} (${payload.role || 'Unknown'})`
     });
 
     return NextResponse.json({ success: true, settings: updatedSettings });
@@ -425,11 +428,13 @@ export async function DELETE(req: NextRequest) {
     // Create audit logger and log settings reset
     const logger = createAdminAuditLogger(req, adminUserId);
     await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.SETTINGS_RESET, 'system_settings', 'Settings', {
-      adminUserId,
+      adminName: payload.name || payload.fullName || payload.email || 'Unknown',
+      adminRole: payload.role || 'Unknown',
+      adminEmail: payload.email || 'Unknown',
       resetFields: propsToReset,
       previousSettings: currentSettings,
       newSettings: updatedSettings,
-      summary: `Reset settings to defaults: ${propsToReset.join(', ')}`
+      summary: `Reset settings to defaults: ${propsToReset.join(', ')} by ${payload.name || payload.fullName || payload.email || 'Unknown'} (${payload.role || 'Unknown'})`
     });
 
     return NextResponse.json({ success: true, settings: updatedSettings });

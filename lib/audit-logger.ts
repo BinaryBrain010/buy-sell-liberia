@@ -1,5 +1,5 @@
 import ActivityLog from "@/models/ActivityLog";
-import User from "@/models/User";
+import Employee from "@/models/Employee";
 import { Types } from "mongoose";
 import crypto from "crypto";
 
