@@ -22,10 +22,10 @@ export async function PATCH(req: NextRequest) {
     const adminUserId = payload._id || payload.id || 'unknown';
 
     await dbConnect();
-    const { employeeId, role, permissions } = await req.json();
+    const { employeeId, role, permissions, action, banReason } = await req.json();
     if (!employeeId)
       return NextResponse.json({ error: "Missing employeeId" }, { status: 400 });
-    
+
     const employee = await Employee.findById(employeeId);
     if (!employee)
       return NextResponse.json({ error: "Employee not found" }, { status: 404 });
@@ -33,13 +33,48 @@ export async function PATCH(req: NextRequest) {
     // Create audit logger
     const logger = createAdminAuditLogger(req, adminUserId);
 
-    const previousRole = employee.role;
+    // Ban employee
+    if (action === 'ban') {
+      if (employee.isBanned) {
+        return NextResponse.json({ error: "Employee already banned" }, { status: 400 });
+      }
+  employee.isBanned = true;
+  employee.banReason = banReason || undefined;
+      await employee.save();
+      await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.EMPLOYEE_BAN, employeeId, 'Employee', {
+        adminUserId,
+        employeeEmail: employee.email,
+        employeeName: employee.fullName,
+        banReason,
+        summary: `Banned employee: ${employee.fullName} (${employee.email})`,
+      });
+      return NextResponse.json({ employee });
+    }
+
+    // Unban employee (only super_admin)
+    if (action === 'unban') {
+      if (!employee.isBanned) {
+        return NextResponse.json({ error: "Employee is not banned" }, { status: 400 });
+      }
+      if (payload.role !== 'super_admin') {
+        return NextResponse.json({ error: "Only super_admin can unban employees" }, { status: 403 });
+      }
+  employee.isBanned = false;
+  employee.banReason = undefined;
+      await employee.save();
+      await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.EMPLOYEE_UNBAN, employeeId, 'Employee', {
+        adminUserId,
+        employeeEmail: employee.email,
+        employeeName: employee.fullName,
+        summary: `Unbanned employee: ${employee.fullName} (${employee.email})`,
+      });
+      return NextResponse.json({ employee });
+    }
 
     // Update employee role
+    const previousRole = employee.role;
     if (role) employee.role = role;
     await employee.save();
-
-    // Log employee role update operation
     await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.EMPLOYEE_UPDATE, employeeId, 'Employee', {
       adminUserId,
       employeeEmail: employee.email,
@@ -49,7 +84,6 @@ export async function PATCH(req: NextRequest) {
       updatedBy: adminUserId,
       summary: `Updated employee role: ${employee.fullName} (${employee.email}) from ${previousRole} to ${role}`
     });
-
     return NextResponse.json({ employee });
   } catch (error: any) {
     console.error("Employee update error:", error);

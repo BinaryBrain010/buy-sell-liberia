@@ -15,6 +15,8 @@ export interface IEmployee extends Document {
     | "support_agent"
     | "analytics_assistant";
   createdAt: Date;
+  isBanned?: boolean;
+  banReason?: string;
 }
 
 const employeeSchema = new Schema<IEmployee>({
@@ -37,6 +39,8 @@ const employeeSchema = new Schema<IEmployee>({
     required: true,
   },
   createdAt: { type: Date, default: Date.now },
+  isBanned: { type: Boolean, default: false },
+  banReason: { type: String, default: undefined },
 });
 
 const Employee: Model<IEmployee> =
