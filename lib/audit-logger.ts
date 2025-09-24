@@ -33,6 +33,8 @@ export enum OperationType {
   EMPLOYEE_CREATE = "employee_create",
   EMPLOYEE_UPDATE = "employee_update",
   EMPLOYEE_DELETE = "employee_delete",
+  EMPLOYEE_BAN = "employee_ban",
+  EMPLOYEE_UNBAN = "employee_unban",
   
   // Listing Management
   LISTING_APPROVE = "listing_approve",
@@ -393,7 +395,9 @@ export class AuditLogger {
    * Generate operation message
    */
   private getOperationMessage(operation: OperationType, entityType: string, entityId?: string): string {
-    const actionMap: Record<OperationType, string> = {
+  const actionMap: Record<OperationType, string> = {
+  [OperationType.EMPLOYEE_BAN]: 'Banned employee',
+  [OperationType.EMPLOYEE_UNBAN]: 'Unbanned employee',
       [OperationType.USER_BAN]: 'Banned user',
       [OperationType.USER_UNBAN]: 'Unbanned user',
       [OperationType.USER_BLOCK]: 'Blocked user',
