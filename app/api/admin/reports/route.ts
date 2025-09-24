@@ -175,7 +175,13 @@ export async function PATCH(request: NextRequest) {
       case "ban":
         report.status = "resolved";
         report.adminAction = "ban";
-        user = await User.findById(report.reported_by);
+        // Ban the owner of the reported product, not the reporter
+        product = await Product.findById(report.product_id);
+        let bannedUserId = null;
+        if (product && product.user_id) {
+          user = await User.findById(product.user_id);
+          bannedUserId = product.user_id;
+        }
         if (user) {
           user.isBanned = true;
           user.banReason = "Flagged by admin via report";
@@ -188,6 +194,7 @@ export async function PATCH(request: NextRequest) {
           reportReason: report.reason,
           reportedBy: report.reported_by.toString(),
           productId: report.product_id.toString(),
+          bannedUserId: bannedUserId ? bannedUserId.toString() : null,
           previousStatus,
           newStatus: "resolved",
           action: "ban",
