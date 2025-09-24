@@ -15,12 +15,19 @@ import { Phone, MessageCircle, Copy, LogIn } from "lucide-react";
 import { AuthModal } from "@/components/auth-modal";
 import { toast } from "sonner";
 
+interface ContactInfo {
+  phone?: string;
+  email?: string;
+  whatsapp?: string;
+}
+
 interface ContactSellerButtonProps {
   sellerId: string;
   productId?: string; // Add productId prop
   productTitle: string;
   showPhoneNumber: boolean;
   sellerName: string;
+  contactInfo?: ContactInfo; // Optional pre-fetched contact info from product response
   className?: string;
   variant?: "phone" | "whatsapp" | "both";
   size?: "sm" | "md" | "lg";
@@ -32,14 +39,22 @@ export function ContactSellerButton({
   productTitle,
   showPhoneNumber,
   sellerName,
+  contactInfo,
   className = "",
   variant = "both",
   size = "sm",
 }: ContactSellerButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [sellerPhone, setSellerPhone] = useState<string | null>(null);
+  const [sellerPhone, setSellerPhone] = useState<string | null>(
+    contactInfo?.phone?.trim() ? contactInfo!.phone! : null
+  );
+  const [sellerEmail, setSellerEmail] = useState<string | null>(
+    contactInfo?.email?.trim() ? contactInfo!.email! : null
+  );
+  const [sellerWhatsapp, setSellerWhatsapp] = useState<string | null>(
+    contactInfo?.whatsapp?.trim() ? contactInfo!.whatsapp! : null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -57,7 +72,7 @@ export function ContactSellerButton({
   };
 
   const fetchSellerPhone = async () => {
-    if (sellerPhone) return; // Already fetched
+    if (sellerPhone || !showPhoneNumber) return; // Already have it or phone not public
     setIsLoading(true);
     try {
       const data = await userClient.getUserContact(sellerId);
@@ -73,20 +88,18 @@ export function ContactSellerButton({
   const router = useRouter();
 
   const handleContactAction = async (action: "phone" | "chat") => {
-    if (!isAuthenticated) {
-      setIsLoginDialogOpen(true);
-      return;
-    }
-
-    if (!showPhoneNumber) {
-      toast.error("Seller has not made their phone number public");
-      return;
-    }
-
     if (action === "phone") {
-      await fetchSellerPhone();
       setIsDialogOpen(true);
-    } else if (action === "chat") {
+      if (isAuthenticated) {
+        await fetchSellerPhone();
+      }
+      return;
+    }
+    if (action === "chat") {
+      if (!isAuthenticated) {
+        setIsDialogOpen(true);
+        return;
+      }
       // Route to dashboard/messages with sellerId, productId, and productTitle
       router.push(
         `/dashboard?tab=messages&sellerId=${sellerId}&productId=${encodeURIComponent(
@@ -97,8 +110,6 @@ export function ContactSellerButton({
   };
 
   const handleLogin = () => {
-    // Close simple login required dialog (if open) and show full auth modal
-    setIsLoginDialogOpen(false);
     setIsAuthModalOpen(true);
   };
 
@@ -106,6 +117,20 @@ export function ContactSellerButton({
     if (sellerPhone) {
       navigator.clipboard.writeText(sellerPhone);
       toast.success("Phone number copied to clipboard");
+    }
+  };
+
+  const copyEmail = () => {
+    if (sellerEmail) {
+      navigator.clipboard.writeText(sellerEmail);
+      toast.success("Email copied to clipboard");
+    }
+  };
+
+  const copyWhatsapp = () => {
+    if (sellerWhatsapp) {
+      navigator.clipboard.writeText(sellerWhatsapp);
+      toast.success("WhatsApp number copied to clipboard");
     }
   };
 
@@ -129,6 +154,7 @@ export function ContactSellerButton({
   };
 
   if (variant === "phone") {
+    if (!showPhoneNumber) return null; // Hide phone trigger if phone is not public
     return (
       <>
         <Button
@@ -136,7 +162,7 @@ export function ContactSellerButton({
           variant="outline"
           className={`${getButtonSize()} ${className}`}
           onClick={() => handleContactAction("phone")}
-          disabled={!showPhoneNumber || isCheckingAuth}
+          disabled={isCheckingAuth}
         >
           <Phone className="h-3 w-3" />
           {size === "lg" && <span className="ml-2">Call</span>}
@@ -149,57 +175,97 @@ export function ContactSellerButton({
               <DialogTitle>Contact {sellerName}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {isLoading ? (
+              {!isAuthenticated ? (
+                <div className="text-center space-y-4 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    You need to be logged in to view seller contact details.
+                  </p>
+                  <Button onClick={handleLogin} className="w-full">
+                    <LogIn className="h-4 w-4 mr-2" /> Login
+                  </Button>
+                </div>
+              ) : isLoading ? (
                 <div className="text-center py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Getting contact information...
                   </p>
                 </div>
-              ) : sellerPhone ? (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Phone Number
-                    </p>
-                    <p className="text-lg font-mono font-semibold">
-                      {sellerPhone}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={makePhoneCall} className="flex-1">
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call Now
-                    </Button>
-                    <Button variant="outline" onClick={copyPhoneNumber}>
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
               ) : (
-                <p className="text-center text-muted-foreground">
-                  Unable to get contact information
-                </p>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+                <div className="space-y-4">
+                  {/* Phone Section - only if available and public */}
+                  {showPhoneNumber && sellerPhone && (
+                    <>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Phone Number
+                        </p>
+                        <p className="text-lg font-mono font-semibold">
+                          {sellerPhone}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={makePhoneCall} className="flex-1">
+                          <Phone className="h-4 w-4 mr-2" />
+                          Call Now
+                        </Button>
+                        <Button variant="outline" onClick={copyPhoneNumber}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
 
-        {/* Login Required Dialog */}
-        <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Login Required</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-center text-muted-foreground">
-                You need to be logged in to view seller contact information.
-              </p>
-              <Button onClick={handleLogin} className="w-full">
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
-              </Button>
+                  {/* Email Section - only if available */}
+                  {sellerEmail && (
+                    <div className="border-t pt-3">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Email
+                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <a
+                          href={`mailto:${sellerEmail}`}
+                          className="text-sm underline"
+                        >
+                          {sellerEmail}
+                        </a>
+                        <Button variant="outline" size="sm" onClick={copyEmail}>
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* WhatsApp Section - only if available */}
+                  {sellerWhatsapp && (
+                    <div className="border-t pt-3">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        WhatsApp
+                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <a
+                          href={`https://wa.me/${sellerWhatsapp.replace(
+                            /[^\d]/g,
+                            ""
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm underline"
+                        >
+                          {sellerWhatsapp}
+                        </a>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={copyWhatsapp}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -231,22 +297,7 @@ export function ContactSellerButton({
         </Button>
 
         {/* Login Required Dialog */}
-        <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Login Required</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-center text-muted-foreground">
-                You need to be logged in to chat with the seller.
-              </p>
-              <Button onClick={handleLogin} className="w-full">
-                <LogIn className="h-4 w-4 mr-2" />
-                Login
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Login prompt now shown inside the contact dialog when unauthenticated */}
         <AuthModal
           isOpen={isAuthModalOpen}
           onOpenChange={setIsAuthModalOpen}
@@ -263,15 +314,17 @@ export function ContactSellerButton({
   // Both phone and WhatsApp buttons
   return (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        className={`${getButtonSize()} ${className}`}
-        onClick={() => handleContactAction("phone")}
-        disabled={!showPhoneNumber || isCheckingAuth}
-      >
-        <Phone className="h-3 w-3" />
-      </Button>
+      {showPhoneNumber && (
+        <Button
+          size="sm"
+          variant="outline"
+          className={`${getButtonSize()} ${className}`}
+          onClick={() => handleContactAction("phone")}
+          disabled={isCheckingAuth}
+        >
+          <Phone className="h-3 w-3" />
+        </Button>
+      )}
 
       <Button
         size="sm"
@@ -290,71 +343,95 @@ export function ContactSellerButton({
             <DialogTitle>Contact {sellerName}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {isLoading ? (
+            {!isAuthenticated ? (
+              <div className="text-center space-y-4 py-2">
+                <p className="text-sm text-muted-foreground">
+                  You need to be logged in to view seller contact details.
+                </p>
+                <Button onClick={handleLogin} className="w-full">
+                  <LogIn className="h-4 w-4 mr-2" /> Login
+                </Button>
+              </div>
+            ) : isLoading ? (
               <div className="text-center py-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Getting contact information...
                 </p>
               </div>
-            ) : sellerPhone ? (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Phone Number
-                  </p>
-                  <p className="text-lg font-mono font-semibold">
-                    {sellerPhone}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={makePhoneCall}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleContactAction("chat")}
-                    className="bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={copyPhoneNumber}
-                  className="w-full bg-transparent"
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Number
-                </Button>
-              </div>
             ) : (
-              <p className="text-center text-muted-foreground">
-                Unable to get contact information
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+              <div className="space-y-4">
+                {/* Phone Section - only if available and public */}
+                {showPhoneNumber && sellerPhone && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Phone Number
+                      </p>
+                      <p className="text-lg font-mono font-semibold">
+                        {sellerPhone}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={makePhoneCall} className="flex-1">
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call Now
+                      </Button>
+                      <Button variant="outline" onClick={copyPhoneNumber}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
 
-      {/* Login Required Dialog */}
-      <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Login Required</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-center text-muted-foreground">
-              You need to be logged in to view seller contact information.
-            </p>
-            <Button onClick={handleLogin} className="w-full">
-              <LogIn className="h-4 w-4 mr-2" />
-              Login
-            </Button>
+                {/* Email Section - only if available */}
+                {sellerEmail && (
+                  <div className="border-t pt-3">
+                    <p className="text-sm text-muted-foreground mb-2">Email</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <a
+                        href={`mailto:${sellerEmail}`}
+                        className="text-sm underline"
+                      >
+                        {sellerEmail}
+                      </a>
+                      <Button variant="outline" size="sm" onClick={copyEmail}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* WhatsApp Section - only if available */}
+                {sellerWhatsapp && (
+                  <div className="border-t pt-3">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      WhatsApp
+                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <a
+                        href={`https://wa.me/${sellerWhatsapp.replace(
+                          /[^\d]/g,
+                          ""
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm underline"
+                      >
+                        {sellerWhatsapp}
+                      </a>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyWhatsapp}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -38,24 +38,48 @@ export default function AnnouncementBar() {
 
   if (loading || displayAnnouncements.length === 0) return null;
 
+  // If there's only one announcement, show a static, centered message (more accessible on mobile)
+  if (displayAnnouncements.length === 1) {
+    const a = displayAnnouncements[0];
+    return (
+      <div
+        className="w-full bg-black text-white dark:bg-white dark:text-black py-1.5 sm:py-2 px-2 sm:px-4 flex items-center justify-center overflow-hidden relative z-20"
+        role="region"
+        aria-label="Announcement"
+      >
+        <div className="font-medium text-xs sm:text-sm text-center">
+          <strong className="mr-1">{a.title}:</strong>
+          <span>{a.content}</span>
+        </div>
+      </div>
+    );
+  }
+
   // Infinite scroll for multiple announcements
   return (
-    <div className="w-full bg-black text-white py-2 px-4 flex items-center justify-center overflow-hidden relative z-20">
+    <div
+      className="w-full bg-black text-white dark:bg-white dark:text-black py-1.5 sm:py-2 px-2 sm:px-4 flex items-center justify-center overflow-hidden relative z-20"
+      role="region"
+      aria-label="Announcements"
+    >
       <div
         ref={marqueeRef}
-        className="whitespace-nowrap font-medium text-sm flex items-center gap-2"
+        className="whitespace-nowrap font-medium text-xs sm:text-sm flex items-center gap-3 sm:gap-6"
         style={{
           minWidth: "100%",
           animation: `marquee 25s linear infinite`,
         }}
       >
-        {Array(100)
+        {Array(20)
           .fill(displayAnnouncements)
           .flat()
           .map((a, idx) => (
-            <span key={a._id + idx} className="inline-flex items-center px-4">
-              <strong>{a.title}:</strong>
-              {a.content}
+            <span
+              key={a._id + idx}
+              className="inline-flex items-center px-3 sm:px-4"
+            >
+              <strong className="mr-1">{a.title}:</strong>
+              <span>{a.content}</span>
             </span>
           ))}
       </div>
@@ -66,6 +90,13 @@ export default function AnnouncementBar() {
           }
           100% {
             transform: translateX(-100%);
+          }
+        }
+        /* Respect user's reduced motion preference */
+        @media (prefers-reduced-motion: reduce) {
+          div[style*="marquee"] {
+            animation: none !important;
+            transform: translateX(0) !important;
           }
         }
       `}</style>

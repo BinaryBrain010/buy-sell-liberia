@@ -98,7 +98,6 @@ export default function ProductDetailPage() {
 
       <div className="border-t bg-gray-50/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto py-8 px-4">
-          <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
           <FeaturedListings />
         </div>
       </div>

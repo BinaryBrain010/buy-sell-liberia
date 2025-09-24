@@ -157,7 +157,6 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
             <div>
               <Label htmlFor="price" className="text-xs flex items-center gap-1">
-                <DollarSign className="h-2 w-2" />
                 Price *
               </Label>
               <Input
@@ -199,9 +198,7 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     <SelectItem key={condition.value} value={condition.value}>
                       <div className="flex flex-col">
                         <span className="text-xs font-medium">{condition.label}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {condition.description}
-                        </span>
+
                       </div>
                     </SelectItem>
                   ))}

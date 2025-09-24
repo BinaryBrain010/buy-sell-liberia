@@ -9,8 +9,17 @@ export const dynamic = 'force-dynamic';
 export async function PUT(request: NextRequest, { params }: { params: { id?: string } }) {
   try {
     const authResult = await verifyToken(request);
-    if (!authResult.success || !params.id || !authResult.userId) {
-      return NextResponse.json({ error: "Unauthorized or missing product/user id" }, { status: 401 });
+    if (!authResult.success || !authResult.userId) {
+      return NextResponse.json(
+        { error: "login_required", message: "Please log in to use favorites." },
+        { status: 401 }
+      );
+    }
+    if (!params.id) {
+      return NextResponse.json(
+        { error: "missing_product_id", message: "Product id is required." },
+        { status: 400 }
+      );
     }
     const user = await User.findById(authResult.userId);
     if (!user) {
@@ -31,8 +40,17 @@ export async function PUT(request: NextRequest, { params }: { params: { id?: str
 export async function DELETE(request: NextRequest, { params }: { params: { id?: string } }) {
   try {
     const authResult = await verifyToken(request);
-    if (!authResult.success || !params.id || !authResult.userId) {
-      return NextResponse.json({ error: "Unauthorized or missing product/user id" }, { status: 401 });
+    if (!authResult.success || !authResult.userId) {
+      return NextResponse.json(
+        { error: "login_required", message: "Please log in to use favorites." },
+        { status: 401 }
+      );
+    }
+    if (!params.id) {
+      return NextResponse.json(
+        { error: "missing_product_id", message: "Product id is required." },
+        { status: 400 }
+      );
     }
     const user = await User.findById(authResult.userId);
     if (!user) {
@@ -52,7 +70,10 @@ export async function GET(request: NextRequest) {
   try {
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.userId) {
-      return NextResponse.json({ error: "Unauthorized or missing user id" }, { status: 401 });
+      return NextResponse.json(
+        { error: "login_required", message: "Please log in to view your favorites." },
+        { status: 401 }
+      );
     }
     const user = await User.findById(authResult.userId).populate("favorites");
     if (!user) {

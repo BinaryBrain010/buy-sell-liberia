@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,35 @@ export function ProductCard({
 }: ProductCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Currency state: defaults to USD, attempt to fetch platform currency
+  const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
+  const currencySymbol = currency === "LRD" ? "L$" : "$";
+
+  useEffect(() => {
+    let cancelled = false;
+    const getCurrency = async () => {
+      try {
+        const res = await fetch("/api/admin/settings/currency", {
+          cache: "no-store",
+        });
+        if (!res.ok) return; // fall back to default USD
+        const data = await res.json();
+        if (
+          !cancelled &&
+          (data?.currency === "USD" || data?.currency === "LRD")
+        ) {
+          setCurrency(data.currency);
+        }
+      } catch {
+        // ignore and use default
+      }
+    };
+    getCurrency();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Guard against undefined product during loading states
   if (!product) return null;
@@ -187,8 +217,10 @@ export function ProductCard({
               >
                 {product.price &&
                 typeof product.price === "object" &&
-                product.price.amount
-                  ? `$${product.price.amount}`
+                product.price.amount != null
+                  ? `${currencySymbol}${Number(
+                      product.price.amount
+                    ).toLocaleString()}`
                   : "-"}
               </span>
               {product.price &&
@@ -377,8 +409,10 @@ export function ProductCard({
               >
                 {product.price &&
                 typeof product.price === "object" &&
-                product.price.amount
-                  ? `$${product.price.amount}`
+                product.price.amount != null
+                  ? `${currencySymbol}${Number(
+                      product.price.amount
+                    ).toLocaleString()}`
                   : "-"}
               </span>
               {product.price &&
