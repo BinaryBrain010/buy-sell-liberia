@@ -227,15 +227,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const existingUser = await authClient.checkGoogleUser(user.email!);
         if (existingUser) {
           // User exists, log them in
-          const userData = await authClient.loginWithGoogle(user.email!);
-          setUser(userData);
-          return { needsRegistration: false };
+          try {
+            const userData = await authClient.loginWithGoogle(user.email!);
+            setUser(userData);
+            return { needsRegistration: false };
+          } catch (error: any) {
+            // If backend sign-in reports banned, rethrow so UI can handle popup and redirect
+            const msg = String(error?.message || "");
+            if (/banned/i.test(msg)) {
+              throw new Error(msg);
+            }
+            // For other errors, fall back to registration flow
+            return { needsRegistration: true, userData: googleUserData };
+          }
         } else {
           // User doesn't exist, needs registration
           return { needsRegistration: true, userData: googleUserData };
         }
-      } catch (error) {
-        // User doesn't exist, needs registration
+      } catch (error: any) {
+        // If the existence check fails in a way that indicates a ban (unlikely), propagate
+        const msg = String(error?.message || "");
+        if (/banned/i.test(msg)) {
+          throw new Error(msg);
+        }
+        // Otherwise, treat as not existing
         return { needsRegistration: true, userData: googleUserData };
       }
     } catch (error: any) {
