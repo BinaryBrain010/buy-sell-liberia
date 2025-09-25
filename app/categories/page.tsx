@@ -15,6 +15,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ProductCard, type Product } from "@/components/product-card";
 import { CategoryService } from "@/app/services/Category.Service";
+import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
 
 // Color mappings for categories (matching existing design)
 const categoryColors: { [key: string]: string } = {
@@ -255,21 +256,29 @@ export default function CategoriesPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-10">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">
-            All Categories
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            {selectedCategory
-              ? `Explore ${selectedCategory.name} products and subcategories`
-              : "Explore products by category"}
-          </p>
-        </div>
+      <div className="container mx-auto max-w-7xl px-4 py-10">
+        {/* Hero */}
+        <FadeIn>
+          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12 text-center mb-10">
+            <div className="relative z-10">
+              <Badge className="mb-3" variant="secondary">
+                Categories
+              </Badge>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                All Categories
+              </h1>
+              <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-2">
+                {selectedCategory
+                  ? `Explore ${selectedCategory.name} products and subcategories`
+                  : "Explore products by category"}
+              </p>
+            </div>
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+          </section>
+        </FadeIn>
 
         {/* Grid of Category Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-16">
+        <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-16">
           {categories.map((category) => (
             <Card
               key={category._id}
@@ -298,7 +307,7 @@ export default function CategoriesPage() {
               </CardContent>
             </Card>
           ))}
-        </div>
+        </FadeInStagger>
 
         {/* Subcategories Section */}
         {selectedCategory && (
@@ -306,12 +315,12 @@ export default function CategoriesPage() {
             ref={subcategoriesSectionRef}
             className="mt-16 pt-8 border-t border-border/50"
           >
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-bold mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2 leading-tight break-words">
                   {selectedCategory.name} Subcategories
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                   Choose a specific subcategory or view all products in{" "}
                   {selectedCategory.name}
                 </p>
@@ -346,7 +355,7 @@ export default function CategoriesPage() {
 
             {selectedCategory.subcategories &&
             selectedCategory.subcategories.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {selectedCategory.subcategories.map((subcategory: any) => (
                   <Card
                     key={subcategory._id}
@@ -404,9 +413,9 @@ export default function CategoriesPage() {
                     </CardContent>
                   </Card>
                 ))}
-              </div>
+              </FadeInStagger>
             ) : (
-              <div className="text-center py-12">
+              <FadeIn className="text-center py-12">
                 <div className="w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">{selectedCategory.icon}</span>
                 </div>
@@ -421,14 +430,14 @@ export default function CategoriesPage() {
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
-              </div>
+              </FadeIn>
             )}
 
             {/* Quick Stats */}
             {selectedCategory.subcategories &&
               selectedCategory.subcategories.length > 0 && (
                 <div className="mt-8 p-6 bg-muted/30 rounded-xl border border-border/50">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h4 className="font-semibold mb-1">Category Overview</h4>
                       <p className="text-sm text-muted-foreground">
@@ -436,7 +445,7 @@ export default function CategoriesPage() {
                         available in {selectedCategory.name}
                       </p>
                     </div>
-                    <Badge variant="secondary" className="text-sm">
+                    <Badge variant="secondary" className="text-sm w-fit">
                       {selectedCategory.subcategories.length} subcategories
                     </Badge>
                   </div>
@@ -451,22 +460,25 @@ export default function CategoriesPage() {
             ref={productsSectionRef}
             className="mt-16 pt-8 border-t border-border/50"
           >
-            <div className="flex items-center justify-between mb-8">
+            <FadeIn className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
               <div>
-                <h2 className="text-3xl font-bold mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold mb-2 leading-tight break-words">
                   Latest Products in {selectedCategory.name}
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm sm:text-base text-muted-foreground">
                   Showing {products.length} of {totalProducts} products
                 </p>
               </div>
-              <Link href={getViewAllProductsUrl()}>
-                <Button variant="outline" className="btn-shadow bg-transparent">
+              <Link href={getViewAllProductsUrl()} className="w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  className="btn-shadow bg-transparent w-full sm:w-auto"
+                >
                   View All {totalProducts} Products
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               </Link>
-            </div>
+            </FadeIn>
 
             {loadingProducts ? (
               <div className="text-center py-12">
@@ -475,7 +487,7 @@ export default function CategoriesPage() {
               </div>
             ) : products.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                <FadeInStagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                   {products.map((product) => (
                     <ProductCard
                       key={product._id}
@@ -484,11 +496,11 @@ export default function CategoriesPage() {
                       onLike={handleLike}
                     />
                   ))}
-                </div>
+                </FadeInStagger>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                  <FadeIn className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
                     <div className="text-sm text-muted-foreground">
                       Page {currentPage} of {totalPages} • {totalProducts} total
                       products
@@ -539,17 +551,20 @@ export default function CategoriesPage() {
                       </Button>
                     </div>
                     {/* View All Products Button */}
-                    <Link href={getViewAllProductsUrl()}>
-                      <Button className="btn-shadow">
+                    <Link
+                      href={getViewAllProductsUrl()}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button className="btn-shadow w-full sm:w-auto">
                         View All Products
                         <ArrowRight className="h-4 w-4 ml-2" />
                       </Button>
                     </Link>
-                  </div>
+                  </FadeIn>
                 )}
 
                 {/* View More Products Call-to-Action */}
-                <div className="mt-12 text-center p-8 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border/50">
+                <FadeIn className="mt-12 text-center p-8 bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl border border-border/50">
                   <h3 className="text-xl font-semibold mb-2">
                     Want to see more products?
                   </h3>
@@ -564,10 +579,10 @@ export default function CategoriesPage() {
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </Link>
-                </div>
+                </FadeIn>
               </>
             ) : (
-              <div className="text-center py-16">
+              <FadeIn className="text-center py-16">
                 <Card className="glass border-0 max-w-md mx-auto">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -599,7 +614,7 @@ export default function CategoriesPage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </FadeIn>
             )}
           </div>
         )}
