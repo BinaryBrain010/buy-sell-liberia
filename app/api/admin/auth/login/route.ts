@@ -10,6 +10,12 @@ export async function POST(request: NextRequest) {
     const result = await AdminAuthService.login(email, password);
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Login failed' }, { status: 401 });
+    // If the auth service flagged a banned account, return 403 with structured message
+    const msg: string = error?.message || 'Login failed';
+    if (typeof msg === 'string' && msg.startsWith('BANNED:')) {
+      const reason = msg.replace('BANNED:', '').trim();
+      return NextResponse.json({ error: 'banned', isBanned: true, reason }, { status: 403 });
+    }
+    return NextResponse.json({ error: msg }, { status: 401 });
   }
 }

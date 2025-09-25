@@ -57,6 +57,11 @@ export class AdminAuthService {
     if (!employee) throw new Error("Admin not found");
     const validEmp = await bcrypt.compare(password, employee.password);
     if (!validEmp) throw new Error("Invalid credentials");
+    // Block banned employees from logging in
+    if ((employee as any).isBanned) {
+      const reason = (employee as any).banReason || "Your account has been banned.";
+      throw new Error(`BANNED:${reason}`);
+    }
     return {
       admin: {
         email: employee.email,
