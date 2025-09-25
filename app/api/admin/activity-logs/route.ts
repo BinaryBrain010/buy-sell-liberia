@@ -4,6 +4,22 @@ import User from "@/models/User";
 import dbConnect from "@/lib/mongoose";
 import { ensureModelsRegistered } from "@/lib/ensure-models";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
+import { Admin } from "../../modules/auth/models/admin.model";
+import { Types } from "mongoose";
+import crypto from "crypto";
+
+// Helper function to generate deterministic ObjectId from any string
+function generateObjectIdFromUser(userId: string | Types.ObjectId): Types.ObjectId {
+  if (Types.ObjectId.isValid(userId)) {
+    return new Types.ObjectId(userId);
+  } else {
+    // For non-ObjectId user IDs, create a deterministic ObjectId based on the user identifier
+    const userString = String(userId);
+    const hash = crypto.createHash('md5').update(userString).digest('hex');
+    const objectIdString = hash.substring(0, 24);
+    return new Types.ObjectId(objectIdString);
+  }
+}
 
 // GET: List activity logs, filterable by user or action
 export async function GET(req: NextRequest) {
@@ -58,29 +74,47 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Process logs to handle cases where user might not exist (admin users)
-    const processedLogs = logs.map((log) => {
+    const processedLogs = await Promise.all(logs.map(async (log) => {
       if (!log.user || typeof log.user === "string") {
         // If user doesn't exist or is a string, try to extract from details
         const details = JSON.parse(log.details || "{}");
-        const originalUserId = details.originalUserId || "Unknown Admin";
+        const originalUserId = details.originalUserId || "unknown";
 
-        // Extract admin info from originalUserId
+        // Try to find admin by ID or email
         let adminName = "Admin User";
         let adminEmail = "admin@system";
+        let adminRole = "admin";
 
-        if (originalUserId.includes("@")) {
-          adminEmail = originalUserId;
-          adminName = originalUserId
-            .split("@")[0]
-            .replace(/[._-]/g, " ")
-            .replace(/\b\w/g, (l: string) => l.toUpperCase());
-        } else if (originalUserId.startsWith("admin-")) {
-          const parts = originalUserId.split("-");
-          if (parts.length >= 2) {
-            adminEmail = parts[1].includes("@")
-              ? parts[1]
-              : `${parts[1]}@admin.system`;
-            adminName = parts[1]
+        try {
+          // Try to find admin by ID first
+          if (originalUserId && originalUserId !== "unknown") {
+            const admin = await Admin.findOne({ 
+              $or: [
+                { _id: originalUserId },
+                { email: originalUserId }
+              ]
+            });
+            
+            if (admin) {
+              adminName = admin.name || admin.email.split('@')[0];
+              adminEmail = admin.email;
+              adminRole = admin.role;
+            } else if (originalUserId.includes("@")) {
+              // If it's an email, use it directly
+              adminEmail = originalUserId;
+              adminName = originalUserId
+                .split("@")[0]
+                .replace(/[._-]/g, " ")
+                .replace(/\b\w/g, (l: string) => l.toUpperCase());
+            }
+          }
+        } catch (error) {
+          console.error("Error finding admin:", error);
+          // Fallback to original logic
+          if (originalUserId.includes("@")) {
+            adminEmail = originalUserId;
+            adminName = originalUserId
+              .split("@")[0]
               .replace(/[._-]/g, " ")
               .replace(/\b\w/g, (l: string) => l.toUpperCase());
           }
@@ -89,15 +123,15 @@ export async function GET(req: NextRequest) {
         return {
           ...log.toObject(),
           user: {
-            _id: log.user || "unknown",
+            _id: generateObjectIdFromUser(log.user || "unknown"),
             fullName: adminName,
             email: adminEmail,
-            role: "admin",
+            role: adminRole,
           },
         };
       }
       return log;
-    });
+    }));
 
     return NextResponse.json({
       logs: processedLogs,

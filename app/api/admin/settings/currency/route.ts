@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../modules/auth/services/admin-auth.service";
 import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
+import { createAdminAuditLogger } from "../../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../../lib/audit-logger";
 
-// GET: Get platform currency
-export async function GET(req: NextRequest) {
+// GET: Get platform currency (public)
+export async function GET(_req: NextRequest) {
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "No token" }, { status: 401 });
-    }
-    const token = authHeader.split(" ")[1];
-    const payload = AdminAuthService.verifyAccessToken(token);
-    if (
-      !payload ||
-      typeof payload !== "object" ||
-      (payload.role !== "admin" && payload.role !== "super_admin")
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const currency = await SettingsService.getPlatformCurrency();
     return NextResponse.json({ currency });
   } catch (error: any) {
@@ -47,6 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || "unknown";
     const { currency } = await req.json();
 
     if (!["LRD", "USD"].includes(currency)) {
@@ -56,7 +45,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get current currency before update for audit logging
+    const currentCurrency = await SettingsService.getPlatformCurrency();
+
     await SettingsService.updateSetting("platform_currency", currency);
+
+    // Create audit logger and log currency update
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(
+      ModuleType.SETTINGS_MANAGEMENT,
+      OperationType.CURRENCY_UPDATE,
+      "platform_currency",
+      "Settings",
+      {
+        adminUserId,
+        previousCurrency: currentCurrency,
+        newCurrency: currency,
+        summary: `Updated platform currency from '${currentCurrency}' to '${currency}'`,
+      }
+    );
 
     return NextResponse.json({ success: true, currency });
   } catch (error: any) {

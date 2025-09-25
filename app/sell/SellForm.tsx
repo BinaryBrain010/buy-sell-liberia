@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { ProductFormData, Category, FormErrors } from "./types";
 
-export default function SellForm() {
+export default function  SellForm() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStep, setCurrentStep] = useState(1);

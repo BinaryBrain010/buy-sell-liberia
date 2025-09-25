@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "../../../modules/auth/middlewares/next-auth-middleware";
-import { User } from "../../../modules/auth/models/user.model";
+import User from "@/models/User";
+import Product from "@/models/Product";
 import mongoose from "mongoose";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Add product to user's favorites
-export async function PUT(request: NextRequest, { params }: { params: { id?: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id?: string } }
+) {
   try {
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.userId) {
@@ -26,18 +30,26 @@ export async function PUT(request: NextRequest, { params }: { params: { id?: str
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     const productId = new mongoose.Types.ObjectId(params.id);
-    if (!user.favorites.includes(productId)) {
-      user.favorites.push(productId);
-      await user.save();
+    if (!user.hasLikedProduct(productId)) {
+      await user.likeProduct(productId);
     }
-    return NextResponse.json({ message: "Added to favorites", isFavorite: true });
+    return NextResponse.json({
+      message: "Added to favorites",
+      isFavorite: true,
+    });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to add favorite" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to add favorite" },
+      { status: 500 }
+    );
   }
 }
 
 // Remove product from user's favorites
-export async function DELETE(request: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id?: string } }
+) {
   try {
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.userId) {
@@ -57,11 +69,16 @@ export async function DELETE(request: NextRequest, { params }: { params: { id?: 
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
     const productId = new mongoose.Types.ObjectId(params.id);
-    user.favorites = user.favorites.filter((favId: mongoose.Types.ObjectId) => !favId.equals(productId));
-    await user.save();
-    return NextResponse.json({ message: "Removed from favorites", isFavorite: false });
+    await user.unlikeProduct(productId);
+    return NextResponse.json({
+      message: "Removed from favorites",
+      isFavorite: false,
+    });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to remove favorite" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to remove favorite" },
+      { status: 500 }
+    );
   }
 }
 
@@ -71,16 +88,28 @@ export async function GET(request: NextRequest) {
     const authResult = await verifyToken(request);
     if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { error: "login_required", message: "Please log in to view your favorites." },
+        {
+          error: "login_required",
+          message: "Please log in to view your favorites.",
+        },
         { status: 401 }
       );
     }
-    const user = await User.findById(authResult.userId).populate("favorites");
+    const user = await User.findById(authResult.userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    return NextResponse.json({ favorites: user.favorites });
+    const productIds = (user.likedProducts || [])
+      .map((lp: any) => lp?.product_id)
+      .filter((id: any) => !!id);
+    const favorites = productIds.length
+      ? await Product.find({ _id: { $in: productIds } }).lean()
+      : [];
+    return NextResponse.json({ favorites });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to get favorites" }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Failed to get favorites" },
+      { status: 500 }
+    );
   }
 }

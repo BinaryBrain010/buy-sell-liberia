@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
 import Chat from "../../../../models/Chat";
+import { EJSON } from "bson";
 
 // Define interfaces for TypeScript
 interface ILike {
@@ -35,7 +36,8 @@ export async function GET(request: NextRequest) {
       "../../modules/auth/services/admin-auth.service"
     );
     // Some earlier tokens may still carry 'admin' or other roles; allow if service recognizes
-    if (!AService.isAllowedRole((payload as any).role)) {
+    const role = (payload as any).role;
+    if (!AService.isAllowedRole(role) && role !== 'manager') {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -44,19 +46,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const skip = (page - 1) * limit;
+    const format = (searchParams.get("format") || "json").toLowerCase();
 
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
-    // Fetch users (basic info)
-    const users = await User.find(
-      {},
-      "fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts createdAt updatedAt"
-    )
+    // Fetch users (complete docs; no projection so all fields are available)
+    const users = await User.find({})
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 })
+      // our schema uses timestamps: created_at / updated_at
+      .sort({ created_at: -1 })
       .lean();
 
     // For each user, fetch their products and liked products
@@ -117,22 +118,38 @@ export async function GET(request: NextRequest) {
                   ) / listedProducts.length
                 )
               : 0,
-          joinedDate: user.createdAt
-            ? new Date(user.createdAt).toISOString()
-            : user.created_at
+          joinedDate: user.created_at
             ? new Date(user.created_at).toISOString()
+            : user.activity?.joinedDate
+            ? new Date(user.activity.joinedDate).toISOString()
             : null,
         };
-        // Prepare response
+        // Omit sensitive fields from the user object
+        const {
+          password,
+          passwordResetToken,
+          emailVerificationToken,
+          phoneVerificationToken,
+          // refreshToken can also be considered sensitive; exclude by default
+          refreshToken,
+          ...safeUser
+        } = user;
+        // Prepare response without overwriting original arrays
         return {
-          ...user,
-          listedProducts,
-          likedProducts,
+          ...safeUser,
+          listedProductsDetails: listedProducts,
+          likedProductsDetails: likedProducts,
           stats,
           chats,
         };
       })
     );
+
+    // If the caller asks for Extended JSON (Mongo export-like), convert
+    if (format === "ejson" || format === "extended") {
+      const extended = JSON.parse(EJSON.stringify(results, { relaxed: false }));
+      return NextResponse.json(extended);
+    }
 
     return NextResponse.json(results);
   } catch (error: any) {

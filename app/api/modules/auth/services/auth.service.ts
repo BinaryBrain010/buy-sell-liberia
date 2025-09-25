@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { User } from "../models/user.model"
+import User from "@/models/User"
 import { PendingUser } from "../models/pending-user.model"
 import { OTP } from "../models/otp.model"
 import { EmailService } from "./email.service"
@@ -90,8 +90,13 @@ export class AuthService {
         throw new Error("Invalid email or password")
       }
 
-      if (!user.isEmailVerified) {
+      if (!user.emailVerified) {
         throw new Error("Please verify your email before logging in")
+      }
+
+      // Check if user is banned
+      if (user.isBanned) {
+        throw new Error("Your account has been banned. Please contact support for assistance.")
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password)
@@ -100,8 +105,8 @@ export class AuthService {
       }
 
       // Generate tokens
-      const accessToken = this.generateAccessToken(user._id.toString())
-      const refreshToken = this.generateRefreshToken(user._id.toString())
+      const accessToken = this.generateAccessToken((user._id as any).toString())
+      const refreshToken = this.generateRefreshToken((user._id as any).toString())
 
       // Update user with refresh token
       user.refreshToken = refreshToken
@@ -111,11 +116,11 @@ export class AuthService {
 
       return {
         user: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           name: user.fullName,
           email: user.email,
           username: user.username,
-          isEmailVerified: user.isEmailVerified,
+          emailVerified: user.emailVerified,
         },
         accessToken,
         refreshToken,
@@ -149,16 +154,37 @@ export class AuthService {
         throw new Error("Pending user not found")
       }
 
-      // Create verified user
+      // Create verified user with all required fields from main User schema
       const user = new User({
         fullName: pendingUser.fullName,
         username: pendingUser.username,
         email: pendingUser.email,
-        phone: pendingUser.phone,
+        phone: pendingUser.phone || "",
         password: pendingUser.password,
-        country: pendingUser.country,
-        isEmailVerified: true,
-        createdAt: new Date(),
+        emailVerified: true,
+        phoneVerified: false,
+        isActive: true,
+        isBlocked: false,
+        isBanned: false,
+        banReason: null,
+        bannedAt: null,
+        loginCount: 0,
+        profile: {
+          rating: {
+            average: 0,
+            count: 0
+          }
+        },
+        preferences: {},
+        activity: {
+          totalListings: 0,
+          activeListings: 0,
+          soldItems: 0,
+          joinedDate: new Date(),
+          lastActive: new Date()
+        },
+        listedProducts: [],
+        likedProducts: []
       })
 
       await user.save()
@@ -172,11 +198,11 @@ export class AuthService {
       return {
         message: "Email verified successfully. You can now log in.",
         user: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           name: user.fullName,
           email: user.email,
           username: user.username,
-          isEmailVerified: user.isEmailVerified,
+          emailVerified: user.emailVerified,
         },
       }
     } catch (error: any) {
@@ -300,8 +326,8 @@ export class AuthService {
         throw new Error("Invalid refresh token")
       }
 
-      const newAccessToken = this.generateAccessToken(user._id.toString())
-      const newRefreshToken = this.generateRefreshToken(user._id.toString())
+      const newAccessToken = this.generateAccessToken((user._id as any).toString())
+      const newRefreshToken = this.generateRefreshToken((user._id as any).toString())
 
       user.refreshToken = newRefreshToken
       await user.save()
@@ -344,11 +370,11 @@ export class AuthService {
 
       return {
         user: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           name: user.fullName,
           email: user.email,
           username: user.username,
-          isEmailVerified: user.isEmailVerified,
+          emailVerified: user.emailVerified,
         },
       }
     } catch (error: any) {
@@ -380,13 +406,18 @@ export class AuthService {
         throw new Error("User not found")
       }
 
-      if (!user.isEmailVerified) {
+      if (!user.emailVerified) {
         throw new Error("Please verify your email before logging in")
       }
 
+      // Check if user is banned
+      if (user.isBanned) {
+        throw new Error("Your account has been banned. Please contact support for assistance.")
+      }
+
       // Generate tokens
-      const accessToken = this.generateAccessToken(user._id.toString())
-      const refreshToken = this.generateRefreshToken(user._id.toString())
+      const accessToken = this.generateAccessToken((user._id as any).toString())
+      const refreshToken = this.generateRefreshToken((user._id as any).toString())
 
       // Update user with refresh token
       user.refreshToken = refreshToken
@@ -396,11 +427,11 @@ export class AuthService {
 
       return {
         user: {
-          id: user._id.toString(),
+          id: (user._id as any).toString(),
           name: user.fullName,
           email: user.email,
           username: user.username,
-          isEmailVerified: user.isEmailVerified,
+          emailVerified: user.emailVerified,
         },
         accessToken,
         refreshToken,

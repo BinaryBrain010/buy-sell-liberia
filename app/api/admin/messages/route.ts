@@ -161,8 +161,19 @@ export async function GET(request: NextRequest) {
         0
       );
 
+      // Fix joined date: prefer user.activity.joinedDate, fallback to user.created_at or user.createdAt
+      let joinedDate = null;
+      if (user.activity && user.activity.joinedDate) {
+        joinedDate = user.activity.joinedDate;
+      } else if (user.created_at) {
+        joinedDate = user.created_at;
+      } else if (user.createdAt) {
+        joinedDate = user.createdAt;
+      }
+
       return {
         ...user,
+        joinedDate,
         chatConversations: sortedChats,
         overallStats: {
           totalChats: sortedChats.length,

@@ -210,6 +210,7 @@ export interface IUser extends Document {
   phoneVerified: boolean;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  refreshToken?: string;
   lastLoginAt?: Date;
   loginCount: number;
   stats?: any;
@@ -322,6 +323,7 @@ const userSchema = new Schema<IUser>(
     // Password reset
     passwordResetToken: String,
     passwordResetExpires: Date,
+    refreshToken: String,
     // Login tracking
     lastLoginAt: Date,
     loginCount: {

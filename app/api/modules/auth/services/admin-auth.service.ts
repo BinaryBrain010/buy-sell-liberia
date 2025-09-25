@@ -21,11 +21,13 @@ export class AdminAuthService {
           email,
           name: "BinaryBrains",
           role: "super_admin",
+          _id: "super_admin_system",
         },
         ...this.generateTokens({
           email,
           role: "super_admin",
           name: "BinaryBrains",
+          _id: "super_admin_system",
         }),
       };
     }
@@ -39,11 +41,13 @@ export class AdminAuthService {
           email: admin.email,
           name: admin.name,
           role: admin.role,
+          _id: (admin._id as any).toString(),
         },
         ...this.generateTokens({
           email: admin.email,
           role: admin.role,
           name: admin.name,
+          _id: (admin._id as any).toString(),
         }),
       };
     }
@@ -53,16 +57,23 @@ export class AdminAuthService {
     if (!employee) throw new Error("Admin not found");
     const validEmp = await bcrypt.compare(password, employee.password);
     if (!validEmp) throw new Error("Invalid credentials");
+    // Block banned employees from logging in
+    if ((employee as any).isBanned) {
+      const reason = (employee as any).banReason || "Your account has been banned.";
+      throw new Error(`BANNED:${reason}`);
+    }
     return {
       admin: {
         email: employee.email,
         name: employee.fullName,
         role: employee.role,
+        _id: (employee._id as any).toString(),
       },
       ...this.generateTokens({
         email: employee.email,
         role: employee.role,
         name: employee.fullName,
+        _id: (employee._id as any).toString(),
       }),
     };
   }

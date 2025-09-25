@@ -3,6 +3,8 @@ import { AdminAuthService } from '../../../modules/auth/services/admin-auth.serv
 import { Admin } from '../../../modules/auth/models/admin.model';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +19,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
+
     const { email, password, name, role } = await request.json();
     if (!email || !password || !name || !role) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -26,6 +30,9 @@ export async function POST(request: NextRequest) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
+
     const exists = await Admin.findOne({ email });
     if (exists) {
       return NextResponse.json({ error: 'Admin with this email already exists' }, { status: 409 });
@@ -33,6 +40,20 @@ export async function POST(request: NextRequest) {
 
     const hashed = await bcrypt.hash(password, 10);
     const newAdmin = await Admin.create({ email, password: hashed, name, role });
+
+    // Log admin creation operation
+    await logger.logCustomOperation(ModuleType.USER_MANAGEMENT, OperationType.ADMIN_CREATE, newAdmin._id.toString(), 'Admin', {
+      adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
+      newAdminEmail: newAdmin.email,
+      newAdminName: newAdmin.name,
+      newAdminRole: newAdmin.role,
+      createdBy: adminUserId,
+      summary: `Created new admin user: ${newAdmin.name} (${newAdmin.email}) with role: ${newAdmin.role} by ${adminName} (${adminRole})`
+    });
+
     return NextResponse.json({
       email: newAdmin.email,
       name: newAdmin.name,

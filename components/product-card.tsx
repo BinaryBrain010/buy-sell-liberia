@@ -43,6 +43,7 @@ interface ProductCardProps {
   product?: Product;
   variant?: "compact" | "list";
   onLike?: (productId: string) => void;
+  platformCurrency?: "USD" | "LRD";
 }
 
 export function ProductCard({
@@ -51,15 +52,19 @@ export function ProductCard({
   product,
   variant = "compact",
   onLike,
+  platformCurrency,
 }: ProductCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // Currency state: defaults to USD, attempt to fetch platform currency
+  // Currency state: defaults to USD; can be overridden by parent via platformCurrency
   const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
-  const currencySymbol = currency === "LRD" ? "L$" : "$";
+  const effectiveCurrency = (platformCurrency ?? currency) as "USD" | "LRD";
+  const currencySymbol = effectiveCurrency === "LRD" ? "L$" : "$";
 
   useEffect(() => {
+    // If parent provided the currency, skip fetching
+    if (platformCurrency) return;
     let cancelled = false;
     const getCurrency = async () => {
       try {
@@ -82,7 +87,7 @@ export function ProductCard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [platformCurrency]);
 
   // Guard against undefined product during loading states
   if (!product) return null;

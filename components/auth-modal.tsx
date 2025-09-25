@@ -13,6 +13,8 @@ import { ForgotPasswordForm } from "./auth/forgot-password-form";
 import { OtpForm } from "./auth/otp-form";
 import { VerificationSuccess } from "./auth/verification-success";
 import { AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 interface AuthModalProps {
   onLoginSuccess: () => void;
@@ -28,13 +30,20 @@ export function AuthModal({
   onLoginSuccess,
 }: AuthModalProps) {
   const [currentStep, setCurrentStep] = useState<
-    "login" | "signup" | "forgot-password" | "otp" | "verification-success"
+    | "login"
+    | "signup"
+    | "forgot-password"
+    | "otp"
+    | "verification-success"
+    | "banned"
   >(initialMode);
   const [email, setEmail] = useState("");
   const [otpContext, setOtpContext] = useState<"signup" | "forgot-password">(
     "signup"
   );
   const [googleSignupData, setGoogleSignupData] = useState<any>(null);
+  const [bannedMessage, setBannedMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   // Reset state when modal opens with different initial mode
   useEffect(() => {
@@ -42,6 +51,7 @@ export function AuthModal({
       setCurrentStep(initialMode);
       setEmail("");
       setGoogleSignupData(null);
+      setBannedMessage(null);
     }
   }, [isOpen, initialMode]);
 
@@ -60,7 +70,24 @@ export function AuthModal({
     setCurrentStep(initialMode); // Reset to the initial mode instead of always "login"
     setEmail("");
     setGoogleSignupData(null);
+    setBannedMessage(null);
     onOpenChange(false);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open && currentStep === "banned") {
+      // Redirect to home when closing after banned notice
+      router.push("/");
+    }
+    onOpenChange(open);
+  };
+
+  const handleBanned = (message?: string) => {
+    setBannedMessage(
+      message ||
+        "You are banned. Kindly contact the help team to resolve the issue."
+    );
+    setCurrentStep("banned");
   };
 
   const getTitle = () => {
@@ -75,6 +102,8 @@ export function AuthModal({
         return otpContext === "signup" ? "Verify Email" : "Reset Password";
       case "verification-success":
         return "Email Verified";
+      case "banned":
+        return "Account Banned";
       default:
         return "Authentication";
     }
@@ -105,6 +134,7 @@ export function AuthModal({
               onLoginSuccess();
               handleClose();
             }}
+            onBanned={(msg?: string) => handleBanned(msg)}
           />
         );
       case "signup":
@@ -166,13 +196,33 @@ export function AuthModal({
             }}
           />
         );
+      case "banned":
+        return (
+          <div className="space-y-4" key="banned-notice">
+            <p className="text-sm text-red-600">
+              {bannedMessage ||
+                "You are banned. Kindly contact the help team to resolve the issue."}
+            </p>
+            <div className="flex justify-end">
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  // Close the modal, wrapped handler will redirect to home
+                  handleOpenChange(false);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         className={`${getMaxWidth()} max-h-[90vh] overflow-y-auto`}
       >

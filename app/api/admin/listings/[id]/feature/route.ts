@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import mongoose from "mongoose";
 import Product from "../../../../../../models/Product";
-import { createAdminAuditLogger } from "../../../../../../lib/admin-audit-middleware";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../../../lib/admin-audit-middleware';
 import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
 
 // PATCH /api/admin/listings/[id]/feature endpoint
@@ -25,7 +25,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || 'unknown';
+    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
     const { id } = params;
     if (!id || !mongoose.isValidObjectId(id)) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function PATCH(
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId);
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
 
     // Determine desired featured state from body or query
     let desired: boolean | undefined;
@@ -89,12 +89,16 @@ export async function PATCH(
     const operation = desired ? OperationType.LISTING_FEATURE : OperationType.LISTING_UNFEATURE;
     await logger.logListingOperation(operation, id, {
       adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
       productTitle: product.title,
       productOwner: product.user_id.toString(),
       previousFeatured,
       newFeatured: desired,
       productCategory: product.category_id.toString(),
-      productSubcategory: product.subcategory_id.toString()
+      productSubcategory: product.subcategory_id.toString(),
+      summary: `${desired ? 'Featured' : 'Unfeatured'} product "${product.title}" by ${adminName} (${adminRole})`
     });
 
     return NextResponse.json({

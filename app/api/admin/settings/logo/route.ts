@@ -6,6 +6,8 @@ import { uploadLogoToLocal, validateLogoFile } from '@/lib/logo-upload';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
 // GET: Get current logo
 export async function GET(req: NextRequest) {
@@ -51,14 +53,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
+
     const contentType = req.headers.get('content-type') || '';
     
     if (contentType.includes('multipart/form-data')) {
       // Handle file upload
-      return await handleFileUpload(req);
+      return await handleFileUpload(req, adminUserId);
     } else {
       // Handle URL setting
-      return await handleUrlSetting(req);
+      return await handleUrlSetting(req, adminUserId);
     }
 
   } catch (error: any) {
@@ -80,6 +84,8 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const adminUserId = payload._id || payload.id || 'unknown';
+
     const settings = await SettingsService.getAllSettings();
     const currentLogo = settings.platformLogo;
 
@@ -94,6 +100,15 @@ export async function DELETE(req: NextRequest) {
     // Clear logo setting
     await SettingsService.updateSetting('platform_logo', '');
 
+    // Create audit logger and log logo deletion
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.LOGO_DELETE, 'platform_logo', 'Settings', {
+      adminUserId,
+      previousLogo: currentLogo,
+      deletedFile: currentLogo && currentLogo.startsWith('/logo/') ? currentLogo : null,
+      summary: `Deleted logo: ${currentLogo || 'none'}`
+    });
+
     return NextResponse.json({ 
       success: true, 
       message: 'Logo removed successfully' 
@@ -106,7 +121,7 @@ export async function DELETE(req: NextRequest) {
 }
 
 // Helper function to handle file upload
-async function handleFileUpload(req: NextRequest) {
+async function handleFileUpload(req: NextRequest, adminUserId: string) {
   // Parse files using multer (same as product photos)
   const { files } = await parseFiles(req);
   
@@ -155,6 +170,18 @@ async function handleFileUpload(req: NextRequest) {
     // Update logo setting in database
     await SettingsService.updateSetting('platform_logo', relativePath);
 
+    // Create audit logger and log logo upload
+    const logger = createAdminAuditLogger(req, adminUserId);
+    await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.LOGO_UPLOAD, 'platform_logo', 'Settings', {
+      adminUserId,
+      previousLogo: currentLogo,
+      newLogo: relativePath,
+      uploadType: 'file',
+      fileName: (logoFile as any).originalname || 'unknown',
+      fileSize: logoFile.size,
+      summary: `Uploaded new logo file: ${(logoFile as any).originalname || 'unknown'}`
+    });
+
     return NextResponse.json({ 
       success: true, 
       logoUrl: relativePath, 
@@ -170,7 +197,7 @@ async function handleFileUpload(req: NextRequest) {
 }
 
 // Helper function to handle URL setting
-async function handleUrlSetting(req: NextRequest) {
+async function handleUrlSetting(req: NextRequest, adminUserId: string) {
   const { logoUrl } = await req.json();
   
   if (!logoUrl || typeof logoUrl !== 'string') {
@@ -206,6 +233,16 @@ async function handleUrlSetting(req: NextRequest) {
 
   // Update logo setting in database
   await SettingsService.updateSetting('platform_logo', logoUrl);
+
+  // Create audit logger and log logo URL update
+  const logger = createAdminAuditLogger(req, adminUserId);
+  await logger.logCustomOperation(ModuleType.SETTINGS_MANAGEMENT, OperationType.LOGO_UPLOAD, 'platform_logo', 'Settings', {
+    adminUserId,
+    previousLogo: currentLogo,
+    newLogo: logoUrl,
+    uploadType: 'url',
+    summary: `Set logo URL: ${logoUrl}`
+  });
 
   return NextResponse.json({ 
     success: true, 

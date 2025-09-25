@@ -12,9 +12,15 @@ export { ModuleType, OperationType, createAuditLogger, extractRequestInfo } from
 /**
  * Create audit logger from request
  */
-export function createAdminAuditLogger(request: NextRequest, userId: string): AuditLogger {
+export function createAdminAuditLogger(
+  request: NextRequest, 
+  userId: string, 
+  userRole?: string, 
+  userEmail?: string, 
+  userName?: string
+): AuditLogger {
   const { ipAddress, userAgent } = extractRequestInfo(request);
-  return createAuditLogger(userId, ipAddress, userAgent);
+  return createAuditLogger(userId, ipAddress, userAgent, userRole, userEmail, userName);
 }
 
 /**
@@ -194,6 +200,23 @@ export const AdminAuditOperations = {
       }
     )
 };
+
+/**
+ * Extract user information from JWT payload
+ */
+export function extractUserInfoFromPayload(payload: any): {
+  userId: string;
+  role: string;
+  email: string;
+  name: string;
+} {
+  return {
+    userId: payload._id || payload.id || payload.email || 'unknown',
+    role: payload.role || 'unknown',
+    email: payload.email || 'unknown',
+    name: payload.name || 'unknown'
+  };
+}
 
 /**
  * Extract user ID from JWT token

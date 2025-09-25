@@ -3,6 +3,11 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
+import {
+  createAdminAuditLogger,
+  extractUserInfoFromPayload,
+} from "../../../../lib/admin-audit-middleware";
+import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 export async function GET(request: NextRequest) {
   try {
@@ -90,9 +95,13 @@ export async function GET(request: NextRequest) {
     // Group products by user
     const usersWithListings = users.map((user) => {
       const userId = user._id.toString();
-      const userProducts = products.filter(
-        (product) => product.user_id.toString() === userId
-      );
+      const userProducts = products.filter((product) => {
+        const ownerId =
+          typeof (product as any).user_id === "string"
+            ? (product as any).user_id
+            : (product as any).user_id?.toString?.();
+        return ownerId === userId;
+      });
       return {
         ...user,
         listings: userProducts,
@@ -149,7 +158,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { productId, action } = await request.json();
+    const {
+      userId: adminUserId,
+      role: adminRole,
+      email: adminEmail,
+      name: adminName,
+    } = extractUserInfoFromPayload(payload);
+
+    // Safely parse JSON body; also allow query params as fallback
+    let body: any = undefined;
+    try {
+      body = await request.json();
+    } catch {
+      // ignore parse errors; may be no body
+    }
+
+    const url = new URL(request.url);
+    const productId = body?.productId ?? url.searchParams.get("productId");
+    const action = body?.action ?? url.searchParams.get("action");
+    const reason = body?.reason ?? url.searchParams.get("reason") ?? undefined;
+
     if (!productId || !action) {
       return NextResponse.json(
         { error: "productId and action are required" },
@@ -157,45 +185,176 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Validate ObjectId to avoid CastError 500s
+    if (!mongoose.isValidObjectId(productId)) {
+      return NextResponse.json({ error: "Invalid productId" }, { status: 400 });
+    }
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(
+      request,
+      adminUserId,
+      adminRole,
+      adminEmail,
+      adminName
+    );
 
     const product = await Product.findById(productId);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    const previousStatus = product.status;
+    const previousFeatured = product.featured;
+    // Normalize IDs to safe strings for logging
+    const productOwner =
+      typeof (product as any).user_id === "string"
+        ? ((product as any).user_id as string)
+        : (product as any).user_id?.toString?.() || "unknown";
+    const productCategory = (product as any).category_id?.toString?.();
+    const productSubcategory = (product as any).subcategory_id?.toString?.();
+
     switch (action) {
       case "approve":
         product.status = "active";
+        // Log listing approval
+        await logger.logListingOperation(
+          OperationType.LISTING_APPROVE,
+          productId,
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            newStatus: "active",
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+          }
+        );
         break;
       case "reject":
         product.status = "removed";
+        // Log listing rejection
+        await logger.logListingOperation(
+          OperationType.LISTING_REJECT,
+          productId,
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            newStatus: "removed",
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+            ...(reason ? { reason } : {}),
+          }
+        );
         break;
       case "delete":
+        // Log listing deletion before deleting
+        await logger.logListingOperation(
+          OperationType.LISTING_DELETE,
+          productId,
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+          }
+        );
         await product.deleteOne();
         return NextResponse.json({ success: true, message: "Product deleted" });
       case "hide":
         product.status = "removed";
+        // Log listing hide action
+        await logger.logCustomOperation(
+          ModuleType.LISTING_MANAGEMENT,
+          OperationType.LISTING_REJECT,
+          productId,
+          "Product",
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            newStatus: "removed",
+            action: "hide",
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+            ...(reason ? { reason } : {}),
+          }
+        );
         break;
       case "markAsSold":
         product.status = "sold";
+        // Log mark as sold action
+        await logger.logCustomOperation(
+          ModuleType.LISTING_MANAGEMENT,
+          OperationType.LISTING_APPROVE,
+          productId,
+          "Product",
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            newStatus: "sold",
+            action: "markAsSold",
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+          }
+        );
         break;
       case "feature":
         product.featured = true;
+        // Log listing feature action
+        await logger.logListingOperation(
+          OperationType.LISTING_FEATURE,
+          productId,
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousFeatured,
+            newFeatured: true,
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+          }
+        );
         break;
       case "unfeature":
         product.featured = false;
+        // Log listing unfeature action
+        await logger.logListingOperation(
+          OperationType.LISTING_UNFEATURE,
+          productId,
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousFeatured,
+            newFeatured: false,
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+          }
+        );
         break;
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
-    await product.save();
+    // Perform partial update without triggering full schema validation
+    await product.save({ validateBeforeSave: false });
     return NextResponse.json({ success: true, product });
   } catch (error: any) {
+    console.error("PATCH /api/admin/listings failed:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to update product" },
+      { error: error?.message || "Failed to update product" },
       { status: 500 }
     );
   }

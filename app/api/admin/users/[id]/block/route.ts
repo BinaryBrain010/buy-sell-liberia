@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
+import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../../../lib/admin-audit-middleware';
+import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
 
 export async function POST(
   request: NextRequest,
@@ -35,9 +37,18 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const userInfo = extractUserInfoFromPayload(payload);
+    const adminUserId = userInfo.userId;
+    const adminRole = userInfo.role;
+    const adminEmail = userInfo.email;
+    const adminName = userInfo.name;
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
+
+    // Create audit logger
+    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
 
     const { id } = params;
     if (!id) {
@@ -52,9 +63,27 @@ export async function POST(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const previousBlocked = user.isBlocked;
+    const previousActive = user.isActive;
+
     user.isBlocked = true;
     user.isActive = false;
     await user.save();
+
+    // Log user block operation
+    await logger.logUserOperation(OperationType.USER_BLOCK, id, {
+      adminUserId,
+      adminRole,
+      adminEmail,
+      adminName,
+      userEmail: user.email,
+      userName: user.fullName,
+      previousBlocked,
+      newBlocked: true,
+      previousActive,
+      newActive: false,
+      summary: `Blocked user: ${user.fullName} (${user.email}) by ${adminName} (${adminRole})`
+    });
 
     return NextResponse.json({
       success: true,
