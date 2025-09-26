@@ -73,7 +73,7 @@ export default function MobileMenu({
       </div>
 
       <div className="flex flex-col space-y-3 text-base font-medium">
-        {["categories", "products", "about", "contact", "help"].map((link) => (
+        {["categories", "products", "about", "contact"].map((link) => (
           <Link
             key={link}
             href={`/${link}`}

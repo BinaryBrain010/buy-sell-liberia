@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { FaHandshake, FaRocket, FaUsers } from "react-icons/fa";
 import { MdVerified } from "react-icons/md";
+import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
+import { Badge } from "@/components/ui/badge";
+import NetworkProbe from "@/components/static-pages/NetworkProbe";
 
 type AboutData = {
   hero?: { title?: string; subtitle?: string };
@@ -42,9 +44,20 @@ export default function AboutPage() {
   // If CMS provided pure HTML content (no structured data), render that page instead
   if (page && !page.data && page.content) {
     return (
-      <main className="container mx-auto max-w-4xl px-4 py-12 md:py-16 prose prose-zinc dark:prose-invert">
-        <h1>{page.title || "About BuySell"}</h1>
-        <div dangerouslySetInnerHTML={{ __html: page.content }} />
+      <main className="container mx-auto max-w-5xl px-4 py-12 md:py-16">
+        <NetworkProbe slug="about" />
+        <FadeIn>
+          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12 text-center">
+            <div className="relative z-10">
+              <Badge className="mb-3" variant="secondary">About</Badge>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{page.title || "About BuySell"}</h1>
+            </div>
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+          </section>
+        </FadeIn>
+        <FadeIn className="prose prose-zinc dark:prose-invert max-w-none mt-10">
+          <div dangerouslySetInnerHTML={{ __html: page.content }} />
+        </FadeIn>
       </main>
     );
   }
@@ -85,50 +98,36 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="min-h-screen px-4 sm:px-8 md:px-16 lg:px-32 py-12 bg-background text-foreground">
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-12"
-      >
-        <h1 className="text-4xl font-bold mb-4">{heroTitle}</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-          {heroSubtitle}
-        </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-      >
-        {sections.map((s, i) => (
-          <div key={i} className="glass p-6 rounded-2xl shadow-lg text-center">
-            {s.icon && iconMap[s.icon]}
-            <h3 className="text-xl font-semibold mb-2">{s.title}</h3>
-            <p className="text-muted-foreground">{s.text}</p>
+    <main className="container mx-auto max-w-6xl px-4 py-12 md:py-16">
+      <NetworkProbe slug="about" />
+      <FadeIn>
+        <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12 text-center">
+          <div className="relative z-10">
+            <Badge className="mb-3" variant="secondary">About</Badge>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{heroTitle}</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg mt-2">{heroSubtitle}</p>
           </div>
-        ))}
-      </motion.div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+        </section>
+      </FadeIn>
 
-      <div className="mt-20 text-center">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold mb-6"
-        >
-          Our Core Values
-        </motion.h2>
+      <section className="mt-10">
+        <FadeInStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {sections.map((s, i) => (
+            <div key={i} className="glass p-6 rounded-2xl shadow-lg text-center">
+              {s.icon && iconMap[s.icon]}
+              <h3 className="text-xl font-semibold mb-2">{s.title}</h3>
+              <p className="text-muted-foreground">{s.text}</p>
+            </div>
+          ))}
+        </FadeInStagger>
+      </section>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="flex flex-wrap justify-center gap-4"
-        >
+      <section className="mt-20 text-center">
+        <FadeIn>
+          <h2 className="text-3xl font-bold mb-6">Our Core Values</h2>
+        </FadeIn>
+        <FadeInStagger className="flex flex-wrap justify-center gap-4">
           {coreValues.map((value, i) => (
             <div
               key={i}
@@ -137,8 +136,8 @@ export default function AboutPage() {
               {value}
             </div>
           ))}
-        </motion.div>
-      </div>
-    </div>
+        </FadeInStagger>
+      </section>
+    </main>
   );
 }

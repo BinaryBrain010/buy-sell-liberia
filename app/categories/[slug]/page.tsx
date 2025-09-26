@@ -1,24 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { CategoryService } from "../../services/Category.Service";
-// You may need to create a ProductService if not present
 import { motion } from "framer-motion";
+import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   Search,
-  Grid3X3,
-  List,
   Loader2,
   ChevronDown,
   SlidersHorizontal,
@@ -26,7 +17,6 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { ProductCard, type Product } from "@/components/product-card";
 
 // Color mappings for categories
@@ -45,7 +35,6 @@ const categoryColors: { [key: string]: string } = {
 
 export default function CategoryPage() {
   const params = useParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const slug = params?.slug as string;
 
@@ -58,7 +47,9 @@ export default function CategoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
   // Applied filter/search state
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [minPrice, setMinPrice] = useState("");
@@ -134,6 +125,30 @@ export default function CategoryPage() {
       fetchCategory();
     }
   }, [slug, subcategoryIdFromUrl]);
+
+  // Fetch platform currency once and share with product cards
+  useEffect(() => {
+    let cancelled = false;
+    const getCurrency = async () => {
+      try {
+        const res = await fetch("/api/admin/settings/currency", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (
+          !cancelled &&
+          (data?.currency === "USD" || data?.currency === "LRD")
+        ) {
+          setPlatformCurrency(data.currency);
+        }
+      } catch {}
+    };
+    getCurrency();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch products using a ProductService (must exist in your services folder)
   const fetchProducts = useCallback(async () => {
@@ -326,290 +341,272 @@ export default function CategoryPage() {
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
-          <Link href="/" className="hover:text-foreground">
-            Home
-          </Link>
-          <span>/</span>
-          <Link href="/categories" className="hover:text-foreground">
-            Categories
-          </Link>
-          <span>/</span>
-          <span className="text-foreground font-medium">
-            {currentCategory?.name}
-          </span>
-          {selectedSubcategory && (
-            <>
-              <span>/</span>
-              <span className="text-foreground font-medium">
-                {selectedSubcategory.name}
-              </span>
-            </>
-          )}
-        </nav>
+        <FadeIn>
+          <nav className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-muted-foreground mb-6">
+            <Link href="/" className="hover:text-foreground">
+              Home
+            </Link>
+            <span>/</span>
+            <Link href="/categories" className="hover:text-foreground">
+              Categories
+            </Link>
+            <span>/</span>
+            <span className="text-foreground font-medium break-words">
+              {currentCategory?.name}
+            </span>
+            {selectedSubcategory && (
+              <>
+                <span>/</span>
+                <span className="text-foreground font-medium break-words">
+                  {selectedSubcategory.name}
+                </span>
+              </>
+            )}
+          </nav>
+        </FadeIn>
 
         {/* Category Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-background to-muted/30 rounded-2xl p-8 mb-8 border border-border/50 card-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div
-                className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
-                  categoryColors[currentCategory?.slug] ||
-                  "from-gray-500 to-gray-600"
-                } flex items-center justify-center text-4xl shadow-lg text-white`}
-              >
-                {selectedSubcategory?.icon || currentCategory?.icon}
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {selectedSubcategory
-                    ? selectedSubcategory.name
-                    : currentCategory?.name}
-                </h1>
-                <p className="text-muted-foreground text-lg">
-                  {totalProducts} products available
-                </p>
-
-                {/* Subcategory Selection */}
-                {currentCategory?.subcategories?.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium mb-3">
-                      Filter by subcategory:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant={
-                          !selectedSubcategory && !subcategoryIdFromUrl
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => handleSubcategorySelect(null)}
-                        className="text-xs h-8"
-                      >
-                        All {currentCategory.name}
-                      </Button>
-                      {currentCategory.subcategories.map((sub: any) => (
-                        <Button
-                          key={sub._id}
-                          variant={
-                            selectedSubcategory?._id === sub._id ||
-                            subcategoryIdFromUrl === sub._id
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={() => handleSubcategorySelect(sub)}
-                          className="text-xs h-8 pl-1 pr-3 flex items-center gap-2"
-                        >
-                          {sub.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <Link href="/categories">
-              <Button variant="outline" className="btn-shadow bg-transparent">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Categories
-              </Button>
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Search and Filters section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-background/50 rounded-xl p-6 border border-border/50 card-shadow mb-8"
-        >
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* View Mode */}
-            <div className="flex border border-border rounded-lg overflow-hidden">
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-                className="rounded-none"
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="rounded-none"
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder={`Search in ${
-                    selectedSubcategory?.name || currentCategory?.name
-                  }...`}
-                  value={pendingSearch}
-                  onChange={(e) => setPendingSearch(e.target.value)}
-                  className="pl-10 input-shadow"
-                />
-              </div>
-            </div>
-
-            {/* Filters Button */}
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="btn-shadow"
-            >
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              Filters
-              <ChevronDown
-                className={`h-4 w-4 ml-2 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
-            </Button>
-          </div>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-6 pt-6 border-t border-border/50"
-            >
-              <div className="space-y-4">
-                {/* Condition Filter */}
+        <FadeIn>
+          <div className="bg-gradient-to-r from-background to-muted/30 rounded-2xl p-6 md:p-8 mb-8 border border-border/50 card-shadow">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4 md:gap-6">
+                <div
+                  className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
+                    categoryColors[currentCategory?.slug] ||
+                    "from-gray-500 to-gray-600"
+                  } flex items-center justify-center text-4xl shadow-lg text-white`}
+                >
+                  {selectedSubcategory?.icon || currentCategory?.icon}
+                </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Condition
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
-                      (condition) => (
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight break-words">
+                    {selectedSubcategory
+                      ? selectedSubcategory.name
+                      : currentCategory?.name}
+                  </h1>
+                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
+                    {totalProducts} products available
+                  </p>
+
+                  {/* Subcategory Selection */}
+                  {currentCategory?.subcategories?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-3">
+                        Filter by subcategory:
+                      </p>
+                      <div className="-mx-4 px-4 overflow-x-auto overflow-y-hidden whitespace-nowrap flex gap-2">
                         <Button
-                          key={condition}
                           variant={
-                            pendingConditions.includes(condition)
+                            !selectedSubcategory && !subcategoryIdFromUrl
                               ? "default"
                               : "outline"
                           }
                           size="sm"
-                          className="btn-shadow bg-transparent"
-                          onClick={() => {
-                            setPendingConditions((prev) =>
-                              prev.includes(condition)
-                                ? prev.filter((c) => c !== condition)
-                                : [...prev, condition]
-                            );
-                          }}
+                          onClick={() => handleSubcategorySelect(null)}
+                          className="text-xs h-8 shrink-0"
                         >
-                          {condition}
+                          All {currentCategory.name}
                         </Button>
-                      )
-                    )}
-                  </div>
+                        {currentCategory.subcategories.map((sub: any) => (
+                          <Button
+                            key={sub._id}
+                            variant={
+                              selectedSubcategory?._id === sub._id ||
+                              subcategoryIdFromUrl === sub._id
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={() => handleSubcategorySelect(sub)}
+                            className="text-xs h-8 pl-1 pr-3 flex items-center gap-2 shrink-0"
+                          >
+                            {sub.name}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Price Range */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Min Price
-                    </label>
-                    <Input
-                      placeholder="$0"
-                      className="input-shadow"
-                      value={pendingMinPrice}
-                      onChange={(e) =>
-                        setPendingMinPrice(
-                          e.target.value.replace(/[^\d.]/g, "")
-                        )
-                      }
-                      inputMode="numeric"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Max Price
-                    </label>
-                    <Input
-                      placeholder="$10,000"
-                      className="input-shadow"
-                      value={pendingMaxPrice}
-                      onChange={(e) =>
-                        setPendingMaxPrice(
-                          e.target.value.replace(/[^\d.]/g, "")
-                        )
-                      }
-                      inputMode="numeric"
-                    />
-                  </div>
-                </div>
-
-                {/* Apply/Clear Filters Buttons */}
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button
-                    variant="default"
-                    onClick={() => {
-                      setSearchQuery(pendingSearch);
-                      setMinPrice(pendingMinPrice);
-                      setMaxPrice(pendingMaxPrice);
-                      setSelectedConditions(pendingConditions);
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
-                  >
-                    Apply Filters
-                  </Button>
+              </div>
+              <div className="self-start md:self-auto">
+                <Link href="/categories" className="w-full md:w-auto">
                   <Button
                     variant="outline"
-                    onClick={() => {
-                      setPendingSearch("");
-                      setPendingMinPrice("");
-                      setPendingMaxPrice("");
-                      setPendingConditions([]);
-                      setSearchQuery("");
-                      setMinPrice("");
-                      setMaxPrice("");
-                      setSelectedConditions([]);
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
+                    className="btn-shadow bg-transparent w-full md:w-auto"
                   >
-                    Clear Filters
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Categories
                   </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+
+        {/* Search and Filters section */}
+        <FadeIn>
+          <div className="bg-background/50 rounded-xl p-4 sm:p-6 border border-border/50 card-shadow mb-8">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              {/* Search Bar */}
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder={`Search in ${
+                      selectedSubcategory?.name || currentCategory?.name
+                    }...`}
+                    value={pendingSearch}
+                    onChange={(e) => setPendingSearch(e.target.value)}
+                    className="pl-10 input-shadow"
+                  />
                 </div>
               </div>
-            </motion.div>
-          )}
-        </motion.div>
 
-        {/* Products Grid/List */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+              {/* Filters Button */}
+              <Button
+                variant="outline"
+                onClick={() => setShowFilters(!showFilters)}
+                className="btn-shadow w-full sm:w-auto"
+                aria-expanded={showFilters}
+                aria-label="Toggle filters"
+              >
+                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                Filters
+                <ChevronDown
+                  className={`h-4 w-4 ml-2 transition-transform ${
+                    showFilters ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </div>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50"
+              >
+                <div className="space-y-4">
+                  {/* Condition Filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Condition
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
+                        (condition) => (
+                          <Button
+                            key={condition}
+                            variant={
+                              pendingConditions.includes(condition)
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            className="btn-shadow bg-transparent"
+                            onClick={() => {
+                              setPendingConditions((prev) =>
+                                prev.includes(condition)
+                                  ? prev.filter((c) => c !== condition)
+                                  : [...prev, condition]
+                              );
+                            }}
+                          >
+                            {condition}
+                          </Button>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Price Range */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Min Price
+                      </label>
+                      <Input
+                        placeholder="$0"
+                        className="input-shadow"
+                        value={pendingMinPrice}
+                        onChange={(e) =>
+                          setPendingMinPrice(
+                            e.target.value.replace(/[^\d.]/g, "")
+                          )
+                        }
+                        inputMode="numeric"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Max Price
+                      </label>
+                      <Input
+                        placeholder="$10,000"
+                        className="input-shadow"
+                        value={pendingMaxPrice}
+                        onChange={(e) =>
+                          setPendingMaxPrice(
+                            e.target.value.replace(/[^\d.]/g, "")
+                          )
+                        }
+                        inputMode="numeric"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Apply/Clear Filters Buttons */}
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4">
+                    <Button
+                      variant="default"
+                      onClick={() => {
+                        setSearchQuery(pendingSearch);
+                        setMinPrice(pendingMinPrice);
+                        setMaxPrice(pendingMaxPrice);
+                        setSelectedConditions(pendingConditions);
+                        setCurrentPage(1);
+                        setShowFilters(false);
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      Apply Filters
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setPendingSearch("");
+                        setPendingMinPrice("");
+                        setPendingMaxPrice("");
+                        setPendingConditions([]);
+                        setSearchQuery("");
+                        setMinPrice("");
+                        setMaxPrice("");
+                        setSelectedConditions([]);
+                        setCurrentPage(1);
+                        setShowFilters(false);
+                      }}
+                      className="w-full sm:w-auto"
+                    >
+                      Clear Filters
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </FadeIn>
+
+        {/* Products Grid */}
+        <FadeIn>
           {loadingProducts ? (
             <div className="text-center py-12">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">Loading products...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-20">
+            <FadeIn className="text-center py-20">
               <div className="w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-4xl">
                   {selectedSubcategory?.icon || currentCategory?.icon}
@@ -633,36 +630,24 @@ export default function CategoryPage() {
                   <Button>List Your Product</Button>
                 </Link>
               </div>
-            </div>
+            </FadeIn>
           ) : (
             <>
-              <div
-                className={
-                  viewMode === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    : "space-y-4"
-                }
-              >
-                {products.map((product, index) => (
-                  <motion.div
+              <FadeInStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {products.map((product) => (
+                  <ProductCard
                     key={product._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className={viewMode === "list" ? "w-full" : ""}
-                  >
-                    <ProductCard
-                      product={product}
-                      variant={viewMode === "list" ? "list" : "compact"}
-                      onLike={handleLike}
-                    />
-                  </motion.div>
+                    product={product}
+                    variant="compact"
+                    platformCurrency={platformCurrency}
+                    onLike={handleLike}
+                  />
                 ))}
-              </div>
+              </FadeInStagger>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+                <FadeIn className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
                   <div className="text-sm text-muted-foreground">
                     Page {currentPage} of {totalPages}
                   </div>
@@ -709,11 +694,11 @@ export default function CategoryPage() {
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
-                </div>
+                </FadeIn>
               )}
             </>
           )}
-        </motion.div>
+        </FadeIn>
       </div>
     </div>
   );

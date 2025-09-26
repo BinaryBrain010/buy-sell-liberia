@@ -4,6 +4,8 @@ import NetworkProbe from "@/components/static-pages/NetworkProbe";
 import { Mail, Phone, MapPin, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ContactForm from "@/components/contact/ContactForm";
+import { FadeIn, FadeInStagger, AnimatedList } from "@/components/static-pages/Animated";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Contact Us | BuySell Liberia",
@@ -73,64 +75,72 @@ export default async function ContactPage() {
   };
 
   return (
-    <main className="container mx-auto max-w-5xl px-4 py-12 md:py-16">
+    <main className="container mx-auto max-w-6xl px-4 py-12 md:py-16">
       <NetworkProbe slug="contact" />
-      <div className="text-center mb-8 space-y-2">
-        <h1 className="text-3xl md:text-4xl font-bold">{heroTitle}</h1>
-        <p className="text-muted-foreground">{heroSubtitle}</p>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="glass border-0 lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Send us a message</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ContactForm />
-          </CardContent>
-        </Card>
+      {/* Hero */}
+      <FadeIn>
+        <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12 text-center">
+          <div className="relative z-10">
+            <Badge className="mb-3" variant="secondary">Support</Badge>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{heroTitle}</h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto mt-2">{heroSubtitle}</p>
+          </div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+        </section>
+      </FadeIn>
+
+      <section className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <FadeIn className="lg:col-span-2">
+          <Card className="glass border-0">
+            <CardHeader>
+              <CardTitle>Send us a message</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ContactForm />
+            </CardContent>
+          </Card>
+        </FadeIn>
 
         <div className="space-y-6">
-          <Card className="glass border-0">
-            <CardHeader>
-              <CardTitle>Contact Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              {(details || []).map((d, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  {iconFor(d.type)} {d.label || d.value}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <Card className="glass border-0">
+              <CardHeader>
+                <CardTitle>Contact Details</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                <AnimatedList
+                  className="space-y-3"
+                  items={(details || []).map((d, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      {iconFor(d.type)} {d.label || d.value}
+                    </div>
+                  ))}
+                />
+              </CardContent>
+            </Card>
+          </FadeIn>
 
-          <Card className="glass border-0">
-            <CardHeader>
-              <CardTitle>Helpful Links</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>Before reaching out, you might find answers here:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>
-                  <a className="underline" href="/faq">
-                    FAQ
-                  </a>
-                </li>
-                <li>
-                  <a className="underline" href="/safety">
-                    Safety Tips
-                  </a>
-                </li>
-                <li>
-                  <a className="underline" href="/faq">
-                    Help Center
-                  </a>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <Card className="glass border-0">
+              <CardHeader>
+                <CardTitle>Helpful Links</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Before reaching out, you might find answers here:</p>
+                <AnimatedList
+                  className="list-disc pl-5 space-y-1"
+                  items={[
+                    <a key="faq" className="underline" href="/faq">FAQ</a>,
+                    <a key="safety" className="underline" href="/safety">Safety Tips</a>,
+                    <a key="help" className="underline" href="/faq">Help Center</a>,
+                  ]}
+                />
+              </CardContent>
+            </Card>
+          </FadeIn>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

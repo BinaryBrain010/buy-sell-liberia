@@ -3,7 +3,10 @@ import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.s
 import mongoose from "mongoose";
 import User from "../../../../../../models/User";
 import bcrypt from "bcryptjs";
-import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../../../lib/admin-audit-middleware';
+import {
+  createAdminAuditLogger,
+  extractUserInfoFromPayload,
+} from "../../../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
 
 export async function PATCH(
@@ -24,6 +27,7 @@ export async function PATCH(
     // }
     const allowedRoles = [
       "super_admin",
+      "manager",
       "admin",
       "moderator",
       "payment_officer",
@@ -50,14 +54,25 @@ export async function PATCH(
       );
     }
 
-    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
+    const {
+      userId: adminUserId,
+      role: adminRole,
+      email: adminEmail,
+      name: adminName,
+    } = extractUserInfoFromPayload(payload);
 
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
+    const logger = createAdminAuditLogger(
+      request,
+      adminUserId,
+      adminRole,
+      adminEmail,
+      adminName
+    );
 
     // Get user before updating for audit logging
     const userBeforeUpdate = await User.findById(params.id);
@@ -80,16 +95,20 @@ export async function PATCH(
     }
 
     // Log password reset operation
-    await logger.logUserOperation(OperationType.USER_PASSWORD_RESET, params.id, {
-      adminUserId,
-      adminRole,
-      adminEmail,
-      adminName,
-      userEmail: user.email,
-      userName: user.fullName,
-      resetBy: adminUserId,
-      summary: `Reset password for user: ${user.fullName} (${user.email}) by ${adminName} (${adminRole})`
-    });
+    await logger.logUserOperation(
+      OperationType.USER_PASSWORD_RESET,
+      params.id,
+      {
+        adminUserId,
+        adminRole,
+        adminEmail,
+        adminName,
+        userEmail: user.email,
+        userName: user.fullName,
+        resetBy: adminUserId,
+        summary: `Reset password for user: ${user.fullName} (${user.email}) by ${adminName} (${adminRole})`,
+      }
+    );
 
     return NextResponse.json({ message: "Password reset successfully", user });
   } catch (error: any) {

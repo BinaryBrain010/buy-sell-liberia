@@ -38,6 +38,9 @@ export function FeaturedListings() {
   const [canHover, setCanHover] = useState(false);
   const router = useRouter();
   const productService = new ProductService();
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
 
   // Simple media query hook for responsiveness
   function useMediaQuery(query: string) {
@@ -83,6 +86,30 @@ export function FeaturedListings() {
     fetchProducts();
   }, []);
 
+  // Fetch platform currency once to pass to cards
+  useEffect(() => {
+    let cancelled = false;
+    const getCurrency = async () => {
+      try {
+        const res = await fetch("/api/admin/settings/currency", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (
+          !cancelled &&
+          (data?.currency === "USD" || data?.currency === "LRD")
+        ) {
+          setPlatformCurrency(data.currency);
+        }
+      } catch {}
+    };
+    getCurrency();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="py-16 md:py-20">
       <div className="container mx-auto px-4">
@@ -112,7 +139,7 @@ export function FeaturedListings() {
           </div>
         ) : (
           <Carousel
-            className="w-full"
+            className="w-full overflow-x-clip"
             opts={{ align: "start", loop: true, slidesToScroll }}
           >
             <CarouselContent>
@@ -133,6 +160,7 @@ export function FeaturedListings() {
                     <ProductCard
                       product={product}
                       variant="compact"
+                      platformCurrency={platformCurrency}
                       onLike={(productId) =>
                         console.log("Liked product:", productId)
                       }
@@ -177,7 +205,7 @@ function FeaturedCarouselSkeleton({
 }) {
   return (
     <Carousel
-      className="w-full"
+      className="w-full overflow-x-clip"
       opts={{ align: "start", loop: true, slidesToScroll }}
     >
       <CarouselContent>

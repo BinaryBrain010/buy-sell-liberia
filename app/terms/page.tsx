@@ -1,6 +1,9 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import NetworkProbe from "@/components/static-pages/NetworkProbe";
+import { FadeIn, FadeInStagger, AnimatedList } from "@/components/static-pages/Animated";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
   title: "Terms of Use | BuySell Liberia",
@@ -75,135 +78,289 @@ export default async function TermsPage() {
   // If CMS provides an HTML content (no structured sections), render it directly
   if (cms && !sections && (cms.content || htmlFromData)) {
     return (
-      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+      <main className="container mx-auto max-w-5xl px-4 py-10">
         <NetworkProbe slug="terms" />
-        <h1>{cms.title || "Terms of Use"}</h1>
-        <div
-          dangerouslySetInnerHTML={{ __html: htmlFromData || cms.content }}
-        />
+        <FadeIn>
+          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12">
+            <div className="relative z-10">
+              <Badge className="mb-3" variant="secondary">Policy</Badge>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{cms.title || "Terms of Use"}</h1>
+              <p className="mt-2 text-muted-foreground">Last updated: {new Date().getFullYear()}</p>
+            </div>
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+          </section>
+        </FadeIn>
+
+        <FadeIn className="prose prose-zinc dark:prose-invert max-w-none mt-10">
+          <div
+            dangerouslySetInnerHTML={{ __html: htmlFromData || cms.content }}
+          />
+        </FadeIn>
       </main>
     );
   }
 
   // If CMS provides structured sections
   if (sections && sections.length > 0) {
+    const toc = sections.map((s, i) => ({
+      id: `section-${i}`,
+      title: s.title || `Section ${i + 1}`,
+    }));
     return (
-      <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+      <main className="container mx-auto max-w-6xl px-4 py-10">
         <NetworkProbe slug="terms" />
-        <h1>{cms?.title || "Terms of Use"}</h1>
-        <p>Last updated: {new Date().getFullYear()}</p>
-        {sections.map((s, idx) => (
-          <section key={idx}>
-            <h2>{s.title}</h2>
-            {s.paragraphs?.map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-            {s.list && s.list.length > 0 && (
-              <ul>
-                {s.list.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            )}
+
+        {/* Hero */}
+        <FadeIn>
+          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12">
+            <div className="relative z-10">
+              <Badge className="mb-3" variant="secondary">Policy</Badge>
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{cms?.title || "Terms of Use"}</h1>
+              <p className="mt-2 text-muted-foreground">Last updated: {new Date().getFullYear()}</p>
+            </div>
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
           </section>
-        ))}
+        </FadeIn>
+
+        {/* Content with TOC */}
+        <div className="mt-10 grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8">
+          {/* TOC - hidden on small screens */}
+          <aside className="hidden md:block">
+            <Card className="sticky top-20">
+              <CardHeader>
+                <CardTitle className="text-base">On this page</CardTitle>
+                <CardDescription>Quickly navigate sections</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <nav className="space-y-2">
+                  {toc.map((t) => (
+                    <a
+                      key={t.id}
+                      href={`#${t.id}`}
+                      className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {t.title}
+                    </a>
+                  ))}
+                </nav>
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Sections */}
+          <section>
+            <FadeInStagger className="space-y-6">
+              {sections.map((s, idx) => (
+                <Card key={idx} id={`section-${idx}`} className="scroll-mt-24">
+                  <CardHeader>
+                    <CardTitle>{s.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                    {s.paragraphs?.map((p, i) => (
+                      <p key={i}>{p}</p>
+                    ))}
+                    {s.list && s.list.length > 0 && (
+                      <AnimatedList
+                        className="list-disc pl-6"
+                        items={s.list.map((item, i) => (
+                          <span key={i}>{item}</span>
+                        ))}
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </FadeInStagger>
+          </section>
+        </div>
       </main>
     );
   }
 
   // Fallback: original hardcoded content
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-10 prose prose-zinc dark:prose-invert">
+    <main className="container mx-auto max-w-6xl px-4 py-10">
       <NetworkProbe slug="terms" />
-      <h1>Terms of Use</h1>
-      <p>Last updated: {new Date().getFullYear()}</p>
 
-      <h2>1. Introduction</h2>
-      <p>
-        Welcome to BuySell Liberia (the "Platform"). By accessing or using the
-        Platform, you agree to these Terms of Use. If you do not agree, please
-        do not use the Platform.
-      </p>
+      <FadeIn>
+        <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12">
+          <div className="relative z-10">
+            <Badge className="mb-3" variant="secondary">Policy</Badge>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Terms of Use</h1>
+            <p className="mt-2 text-muted-foreground">Last updated: {new Date().getFullYear()}</p>
+          </div>
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+        </section>
+      </FadeIn>
 
-      <h2>2. Eligibility & Account</h2>
-      <ul>
-        <li>You must be at least 18 years old or have parental consent.</li>
-        <li>
-          You are responsible for maintaining the confidentiality of your
-          account credentials and all activities under your account.
-        </li>
-      </ul>
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8">
+        <aside className="hidden md:block">
+          <Card className="sticky top-20">
+            <CardHeader>
+              <CardTitle className="text-base">On this page</CardTitle>
+              <CardDescription>Quickly navigate sections</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <nav className="space-y-2 text-sm text-muted-foreground">
+                <span className="block">1. Introduction</span>
+                <span className="block">2. Eligibility & Account</span>
+                <span className="block">3. Acceptable Use</span>
+                <span className="block">4. Listings & Transactions</span>
+                <span className="block">5. Safety</span>
+                <span className="block">6. Intellectual Property</span>
+                <span className="block">7. Disclaimers</span>
+                <span className="block">8. Limitation of Liability</span>
+                <span className="block">9. Termination</span>
+                <span className="block">10. Changes to these Terms</span>
+                <span className="block">11. Contact</span>
+              </nav>
+            </CardContent>
+          </Card>
+        </aside>
 
-      <h2>3. Acceptable Use</h2>
-      <ul>
-        <li>No unlawful, fraudulent, or harmful activities.</li>
-        <li>No spam, misleading content, or impersonation.</li>
-        <li>No uploading of malicious code.</li>
-      </ul>
+        <section>
+          <FadeInStagger className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>1. Introduction</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  Welcome to BuySell Liberia (the "Platform"). By accessing or using the Platform, you agree to these Terms of Use. If you do not agree, please do not use the Platform.
+                </p>
+              </CardContent>
+            </Card>
 
-      <h2>4. Listings & Transactions</h2>
-      <ul>
-        <li>
-          Listings must be accurate, lawful, and placed in the correct category.
-        </li>
-        <li>
-          Prohibited items/services are not allowed. We may remove listings that
-          violate our policies.
-        </li>
-        <li>
-          Except where specified (e.g., manual payment verification), payments
-          are arranged directly between buyer and seller.
-        </li>
-      </ul>
+            <Card>
+              <CardHeader>
+                <CardTitle>2. Eligibility & Account</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnimatedList
+                  className="list-disc pl-6"
+                  items={[
+                    <span key="1">You must be at least 18 years old or have parental consent.</span>,
+                    <span key="2">You are responsible for maintaining the confidentiality of your account credentials and all activities under your account.</span>,
+                  ]}
+                />
+              </CardContent>
+            </Card>
 
-      <h2>5. Safety</h2>
-      <ul>
-        <li>
-          Meet in public places where possible and verify items before paying.
-        </li>
-        <li>
-          Report suspicious behavior using the reporting tools on listings.
-        </li>
-      </ul>
+            <Card>
+              <CardHeader>
+                <CardTitle>3. Acceptable Use</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnimatedList
+                  className="list-disc pl-6"
+                  items={[
+                    <span key="1">No unlawful, fraudulent, or harmful activities.</span>,
+                    <span key="2">No spam, misleading content, or impersonation.</span>,
+                    <span key="3">No uploading of malicious code.</span>,
+                  ]}
+                />
+              </CardContent>
+            </Card>
 
-      <h2>6. Intellectual Property</h2>
-      <p>
-        You retain ownership of the content you post, but grant us a license to
-        host and display it on the Platform. Do not post content you do not have
-        rights to use.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>4. Listings & Transactions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnimatedList
+                  className="list-disc pl-6"
+                  items={[
+                    <span key="1">Listings must be accurate, lawful, and placed in the correct category.</span>,
+                    <span key="2">Prohibited items/services are not allowed. We may remove listings that violate our policies.</span>,
+                    <span key="3">Except where specified (e.g., manual payment verification), payments are arranged directly between buyer and seller.</span>,
+                  ]}
+                />
+              </CardContent>
+            </Card>
 
-      <h2>7. Disclaimers</h2>
-      <p>
-        The Platform is provided on an "as is" basis without warranties of any
-        kind. We do not control user-generated listings nor guarantee
-        transactions.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>5. Safety</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AnimatedList
+                  className="list-disc pl-6"
+                  items={[
+                    <span key="1">Meet in public places where possible and verify items before paying.</span>,
+                    <span key="2">Report suspicious behavior using the reporting tools on listings.</span>,
+                  ]}
+                />
+              </CardContent>
+            </Card>
 
-      <h2>8. Limitation of Liability</h2>
-      <p>
-        To the maximum extent permitted by law, we are not liable for indirect,
-        incidental, or consequential damages arising from your use of the
-        Platform.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>6. Intellectual Property</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  You retain ownership of the content you post, but grant us a license to host and display it on the Platform. Do not post content you do not have rights to use.
+                </p>
+              </CardContent>
+            </Card>
 
-      <h2>9. Termination</h2>
-      <p>
-        We may suspend or terminate accounts that violate these Terms. You may
-        also delete your account at any time through your settings.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>7. Disclaimers</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  The Platform is provided on an "as is" basis without warranties of any kind. We do not control user-generated listings nor guarantee transactions.
+                </p>
+              </CardContent>
+            </Card>
 
-      <h2>10. Changes to these Terms</h2>
-      <p>
-        We may update these Terms occasionally. Continued use after changes
-        constitutes acceptance of the updated Terms.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>8. Limitation of Liability</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  To the maximum extent permitted by law, we are not liable for indirect, incidental, or consequential damages arising from your use of the Platform.
+                </p>
+              </CardContent>
+            </Card>
 
-      <h2>11. Contact</h2>
-      <p>
-        Questions about these Terms? Contact us via the Contact page on the
-        Platform.
-      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>9. Termination</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  We may suspend or terminate accounts that violate these Terms. You may also delete your account at any time through your settings.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>10. Changes to these Terms</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  We may update these Terms occasionally. Continued use after changes constitutes acceptance of the updated Terms.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>11. Contact</CardTitle>
+              </CardHeader>
+              <CardContent className="prose prose-zinc dark:prose-invert max-w-none">
+                <p>
+                  Questions about these Terms? Contact us via the Contact page on the Platform.
+                </p>
+              </CardContent>
+            </Card>
+          </FadeInStagger>
+        </section>
+      </div>
     </main>
   );
 }

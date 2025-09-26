@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Facebook,
@@ -14,12 +13,27 @@ import {
 } from "lucide-react";
 import { NewsletterSubscribe } from "./footer/newsLetterSubscribe";
 import Logo from "./ui/logo";
+import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
+import { motion } from "framer-motion";
 
 export function Footer() {
   return (
-    <footer className="bg-background border-t">
+    <footer className="relative bg-background border-t overflow-hidden overflow-x-clip">
+      {/* Decorative background accents */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-10 right-0 h-40 w-40 rounded-full bg-primary/10 blur-2xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute bottom-0 -left-10 h-28 w-28 rounded-full bg-purple-500/10 blur-2xl"
+      />
+
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <FadeInStagger
+          as="div"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+        >
           {/* Company Info */}
           <div>
             <Logo />
@@ -28,27 +42,36 @@ export function Footer() {
               secure, and trusted by thousands.
             </p>
             <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="glass border-0 bg-transparent"
-              >
-                <Facebook className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="glass border-0 bg-transparent"
-              >
-                <Twitter className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="glass border-0 bg-transparent"
-              >
-                <Instagram className="h-4 w-4" />
-              </Button>
+              <motion.div whileHover={{ y: -2, scale: 1.03 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="glass border-0 bg-transparent"
+                  aria-label="Visit our Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ y: -2, scale: 1.03 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="glass border-0 bg-transparent"
+                  aria-label="Visit our Twitter"
+                >
+                  <Twitter className="h-4 w-4" />
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ y: -2, scale: 1.03 }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="glass border-0 bg-transparent"
+                  aria-label="Visit our Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </Button>
+              </motion.div>
             </div>
           </div>
 
@@ -153,18 +176,22 @@ export function Footer() {
               <NewsletterSubscribe />
             </div>
           </div>
-        </div>
+        </FadeInStagger>
 
-        <Separator className="my-8" />
+        <FadeIn>
+          <Separator className="my-8" />
+        </FadeIn>
 
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-muted-foreground text-sm">
-            © 2025 BuySell. All rights reserved.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Made with ❤️ for everyone
-          </p>
-        </div>
+        <FadeIn>
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-muted-foreground text-sm">
+              © 2025 BuySell. All rights reserved.
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Made with ❤️ for everyone
+            </p>
+          </div>
+        </FadeIn>
       </div>
     </footer>
   );

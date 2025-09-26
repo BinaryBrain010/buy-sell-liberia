@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import ProductDetail from "./ProductDetail";
 import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
 import { FeaturedListings } from "@/components/featured-listings";
+import { FadeIn } from "@/components/static-pages/Animated";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -50,31 +51,42 @@ export default function ProductDetailPage() {
   if (!_id) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">
-            Invalid Product
-          </h2>
-          <p className="text-muted-foreground">No product ID found in route.</p>
-        </div>
+        <FadeIn>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">
+              Invalid Product
+            </h2>
+            <p className="text-muted-foreground">
+              No product ID found in route.
+            </p>
+          </div>
+        </FadeIn>
       </div>
     );
   }
 
-  if (loading) return <ProductDetailSkeleton />;
+  if (loading)
+    return (
+      <FadeIn>
+        <ProductDetailSkeleton />
+      </FadeIn>
+    );
 
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            Try Again
-          </button>
-        </div>
+        <FadeIn>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Try Again
+            </button>
+          </div>
+        </FadeIn>
       </div>
     );
   }
@@ -82,23 +94,29 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
-          <p className="text-muted-foreground">
-            The product you're looking for doesn't exist.
-          </p>
-        </div>
+        <FadeIn>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Product Not Found</h2>
+            <p className="text-muted-foreground">
+              The product you're looking for doesn't exist.
+            </p>
+          </div>
+        </FadeIn>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen">
-      <ProductDetail {...product} />
+      <FadeIn>
+        <ProductDetail {...product} />
+      </FadeIn>
 
       <div className="border-t bg-gray-50/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto py-8 px-4">
-          <FeaturedListings />
+          <FadeIn>
+            <FeaturedListings />
+          </FadeIn>
         </div>
       </div>
     </div>

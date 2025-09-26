@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
       "../../modules/auth/services/admin-auth.service"
     );
     // Some earlier tokens may still carry 'admin' or other roles; allow if service recognizes
-    if (!AService.isAllowedRole((payload as any).role)) {
+    const role = (payload as any).role;
+    if (!AService.isAllowedRole(role) && role !== 'manager') {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
