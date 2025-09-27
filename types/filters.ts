@@ -8,4 +8,6 @@ export interface FilterState {
   sortBy?: string
   sortOrder?: string
   customFilters?: Record<string, any>
+  /** Product condition(s) in canonical lowercase format: new | like-new | good | fair | poor */
+  condition?: string[]
 }
