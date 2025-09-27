@@ -21,7 +21,9 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
-  const [categories, setCategories] = useState<Map<string, { name: string; subcategories: Map<string, string> }>>(new Map());
+  const [categories, setCategories] = useState<
+    Map<string, { name: string; subcategories: Map<string, string> }>
+  >(new Map());
 
   // Listen for logout events and clear state
   useAuthLogout(() => {
@@ -38,36 +40,36 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
     const loadData = async () => {
       try {
         // Check if user is authenticated
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem("accessToken");
         if (!token) {
           setError("Please log in to view your favourites");
           setLoading(false);
           return;
         }
-        
+
         setLoading(true);
         setError(null);
-        
+
         // Load categories first
         const categoryService = new CategoryService();
         const categoriesResponse = await categoryService.getCategories();
-        
+
         // Build a map of category IDs to names and subcategory IDs to names
         const categoryMap = new Map();
         if (categoriesResponse.categories) {
-          categoriesResponse.categories.forEach(category => {
+          categoriesResponse.categories.forEach((category) => {
             const subcategoryMap = new Map();
-            category.subcategories?.forEach(subcategory => {
+            category.subcategories?.forEach((subcategory) => {
               subcategoryMap.set(subcategory._id, subcategory.name);
             });
             categoryMap.set(category._id, {
               name: category.name,
-              subcategories: subcategoryMap
+              subcategories: subcategoryMap,
             });
           });
         }
         setCategories(categoryMap);
-        
+
         // Load favourites
         const favorites = await ProductService.getUserFavorites();
         setFavourites(favorites);
@@ -85,14 +87,14 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 
   const removeFavourite = async (listingId: string) => {
     try {
-      setRemovingItems(prev => new Set(prev).add(listingId));
+      setRemovingItems((prev) => new Set(prev).add(listingId));
       await ProductService.toggleFavourite(listingId, false);
       setFavourites((prev) => prev.filter((item) => item._id !== listingId));
     } catch (error: any) {
       console.error("Failed to remove favourite:", error);
       // You might want to show a toast notification here
     } finally {
-      setRemovingItems(prev => {
+      setRemovingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(listingId);
         return newSet;
@@ -103,8 +105,10 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
   // Convert Product from service to ProductCard format
   const convertToProductCardFormat = (product: Product) => {
     const categoryInfo = categories.get(product.category_id);
-    const subcategoryInfo = categoryInfo?.subcategories.get(product.subcategory_id || "");
-    
+    const subcategoryInfo = categoryInfo?.subcategories.get(
+      product.subcategory_id || ""
+    );
+
     return {
       _id: product._id,
       title: product.title,
@@ -113,7 +117,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       category: categoryInfo?.name || "", // Use actual category name
       subCategory: subcategoryInfo || "", // Use actual subcategory name
       condition: product.condition,
-      images: product.images.map(img => ({ url: img })), // Convert string array to object array
+      images: product.images.map((img) => ({ url: img })), // Convert string array to object array
       titleImageIndex: 0, // Default to first image
       location: {
         city: product.location?.city || "",
@@ -128,17 +132,23 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       showPhoneNumber: true, // Default value
       views: product.views || 0,
       featured: product.featured,
-      createdAt: typeof product.createdAt === 'string' ? product.createdAt : product.createdAt.toISOString(),
-      updatedAt: typeof product.createdAt === 'string' ? product.createdAt : product.createdAt.toISOString(), // Use createdAt as updatedAt
+      createdAt:
+        typeof product.createdAt === "string"
+          ? product.createdAt
+          : product.createdAt.toISOString(),
+      updatedAt:
+        typeof product.createdAt === "string"
+          ? product.createdAt
+          : product.createdAt.toISOString(), // Use createdAt as updatedAt
     };
   };
 
   const filteredFavourites = favourites.filter(
     (item) =>
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.location?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       item.location?.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       item.location?.country?.toLowerCase().includes(searchTerm.toLowerCase()))
+      item.location?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location?.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.location?.country?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -163,7 +173,9 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
         <CardContent>
           <div className="text-red-500 mb-4">
             <Heart className="h-12 w-12 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Error Loading Favourites</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Error Loading Favourites
+            </h3>
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button onClick={() => window.location.reload()}>Try Again</Button>
           </div>
@@ -212,11 +224,12 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredFavourites.map((listing) => (
             <div key={listing._id} className="relative group">
-              <ProductCard 
+              <ProductCard
                 product={convertToProductCardFormat(listing)}
                 variant="compact"
+                hideFavouriteButton
               />
-              
+
               {/* Custom remove from favourites button */}
               <div className="absolute top-2 right-2 z-10 flex flex-col items-center gap-1">
                 <Button
