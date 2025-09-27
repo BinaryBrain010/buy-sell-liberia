@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Package, MapPin, ShieldCheck } from "lucide-react";
 
@@ -37,45 +36,48 @@ const stats = [
 
 export function StatsSection() {
   return (
-    <section className="py-20 bg-muted/30 overflow-x-clip">
-      <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-2xl md:text-4xl font-bold mb-2">
-            Join the first wave of users building Liberia's trusted online
-            marketplace.
-          </h2>
-        </motion.div>
+    <section className="py-20 bg-gradient-to-b from-background to-muted/20 overflow-x-clip relative">
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 relative z-10">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Join Liberia's Trusted Marketplace
+          </h2>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+            Be part of the first wave of users building Liberia's most trusted online marketplace
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {stats.map((stat, index) => (
-            <motion.div
+            <div
               key={stat.label}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              whileHover={{ scale: 1.05 }}
+              className="group hover:scale-105 hover:-translate-y-2 transition-all duration-300"
             >
-              <Card className="glass border-0 text-center hover:shadow-lg transition-all duration-300 h-full">
-                <CardContent className="p-8">
-                  <div
-                    className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-r ${stat.color} flex items-center justify-center`}
-                  >
-                    <stat.icon className="h-8 w-8 text-white" />
+              <Card className="relative bg-background/80 backdrop-blur-sm border border-border/50 text-center hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <CardContent className="p-8 relative z-10">
+                  <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg ring-4 ring-white/20 relative overflow-hidden group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                    <stat.icon className="h-10 w-10 text-white relative z-10" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{stat.label}</h3>
+                  
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
+                    {stat.label}
+                  </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {stat.description}
                   </p>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
