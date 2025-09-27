@@ -19,7 +19,11 @@ const ITEMS_PER_PAGE = 30;
 
 export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
+  // sortBy holds backend field name (createdAt, price, etc.) while sortOrder managed separately
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [priceMin, setPriceMin] = useState<number | undefined>(undefined);
+  const [priceMax, setPriceMax] = useState<number | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,19 +59,26 @@ export default function ProductsPage() {
     setCurrentPage(1);
     setShowFilters(false);
     fetchProducts({
-      filters: { sortBy },
+      filters: { sortBy, sortOrder, priceMin, priceMax },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
     });
-  }, [sortBy, debouncedSearchQuery, fetchProducts]);
+  }, [
+    sortBy,
+    sortOrder,
+    priceMin,
+    priceMax,
+    debouncedSearchQuery,
+    fetchProducts,
+  ]);
 
   // Optimized page change handler with smooth scrolling
   const handlePageChange = useCallback(
     (page: number) => {
       setCurrentPage(page);
       fetchProducts({
-        filters: { sortBy },
+        filters: { sortBy, sortOrder, priceMin, priceMax },
         page,
         search: debouncedSearchQuery,
         itemsPerPage: ITEMS_PER_PAGE,
@@ -86,7 +97,10 @@ export default function ProductsPage() {
 
   // Clear all filters handler
   const handleClearFilters = useCallback(() => {
-    setSortBy("newest");
+    setSortBy("createdAt");
+    setSortOrder("desc");
+    setPriceMin(undefined);
+    setPriceMax(undefined);
     setSearchQuery("");
     setCurrentPage(1);
     clearError();
@@ -146,12 +160,19 @@ export default function ProductsPage() {
 
     setCurrentPage(1);
     fetchProducts({
-      filters: { sortBy },
+      filters: { sortBy, sortOrder, priceMin, priceMax },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
     });
-  }, [debouncedSearchQuery, sortBy, fetchProducts]);
+  }, [
+    debouncedSearchQuery,
+    sortBy,
+    sortOrder,
+    priceMin,
+    priceMax,
+    fetchProducts,
+  ]);
 
   // Memoized results info to prevent unnecessary recalculations
   const resultsInfo = useMemo(() => {
@@ -193,11 +214,73 @@ export default function ProductsPage() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             sortBy={sortBy}
-            onSortChange={setSortBy}
+            onSortChange={(val) => {
+              if (val === "price-low") {
+                setSortBy("price.amount");
+                setSortOrder("asc");
+                return;
+              }
+              if (val === "price-high") {
+                setSortBy("price.amount");
+                setSortOrder("desc");
+                return;
+              }
+              if (val === "newest") {
+                setSortBy("createdAt");
+                setSortOrder("desc");
+                return;
+              }
+              setSortBy(val);
+            }}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters(!showFilters)}
+            onFiltersApply={(f) => {
+              // When filters applied explicitly
+              if (f.sortBy) {
+                if (f.sortBy === "price-low") {
+                  setSortBy("price.amount");
+                  setSortOrder("asc");
+                } else if (f.sortBy === "price-high") {
+                  setSortBy("price.amount");
+                  setSortOrder("desc");
+                } else if (f.sortBy === "newest") {
+                  setSortBy("createdAt");
+                  setSortOrder("desc");
+                } else {
+                  setSortBy(f.sortBy);
+                }
+              }
+              // Map condition label(s) to backend values
+              const mappedConditions = f.condition?.map((c) =>
+                c.toLowerCase().replace(/\s+/g, "-")
+              );
+              setPriceMin(f.priceMin);
+              setPriceMax(f.priceMax);
+              fetchProducts({
+                filters: {
+                  sortBy:
+                    f.sortBy === "price-low" || f.sortBy === "price-high"
+                      ? "price.amount"
+                      : f.sortBy === "newest"
+                      ? "createdAt"
+                      : f.sortBy || sortBy,
+                  sortOrder:
+                    f.sortBy === "price-low"
+                      ? "asc"
+                      : f.sortBy === "price-high"
+                      ? "desc"
+                      : sortOrder,
+                  condition: mappedConditions,
+                  priceMin: f.priceMin,
+                  priceMax: f.priceMax,
+                },
+                page: 1,
+                search: f.search,
+                itemsPerPage: ITEMS_PER_PAGE,
+              });
+            }}
           />
         </FadeIn>
 

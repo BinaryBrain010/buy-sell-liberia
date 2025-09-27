@@ -185,6 +185,21 @@ export default function SearchBar() {
                 <ul>
                   {results.map((item, index) => {
                     const isHighlighted = index === highlightedIndex;
+                    // Normalize image value which could be string or object
+                    const resolveImage = (img: any): string | undefined => {
+                      if (!img) return undefined;
+                      const value = typeof img === "string" ? img : img.url || img.path || img.src;
+                      if (!value) return undefined;
+                      // Already absolute or already hitting uploads API
+                      if (/^https?:\/\//i.test(value) || value.startsWith("/api/uploads")) {
+                        return value;
+                      }
+                      // Remove leading slashes to avoid double // in final URL
+                      const clean = value.replace(/^\/+/, "");
+                      return `/api/uploads/${clean}`;
+                    };
+                    const firstImage = Array.isArray(item.images) ? item.images[0] : item.image;
+                    const imgSrc = resolveImage(firstImage);
                     return (
                       <li
                         key={item._id}
@@ -197,11 +212,14 @@ export default function SearchBar() {
                           href={`/products/${item._id}`}
                           className="flex items-center gap-2 w-full"
                         >
-                          {(item.image || (item.images && item.images[0])) && (
+                          {imgSrc && (
                             <img
-                              src={item.image || item.images[0]}
-                              alt={item.title}
+                              src={imgSrc}
+                              alt={item.title || "Product image"}
                               className="w-8 h-8 rounded object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                              }}
                             />
                           )}
                           <span className="font-medium text-sm">

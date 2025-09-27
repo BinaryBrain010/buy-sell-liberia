@@ -44,6 +44,8 @@ interface ProductCardProps {
   variant?: "compact" | "list";
   onLike?: (productId: string) => void;
   platformCurrency?: "USD" | "LRD";
+  /** When true, the built-in Favourite (like) button is hidden */
+  hideFavouriteButton?: boolean;
 }
 
 export function ProductCard({
@@ -53,6 +55,7 @@ export function ProductCard({
   variant = "compact",
   onLike,
   platformCurrency,
+  hideFavouriteButton = false,
 }: ProductCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -210,7 +213,9 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <FavouriteButton productId={product._id} />
+              {!hideFavouriteButton && (
+                <FavouriteButton productId={product._id} />
+              )}
             </div>
 
             {/* Price + Negotiable */}
@@ -352,7 +357,9 @@ export function ProductCard({
               >
                 {product.title || "Untitled Product"}
               </Link>
-              <FavouriteButton productId={product._id} />
+              {!hideFavouriteButton && (
+                <FavouriteButton productId={product._id} />
+              )}
             </div>
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">

@@ -343,20 +343,6 @@ export default function ProductDetail(productData: ProductDetailProps) {
                         <Star className="h-3 w-3 mr-1" /> Featured
                       </Badge>
                     )}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      aria-pressed={liked}
-                      onClick={() => setLiked((v) => !v)}
-                      className={cn(
-                        "rounded-full",
-                        liked ? "text-red-500 border-red-200" : ""
-                      )}
-                    >
-                      <Heart
-                        className={cn("h-4 w-4", liked ? "fill-current" : "")}
-                      />
-                    </Button>
                   </div>
                 </div>
 

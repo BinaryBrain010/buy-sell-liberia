@@ -28,6 +28,14 @@ interface FiltersSectionProps {
   onViewModeChange: (mode: "grid" | "list") => void;
   showFilters: boolean;
   onToggleFilters: () => void;
+  /** Callback when user applies filters returning UI filter payload */
+  onFiltersApply?: (filters: {
+    search: string;
+    sortBy: string;
+    condition?: string[];
+    priceMin?: number;
+    priceMax?: number;
+  }) => void;
 }
 
 export function FiltersSection(props: FiltersSectionProps) {
@@ -47,6 +55,8 @@ export function FiltersSection(props: FiltersSectionProps) {
   const [selectedCondition, setSelectedCondition] = useState<string | null>(
     null
   );
+  const [localPriceMin, setLocalPriceMin] = useState<string>("");
+  const [localPriceMax, setLocalPriceMax] = useState<string>("");
 
   // Sync local state with props if they change externally
   useEffect(() => {
@@ -59,16 +69,31 @@ export function FiltersSection(props: FiltersSectionProps) {
   const handleApplyFilters = () => {
     onSearchChange(localSearch);
     onSortChange(localSort);
-    // You can add a callback for condition if needed
+    const conditionArray = selectedCondition ? [selectedCondition] : undefined;
+    const priceMinNum = localPriceMin ? Number(localPriceMin) : undefined;
+    const priceMaxNum = localPriceMax ? Number(localPriceMax) : undefined;
+    if (props.onFiltersApply) {
+      props.onFiltersApply({
+        search: localSearch,
+        sortBy: localSort,
+        condition: conditionArray,
+        priceMin: priceMinNum,
+        priceMax: priceMaxNum,
+      });
+    }
   };
 
   const handleClearFilters = () => {
     setLocalSearch("");
-    setLocalSort("");
+    setLocalSort("newest");
     setSelectedCondition(null);
+    setLocalPriceMin("");
+    setLocalPriceMax("");
     onSearchChange("");
-    onSortChange("");
-    // You can add a callback for condition if needed
+    onSortChange("newest");
+    if (props.onFiltersApply) {
+      props.onFiltersApply({ search: "", sortBy: "newest" });
+    }
   };
 
   return (
@@ -174,6 +199,51 @@ export function FiltersSection(props: FiltersSectionProps) {
                     </Button>
                   )
                 )}
+              </div>
+            </div>
+            {/* Price Range */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Price Range
+              </label>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground mb-1">
+                    Min
+                  </span>
+                  <Input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="0"
+                    value={localPriceMin}
+                    onChange={(e) =>
+                      setLocalPriceMin(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    className="w-32"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground mb-1">
+                    Max
+                  </span>
+                  <Input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    placeholder="Any"
+                    value={localPriceMax}
+                    onChange={(e) =>
+                      setLocalPriceMax(e.target.value.replace(/[^0-9]/g, ""))
+                    }
+                    className="w-32"
+                  />
+                </div>
+                {localPriceMin &&
+                  localPriceMax &&
+                  Number(localPriceMin) > Number(localPriceMax) && (
+                    <p className="text-xs text-red-500 w-full">
+                      Min price cannot exceed Max price.
+                    </p>
+                  )}
               </div>
             </div>
             <div className="flex justify-end gap-2">
