@@ -519,7 +519,7 @@ function FavoriteListItem({
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>Listed {formatDate(listing.createdAt)}</span>
+                  <span>Listed {formatDate(typeof listing.createdAt === "string" ? listing.createdAt : listing.createdAt.toISOString())}</span>
                 </div>
                 {listing.location?.city && (
                   <div className="flex items-center gap-1">
