@@ -331,10 +331,23 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
+        <div className="relative">
+          {/* Background accent */}
+          <div className="absolute -inset-2 bg-gradient-to-r from-primary/5 via-v0-green/5 to-primary/5 rounded-2xl opacity-50" />
+          
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8 shadow-xl">
+            <div className="text-center space-y-6">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2">Loading Dashboard</h2>
+                <p className="text-muted-foreground">Setting up your personalized experience...</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -342,85 +355,116 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Shield className="h-16 w-16 text-muted-foreground mx-auto" />
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">
-            You must be logged in to access the dashboard.
-          </p>
-          <Badge
-            variant="outline"
-            onClick={() => router.push("/")}
-            className="cursor-pointer"
-          >
-            Go to Home
-          </Badge>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
+        <div className="relative">
+          {/* Background accent */}
+          <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 via-red-600/5 to-red-500/5 rounded-2xl opacity-50" />
+          
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8 shadow-xl">
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                <Shield className="h-10 w-10 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
+                <p className="text-muted-foreground mb-6">
+                  You must be logged in to access the dashboard.
+                </p>
+                <Badge
+                  variant="outline"
+                  onClick={() => router.push("/")}
+                  className="cursor-pointer px-6 py-2 text-base hover:bg-primary/10 transition-colors"
+                >
+                  Go to Home
+                </Badge>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20"> 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        {/* Header */}
-        <div className="border-b bg-card">
-          <div className="container mx-auto px-4 py-2.5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <h1 className="text-xl font-semibold truncate">Dashboard</h1>
+        {/* Enhanced Header */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-background border-b border-border/30">
+          {/* Background Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+            <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+          </div>
+          
+          <div className="container mx-auto px-4 py-8 relative z-10">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              {/* Enhanced Welcome Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
+                    <Shield className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                      Dashboard
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Manage your account and listings
+                    </p>
+                  </div>
                 </div>
-                <Badge
-                  variant="secondary"
-                  className="ml-1 h-6 px-2 text-xs whitespace-nowrap"
-                >
-                  Welcome back
-                  {user?.fullName
-                    ? `, ${user.fullName}`
-                    : user?.username
-                    ? `, ${user.username}`
-                    : user?.email
-                    ? `, ${user.email.split("@")[0]}`
-                    : ""}
-                  !
-                </Badge>
+                
+                {/* Enhanced Welcome Badge */}
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-sm font-semibold text-primary">
+                    Welcome back
+                    {user?.fullName
+                      ? `, ${user.fullName}`
+                      : user?.username
+                      ? `, ${user.username}`
+                      : user?.email
+                      ? `, ${user.email.split("@")[0]}`
+                      : ""}
+                    !
+                  </span>
+                </div>
               </div>
-              <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-                <TabsList className="flex items-center gap-1 overflow-x-auto whitespace-nowrap w-full sm:w-auto">
+              
+              {/* Enhanced Navigation Tabs */}
+              <div className="flex-shrink-0">
+                <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:flex lg:gap-1 bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg">
                   <TabsTrigger
                     value="profile"
                     aria-label="Profile"
-                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <User className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Profile</span>
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline font-medium">Profile</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="listings"
                     aria-label="Listings"
-                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <Package className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Listings</span>
+                    <Package className="h-4 w-4" />
+                    <span className="hidden sm:inline font-medium">Listings</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="favourites"
                     aria-label="Favourites"
-                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <Heart className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Favourites</span>
+                    <Heart className="h-4 w-4" />
+                    <span className="hidden sm:inline font-medium">Favourites</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="messages"
                     aria-label="Messages"
-                    className="h-8 px-2 text-xs sm:text-sm flex items-center gap-1.5"
+                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <MessageCircle className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-                    <span className="hidden sm:inline">Messages</span>
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline font-medium">Messages</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -428,56 +472,99 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-4">
-          <TabsContent value="profile" className="space-y-4">
+        {/* Enhanced Main Content */}
+        <div className="container mx-auto px-4 py-8">
+          <TabsContent value="profile" className="space-y-6">
             {user?.id || user?._id ? (
-              <ProfileTab userId={user?.id || user?._id} onProfileUpdate={refreshUserData} />
+              <div className="relative">
+                {/* Background accent */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+                
+                <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
+                  <ProfileTab userId={user?.id || user?._id} onProfileUpdate={refreshUserData} />
+                </div>
+              </div>
             ) : (
-              <div className="text-center py-12">
-                <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">User ID Not Found</h3>
-                <p className="text-muted-foreground">
-                  Unable to load profile: User ID is missing
-                </p>
+              <div className="text-center py-16">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
+                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
+                    <User className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <p className="text-muted-foreground">
+                      Unable to load profile: User ID is missing
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="listings" className="space-y-4">
+          <TabsContent value="listings" className="space-y-6">
             {user?.id || user?._id ? (
-              <ListingsTab userId={user?.id || user?._id} />
+              <div className="relative">
+                {/* Background accent */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
+                
+                <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
+                  <ListingsTab userId={user?.id || user?._id} />
+                </div>
+              </div>
             ) : (
-              <div className="text-center py-12">
-                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">User ID Not Found</h3>
-                <p className="text-muted-foreground">
-                  Unable to load listings: User ID is missing
-                </p>
+              <div className="text-center py-16">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
+                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <p className="text-muted-foreground">
+                      Unable to load listings: User ID is missing
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="favourites" className="space-y-4">
+          <TabsContent value="favourites" className="space-y-6">
             {user?.id || user?._id ? (
-              <FavouritesTab userId={user?.id || user?._id} />
+              <div className="relative">
+                {/* Background accent */}
+                <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/5 via-red-500/5 to-pink-500/5 rounded-2xl opacity-50" />
+                
+                <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
+                  <FavouritesTab userId={user?.id || user?._id} />
+                </div>
+              </div>
             ) : (
-              <div className="text-center py-12">
-                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">User ID Not Found</h3>
-                <p className="text-muted-foreground">
-                  Unable to load favourites: User ID is missing
-                </p>
+              <div className="text-center py-16">
+                <div className="relative">
+                  <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
+                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
+                    <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <p className="text-muted-foreground">
+                      Unable to load favourites: User ID is missing
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="messages" className="space-y-4">
-            <MessagesComponent
-              sellerId={chatParams.sellerId}
-              productId={chatParams.productId}
-              productTitle={chatParams.productTitle}
-            />
+          <TabsContent value="messages" className="space-y-6">
+            <div className="relative">
+              {/* Background accent */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
+              
+              <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
+                <MessagesComponent
+                  sellerId={chatParams.sellerId}
+                  productId={chatParams.productId}
+                  productTitle={chatParams.productTitle}
+                />
+              </div>
+            </div>
           </TabsContent>
         </div>
       </Tabs>

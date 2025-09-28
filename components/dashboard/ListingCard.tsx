@@ -50,7 +50,7 @@ export function ListingCard({
     }
   };
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow overflow-hidden">
       <div className="w-full overflow-hidden rounded-t-lg bg-muted/40">
         <img
           src={resolveImageUrl(listing.images?.[0]?.url)}
@@ -83,12 +83,12 @@ export function ListingCard({
         </div>
       )}
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-base line-clamp-1">
+        <div className="flex items-start justify-between min-w-0">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <CardTitle className="text-base line-clamp-1 break-words overflow-hidden">
               {listing.title}
             </CardTitle>
-            <CardDescription className="line-clamp-2 mt-1 text-sm">
+            <CardDescription className="line-clamp-2 mt-1 text-sm break-words overflow-hidden">
               {listing.description}
             </CardDescription>
           </div>
@@ -97,7 +97,7 @@ export function ListingCard({
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="text-xl font-semibold">
             {currencySymbol}

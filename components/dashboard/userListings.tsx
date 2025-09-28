@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Package } from "lucide-react";
+import { Search, Plus, Package, Grid3X3, List, Eye, Calendar, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategoryService } from "@/app/services/Category.Service";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
@@ -47,6 +47,7 @@ export default function UserListings({ userId }: UserListingsProps) {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [editingListingId, setEditingListingId] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(false);
@@ -66,6 +67,7 @@ export default function UserListings({ userId }: UserListingsProps) {
     setError(null);
     setSearchTerm("");
     setStatusFilter("all");
+    setViewMode("grid");
     setEditingListingId(null);
     setIsUpdating(false);
     setIsImageLoading(false);
@@ -294,20 +296,32 @@ export default function UserListings({ userId }: UserListingsProps) {
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <p className="text-muted-foreground">Loading your listings...</p>
+      <div className="p-6">
+        <div className="flex items-center justify-center py-16">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+        </div>
+        <div className="text-center mt-4">
+          <p className="text-muted-foreground">Loading your listings...</p>
+        </div>
       </div>
     );
 
   if (error)
     return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="text-center space-y-4">
-          <Package className="h-12 w-12 text-muted-foreground mx-auto" />
-          <h3 className="text-lg font-semibold">Failed to load listings</h3>
-          <p className="text-muted-foreground">{error}</p>
-          <Button onClick={fetchUserListings} variant="outline">
+      <div className="p-6">
+        <div className="text-center py-16">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
+            <Package className="h-10 w-10 text-white" />
+          </div>
+          <h3 className="text-2xl font-semibold mb-2">Failed to Load Listings</h3>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button 
+            onClick={fetchUserListings} 
+            className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+          >
             Try Again
           </Button>
         </div>
@@ -315,128 +329,233 @@ export default function UserListings({ userId }: UserListingsProps) {
     );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="shrink-0">
-          <h2 className="text-xl font-semibold">My Listings</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage your posted items
-          </p>
-        </div>
-        {listings.length > 0 && (
-          <div className="w-full sm:flex-1 min-w-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-muted/50 rounded-lg">
-              <SummaryStat
-                label="Total Listings"
-                value={listings.length}
-                colorClass="text-primary"
-              />
-              <SummaryStat
-                label="Active"
-                value={listings.filter((l) => l.status === "active").length}
-                colorClass="text-green-600"
-              />
-              <SummaryStat
-                label="Sold"
-                value={listings.filter((l) => l.status === "sold").length}
-                colorClass="text-blue-600"
-              />
-              <SummaryStat
-                label="Featured"
-                value={listings.filter((l) => l.featured).length}
-                colorClass="text-orange-600"
-              />
+    <div className="p-6 space-y-8">
+      {/* Enhanced Header Section */}
+      <div className="relative">
+        {/* Background accent */}
+        <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
+        
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            {/* Title Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
+                  <Package className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground">My Listings</h2>
+                  <p className="text-muted-foreground">
+                    Manage your posted items and track their performance
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="flex gap-2 shrink-0 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchUserListings}
-            className="flex-1 sm:flex-none"
-          >
-            <Package className="h-4 w-4 mr-2" /> Refresh
-          </Button>
-          <Button
-            size="sm"
-            className="flex items-center gap-2 flex-1 sm:flex-none"
-            onClick={() => router.push("/sell")}
-          >
-            {" "}
-            <Plus className="h-4 w-4" /> New Listing
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search listings..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-44 h-9">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="sold">Sold</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredListings.map((l) => (
-          <ListingCard
-            key={l._id}
-            listing={l}
-            onEdit={() => setEditingListingId(l._id)}
-            onDelete={handleDeleteListing}
-            currencySymbol={l.price?.currency === "LRD" ? "L$" : "$"}
-          />
-        ))}
-      </div>
-
-      {filteredListings.length === 0 && (
-        <div className="text-center py-12">
-          {searchTerm || statusFilter !== "all" ? (
-            <div className="space-y-4">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto" />
-              <h3 className="text-lg font-semibold">No listings found</h3>
-              <p className="text-muted-foreground">
-                No listings match your current search criteria.
-              </p>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-3">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setSearchTerm("");
-                  setStatusFilter("all");
-                }}
+                onClick={fetchUserListings}
+                className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
               >
-                Clear Filters
+                <Package className="h-4 w-4 mr-2" /> Refresh
+              </Button>
+              <Button
+                onClick={() => router.push("/sell")}
+                className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                <Plus className="h-4 w-4 mr-2" /> New Listing
               </Button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto" />
-              <h3 className="text-lg font-semibold">No listings yet</h3>
-              <p className="text-muted-foreground">
-                You haven't created any listings yet. Start selling by creating
-                your first listing!
-              </p>
-              <Button onClick={() => router.push("/sell")}>
-                <Plus className="h-4 w-4 mr-2" /> Create Your First Listing
-              </Button>
+          </div>
+          
+          {/* Enhanced Statistics */}
+          {listings.length > 0 && (
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                <div className="text-2xl font-bold text-primary">{listings.length}</div>
+                <div className="text-sm text-muted-foreground">Total Listings</div>
+              </div>
+              <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                <div className="text-2xl font-bold text-green-600">
+                  {listings.filter((l) => l.status === "active").length}
+                </div>
+                <div className="text-sm text-muted-foreground">Active</div>
+              </div>
+              <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                <div className="text-2xl font-bold text-blue-600">
+                  {listings.filter((l) => l.status === "sold").length}
+                </div>
+                <div className="text-sm text-muted-foreground">Sold</div>
+              </div>
+              <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
+                <div className="text-2xl font-bold text-orange-600">
+                  {listings.filter((l) => l.featured).length}
+                </div>
+                <div className="text-sm text-muted-foreground">Featured</div>
+              </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Enhanced Search and Filter Section */}
+      <div className="relative">
+        <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
+        
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                <Input
+                  placeholder="Search your listings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-12 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-base"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-48 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="sold">Sold</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* View Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <div className="flex border-2 border-border/30 rounded-xl overflow-hidden">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className={`h-10 px-4 ${
+                    viewMode === "grid" 
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                      : "hover:bg-muted/50"
+                  }`}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className={`h-10 px-4 ${
+                    viewMode === "list" 
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                      : "hover:bg-muted/50"
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced Listings Display */}
+      {filteredListings.length > 0 ? (
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-green-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+          
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-foreground">
+                Your Listings ({filteredListings.length})
+              </h3>
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredListings.length} of {listings.length} listings
+              </div>
+            </div>
+            
+            {/* Conditional Rendering based on View Mode */}
+            {viewMode === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredListings.map((l) => (
+                  <ListingCard
+                    key={l._id}
+                    listing={l}
+                    onEdit={() => setEditingListingId(l._id)}
+                    onDelete={handleDeleteListing}
+                    currencySymbol={l.price?.currency === "LRD" ? "L$" : "$"}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredListings.map((l) => (
+                  <ListingListItem
+                    key={l._id}
+                    listing={l}
+                    onEdit={() => setEditingListingId(l._id)}
+                    onDelete={handleDeleteListing}
+                    currencySymbol={l.price?.currency === "LRD" ? "L$" : "$"}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Enhanced Empty States */
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-2xl opacity-50" />
+          
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-12 border border-border/30">
+            {searchTerm || statusFilter !== "all" ? (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Search className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold mb-2">No listings found</h3>
+                  <p className="text-muted-foreground mb-6">
+                    No listings match your current search criteria. Try adjusting your filters.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setStatusFilter("all");
+                  }}
+                  className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center space-y-6">
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
+                  <Package className="h-10 w-10 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold mb-2">No listings yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    You haven't created any listings yet. Start selling by creating your first listing!
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => router.push("/sell")}
+                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Create Your First Listing
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -460,19 +579,183 @@ export default function UserListings({ userId }: UserListingsProps) {
   );
 }
 
-function SummaryStat({
-  label,
-  value,
-  colorClass,
-}: {
-  label: string;
-  value: number;
-  colorClass: string;
+// Enhanced List View Item Component
+function ListingListItem({ 
+  listing, 
+  onEdit, 
+  onDelete, 
+  currencySymbol 
+}: { 
+  listing: Listing; 
+  onEdit: () => void; 
+  onDelete: (id: string) => void; 
+  currencySymbol: string;
 }) {
+  const [expandedDescription, setExpandedDescription] = useState(false);
+  const maxDescriptionLength = 150;
+  
+  // Image URL resolution function (same as ListingCard)
+  const resolveImageUrl = (raw?: string) => {
+    if (!raw) return "/placeholder.jpg";
+    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+    const cleaned = raw.replace(/^\/+/, "");
+    if (cleaned.startsWith("api/uploads/")) return `/${cleaned}`;
+    if (cleaned.startsWith("uploads/")) return `/api/${cleaned}`;
+    if (/\.[a-zA-Z0-9]{2,5}$/.test(cleaned)) return `/api/uploads/${cleaned}`;
+    return "/placeholder.jpg";
+  };
+  
+  const truncateDescription = (text: string) => {
+    if (text.length <= maxDescriptionLength) return text;
+    return text.substring(0, maxDescriptionLength) + "...";
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "sold": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "draft": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "expired": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+  };
+
   return (
-    <div className="text-center">
-      <div className={`text-lg font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:border-border/50 transition-all duration-300 hover:shadow-lg overflow-hidden">
+      <div className="p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Image Section */}
+          <div className="flex-shrink-0">
+            <div className="w-full lg:w-48 h-48 rounded-xl overflow-hidden bg-muted/50">
+              {listing.images && listing.images.length > 0 ? (
+                <img
+                  src={resolveImageUrl(listing.images[0].url)}
+                  alt={listing.images[0].alt || listing.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-12 w-12 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-2">
+                    {listing.title}
+                  </h3>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl font-bold text-primary">
+                      {currencySymbol}{listing.price.amount}
+                    </span>
+                    {listing.price.negotiable && (
+                      <span className="text-sm text-muted-foreground">(Negotiable)</span>
+                    )}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(listing.status)}`}>
+                      {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
+                    </span>
+                    {listing.featured && (
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 dark:from-orange-900/20 dark:to-yellow-900/20 dark:text-orange-400">
+                        Featured
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <p className="text-muted-foreground leading-relaxed">
+                  {expandedDescription ? listing.description : truncateDescription(listing.description)}
+                </p>
+                {listing.description.length > maxDescriptionLength && (
+                  <button
+                    onClick={() => setExpandedDescription(!expandedDescription)}
+                    className="text-primary hover:text-primary/80 text-sm font-medium mt-2 transition-colors"
+                  >
+                    {expandedDescription ? "Show less" : "Read more"}
+                  </button>
+                )}
+              </div>
+
+              {/* Meta Information */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{listing.views} views</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>Listed {formatDate(listing.createdAt)}</span>
+                </div>
+                {listing.location.city && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    <span>{listing.location.city}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              {listing.tags && listing.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {listing.tags.slice(0, 4).map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 rounded-md text-xs bg-muted/50 text-muted-foreground"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {listing.tags.length > 4 && (
+                    <span className="px-2 py-1 rounded-md text-xs bg-muted/50 text-muted-foreground">
+                      +{listing.tags.length - 4} more
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 mt-auto">
+                <Button
+                  onClick={onEdit}
+                  variant="outline"
+                  size="sm"
+                  className="px-4 py-2 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  Edit
+                </Button>
+                <Button
+                  onClick={() => onDelete(listing._id)}
+                  variant="outline"
+                  size="sm"
+                  className="px-4 py-2 border-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 transition-colors"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
+
