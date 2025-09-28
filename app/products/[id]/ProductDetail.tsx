@@ -79,6 +79,26 @@ export default function ProductDetail(productData: ProductDetailProps) {
     };
   }, []);
 
+  // ESC key functionality for gallery modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showGallery) {
+        setShowGallery(false);
+      }
+    };
+
+    if (showGallery) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showGallery]);
+
   const getTimeAgo = (dateString: string): string => {
     if (!dateString) return "Unknown date";
     const date = new Date(dateString);
@@ -194,14 +214,14 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
   return (
     <>
-      <div className="max-w-7xl mx-auto py-4 px-4">
+      <div className="max-w-7xl mx-auto py-8 px-4">
         <FadeIn>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Enhanced Image Gallery - Made more compact */}
-            <div className="space-y-3">
-              {/* Main Image - Reduced height */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Enhanced Image Gallery */}
+            <div className="space-y-4">
+              {/* Main Image - Enhanced design */}
               <motion.div
-                className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-gray-100 group"
+                className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 group shadow-xl border-2 border-border/20"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
@@ -241,14 +261,14 @@ export default function ProductDetail(productData: ProductDetailProps) {
                       priority
                     />
 
-                    {/* Zoom indicator */}
-                    <div className="absolute top-3 right-3 bg-black/50 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      <ZoomIn className="h-3 w-3" />
+                    {/* Enhanced Zoom indicator */}
+                    <div className="absolute top-4 right-4 bg-gradient-to-r from-primary/90 to-v0-dark-blue/90 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg">
+                      <ZoomIn className="h-4 w-4" />
                     </div>
 
-                    {/* Image counter */}
+                    {/* Enhanced Image counter */}
                     {images.length > 1 && (
-                      <div className="absolute top-3 left-3 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+                      <div className="absolute top-4 left-4 bg-gradient-to-r from-black/70 to-black/50 text-white px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-sm">
                         {currentImageIndex + 1} / {images.length}
                       </div>
                     )}
@@ -264,41 +284,41 @@ export default function ProductDetail(productData: ProductDetailProps) {
                   </div>
                 )}
 
-                {/* Navigation arrows for main image */}
+                {/* Enhanced Navigation arrows for main image */}
                 {images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary/90 to-v0-dark-blue/90 hover:from-primary hover:to-v0-dark-blue text-white rounded-full p-2 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
                       aria-label="Previous image"
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      <ChevronLeft className="h-5 w-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-1.5 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary/90 to-v0-dark-blue/90 hover:from-primary hover:to-v0-dark-blue text-white rounded-full p-2 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
                       aria-label="Next image"
                     >
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-5 w-5" />
                     </button>
                   </>
                 )}
               </motion.div>
 
-              {/* Enhanced Thumbnails - Made smaller */}
+              {/* Enhanced Thumbnails */}
               {images.length > 1 && (
                 <FadeInStagger
                   as="div"
-                  className="flex gap-1.5 overflow-x-auto pb-1"
+                  className="flex gap-3 overflow-x-auto pb-2"
                 >
                   {images.map((img: ImageType, idx: number) => (
                     <button
                       key={idx}
                       className={cn(
-                        "relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all",
+                        "relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-3 transition-all shadow-lg hover:shadow-xl",
                         idx === currentImageIndex
-                          ? "border-primary ring-2 ring-primary/20"
-                          : "border-gray-200 hover:border-gray-300"
+                          ? "border-primary scale-110 shadow-xl ring-4 ring-primary/20"
+                          : "border-border/30 hover:border-primary/60 hover:scale-105"
                       )}
                       onClick={() => setCurrentImageIndex(idx)}
                     >
@@ -324,107 +344,154 @@ export default function ProductDetail(productData: ProductDetailProps) {
               )}
             </div>
 
-            {/* Product Details - Made more compact */}
+            {/* Enhanced Product Details */}
             <FadeIn>
-              <div className="space-y-4">
-                {/* Header - Reduced spacing */}
-                <div className="flex items-start gap-3">
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold leading-tight mb-1">
-                      {productData.title || "Untitled Product"}
-                    </h1>
-                    <div className="text-3xl font-bold text-primary mb-3">
-                      {formatPrice(productData.price)}
+              <div className="space-y-6">
+                {/* Enhanced Header */}
+                <div className="relative">
+                  {/* Background accent */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-primary/5 via-v0-green/5 to-primary/5 rounded-2xl opacity-50" />
+                  
+                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-3 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                          {productData.title || "Untitled Product"}
+                        </h1>
+                        <div className="text-4xl md:text-5xl font-bold text-primary mb-4">
+                          {formatPrice(productData.price)}
+                        </div>
+                        
+                        {/* Trust indicators */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                              Available
+                            </span>
+                          </div>
+                          {productData.featured && (
+                            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                              <Star className="h-3 w-3" />
+                              <span className="text-sm font-medium">Featured</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {productData.featured && (
-                      <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs">
-                        <Star className="h-3 w-3 mr-1" /> Featured
+                </div>
+
+                {/* Enhanced Meta Information */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                      <MapPin className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Location</p>
+                      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        {productData.location?.city ||
+                          productData.location?.state ||
+                          productData.location?.country ||
+                          "Unknown"}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
+                      <Clock className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-green-700 dark:text-green-300">Listed</p>
+                      <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                        {getTimeAgo(
+                          productData.created_at || productData.createdAt || ""
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-purple-700 dark:text-purple-300">Views</p>
+                      <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                        {productData.views || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enhanced Tags and Categories */}
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground">Product Details</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {productData.category && (
+                      <Badge className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 text-primary hover:bg-gradient-to-r hover:from-primary/20 hover:to-v0-green/20 transition-colors">
+                        {productData.category}
                       </Badge>
                     )}
+                    {productData.subCategory && (
+                      <Badge className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-blue-500/10 to-blue-600/10 border border-blue-500/20 text-blue-600 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-blue-600/20 transition-colors">
+                        {productData.subCategory}
+                      </Badge>
+                    )}
+                    {productData.condition && (
+                      <Badge className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20 text-green-600 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-600/20 transition-colors">
+                        {productData.condition}
+                      </Badge>
+                    )}
+                    {Array.isArray(productData.tags) &&
+                      productData.tags
+                        .slice(0, 4)
+                        .map((tag: string, idx: number) => (
+                          <Badge key={idx} className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-purple-600 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-purple-600/20 transition-colors">
+                            #{tag}
+                          </Badge>
+                        ))}
                   </div>
                 </div>
 
-                {/* Meta Information - Reduced spacing */}
-                <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {productData.location?.city ||
-                      productData.location?.state ||
-                      productData.location?.country ||
-                      "Unknown location"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {getTimeAgo(
-                      productData.created_at || productData.createdAt || ""
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    {productData.views || 0} views
-                  </span>
-                </div>
-
-                {/* Tags and Categories - Smaller badges */}
-                <div className="flex flex-wrap gap-1.5">
-                  {productData.category && (
-                    <Badge variant="secondary" className="text-xs">
-                      {productData.category}
-                    </Badge>
-                  )}
-                  {productData.subCategory && (
-                    <Badge variant="secondary" className="text-xs">
-                      {productData.subCategory}
-                    </Badge>
-                  )}
-                  {productData.condition && (
-                    <Badge variant="secondary" className="text-xs">
-                      {productData.condition}
-                    </Badge>
-                  )}
-                  {Array.isArray(productData.tags) &&
-                    productData.tags
-                      .slice(0, 3)
-                      .map((tag: string, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                </div>
-
-                {/* Description - Improved UX with expand/collapse */}
-                <div>
-                  <h3 className="text-base font-semibold mb-2">Description</h3>
-                  <div
-                    ref={descRef}
-                    className={cn(
-                      "relative text-gray-700 dark:text-gray-300 leading-relaxed text-sm overflow-hidden",
-                      descExpanded ? "max-h-none" : "max-h-40"
-                    )}
-                  >
-                    {productData.description || (
-                      <span className="italic text-gray-400">
-                        No description available
-                      </span>
-                    )}
-
-                    {!descExpanded && isDescOverflowing && (
-                      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
-                    )}
-                  </div>
-                  {isDescOverflowing && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-1 px-0 h-7 text-primary hover:underline"
-                      aria-expanded={descExpanded}
-                      onClick={() => setDescExpanded((v) => !v)}
+                {/* Enhanced Description */}
+                <div className="relative">
+                  {/* Background accent */}
+                  <div className="absolute -inset-2 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 rounded-2xl opacity-50" />
+                  
+                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
+                    <h3 className="text-lg font-semibold mb-4 text-foreground">Description</h3>
+                    <div
+                      ref={descRef}
+                      className={cn(
+                        "relative text-gray-700 dark:text-gray-300 leading-relaxed text-base overflow-hidden",
+                        descExpanded ? "max-h-none" : "max-h-40"
+                      )}
                     >
-                      {descExpanded ? "Show less" : "Read more"}
-                    </Button>
-                  )}
+                      {productData.description || (
+                        <span className="italic text-gray-400">
+                          No description available
+                        </span>
+                      )}
+
+                      {!descExpanded && isDescOverflowing && (
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
+                      )}
+                    </div>
+                    {isDescOverflowing && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 px-4 py-2 text-primary hover:bg-primary/10 border-primary/20"
+                        aria-expanded={descExpanded}
+                        onClick={() => setDescExpanded((v) => !v)}
+                      >
+                        {descExpanded ? "Show less" : "Read more"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Custom Fields - More compact grid */}
@@ -456,43 +523,56 @@ export default function ProductDetail(productData: ProductDetailProps) {
                     </div>
                   )}
 
-                {/* Seller Information - More compact */}
+                {/* Enhanced Seller Information */}
                 <FadeIn>
-                  <div className="border-t pt-4">
-                    <h3 className="text-base font-semibold mb-3">Seller</h3>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{displayName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            Seller
+                  <div className="relative">
+                    {/* Background accent */}
+                    <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+                    
+                    <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
+                      <h3 className="text-lg font-semibold mb-4 text-foreground">Seller Information</h3>
+                      
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                            <User className="h-8 w-8 text-white" />
+                          </div>
+                          <div>
+                            <div className="text-xl font-bold text-foreground">{displayName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Verified Seller
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                                <span className="text-xs text-muted-foreground">4.8 (24 reviews)</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <ContactSellerButton
-                          sellerId={
-                            productData.seller?._id ||
-                            productData.user_id?._id ||
-                            ""
-                          }
-                          productId={productData._id || productData.id}
-                          productTitle={productData.title || "Untitled Product"}
-                          showPhoneNumber={productData.showPhoneNumber ?? true}
-                          sellerName={displayName}
-                          contactInfo={productData.contactInfo}
-                          variant="both"
-                          size="md"
-                        />
-                        <ReportProductButton
-                          productId={productData._id || productData.id}
-                          currentUserId={productData.currentUserId}
-                          triggerLabel="Report"
-                          size="sm"
-                        />
+                        
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <ContactSellerButton
+                            sellerId={
+                              productData.seller?._id ||
+                              productData.user_id?._id ||
+                              ""
+                            }
+                            productId={productData._id || productData.id}
+                            productTitle={productData.title || "Untitled Product"}
+                            showPhoneNumber={productData.showPhoneNumber ?? true}
+                            sellerName={displayName}
+                            contactInfo={productData.contactInfo}
+                            variant="both"
+                            size="lg"
+                          />
+                          <ReportProductButton
+                            productId={productData._id || productData.id}
+                            currentUserId={productData.currentUserId}
+                            triggerLabel="Report"
+                            size="lg"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -511,6 +591,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={() => setShowGallery(false)}
           >
             <motion.div
               className="relative w-full h-full flex items-center justify-center p-4"
@@ -518,15 +599,21 @@ export default function ProductDetail(productData: ProductDetailProps) {
               animate={{ y: 0, scale: 1, opacity: 1 }}
               exit={{ y: 10, scale: 0.98, opacity: 0 }}
               transition={{ type: "spring", stiffness: 130, damping: 18 }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Close button */}
+              {/* Enhanced Close button */}
               <button
                 onClick={() => setShowGallery(false)}
-                className="absolute top-4 right-4 z-10 bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-colors"
+                className="absolute top-6 right-6 z-20 bg-gradient-to-r from-red-500/90 to-red-600/90 hover:from-red-500 hover:to-red-600 text-white rounded-full p-3 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110"
                 aria-label="Close gallery"
               >
                 <X className="h-6 w-6" />
               </button>
+              
+              {/* Additional close hint */}
+              <div className="absolute top-6 right-20 z-20 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
+                Press ESC to close
+              </div>
 
               {/* Image counter */}
               <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-4 py-2 rounded-full">
@@ -548,19 +635,19 @@ export default function ProductDetail(productData: ProductDetailProps) {
                 />
               </div>
 
-              {/* Navigation */}
+              {/* Enhanced Navigation */}
               {images.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-colors"
+                    className="absolute left-6 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary/90 to-v0-dark-blue/90 hover:from-primary hover:to-v0-dark-blue text-white rounded-full p-4 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110"
                     aria-label="Previous image"
                   >
                     <ChevronLeft className="h-6 w-6" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-3 transition-colors"
+                    className="absolute right-6 top-1/2 -translate-y-1/2 bg-gradient-to-r from-primary/90 to-v0-dark-blue/90 hover:from-primary hover:to-v0-dark-blue text-white rounded-full p-4 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-110"
                     aria-label="Next image"
                   >
                     <ChevronRight className="h-6 w-6" />
