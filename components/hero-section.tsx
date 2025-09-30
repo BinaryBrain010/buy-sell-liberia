@@ -65,11 +65,6 @@ export function HeroSection() {
       <div className="container mx-auto px-4 md:px-8 lg:px-16 max-w-6xl flex flex-col items-center justify-center min-h-[70vh] w-full relative z-10">
         {/* Content Column */}
         <div className="flex flex-col items-center text-center w-full gap-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 px-4 py-2 text-sm font-medium text-foreground border border-primary/20 backdrop-blur-sm">
-            <Sparkles className="w-4 h-4 text-v0-orange" />
-            Trusted by thousands in Liberia
-          </div>
 
           {/* Main Heading */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-balance">
