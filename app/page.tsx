@@ -3,10 +3,10 @@ import { HeroSection } from "@/components/hero-section";
 import { CategoriesSection } from "@/components/categories-section";
 import { FeaturedListings } from "@/components/featured-listings";
 import { StatsSection } from "@/components/stats-section";
-import { TestimonialsSection } from "@/components/testimonials-section";
+// import { TestimonialsSection } from "@/components/testimonials-section"; // Disabled for redesign
 import { HowItWorksSection } from "@/components/how-it-works-section";
 import { TrustBadgesSection } from "@/components/trust-badges-section";
-import { NewsletterSection } from "@/components/newsletter-section";
+// import { NewsletterSection } from "@/components/newsletter-section"; // Disabled for redesign
 import { FadeIn } from "@/components/static-pages/Animated";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -51,9 +51,9 @@ export default function Home() {
       </FadeIn>
 
       {/* Testimonials */}
-      <FadeIn>
+      {/* <FadeIn>
         <TestimonialsSection />
-      </FadeIn>
+      </FadeIn> */}
 
       {/* How It Works */}
       <FadeIn>
@@ -66,14 +66,13 @@ export default function Home() {
       </FadeIn>
 
       {/* Newsletter */}
-      <FadeIn>
+      {/* <FadeIn>
         <NewsletterSection />
-      </FadeIn>
+      </FadeIn> */}
 
       {/* Call to Action */}
-      <FadeIn>
+      {/* <FadeIn>
         <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-v0-green/5 py-16 md:py-20">
-          {/* Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-1/4 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
             <div className="absolute bottom-1/4 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-green/20 to-transparent blur-3xl" />
@@ -168,7 +167,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Trust Indicators */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -186,7 +184,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </FadeIn>
+      </FadeIn> */}
     </div>
   );
 }
