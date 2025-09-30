@@ -1,46 +1,52 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState, useRef } from "react"
+import type React from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface Announcement {
-  _id: string
-  title: string
-  content: string
-  type?: string[]
+  _id: string;
+  title: string;
+  content: string;
+  type?: string[];
 }
 
 type AnnouncementBarProps = {
-  children?: React.ReactNode
+  children?: React.ReactNode;
   // Speed in seconds; optional via CSS var if desired
-  durationSeconds?: number
-  direction?: "ltr" | "rtl"
-}
+  durationSeconds?: number;
+  direction?: "ltr" | "rtl";
+};
 
-export function AnnouncementBar({ children, durationSeconds = 25, direction = "ltr" }: AnnouncementBarProps) {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([])
-  const [loading, setLoading] = useState(true)
-  const marqueeRef = useRef<HTMLDivElement>(null)
+export function AnnouncementBar({
+  children,
+  durationSeconds = 25,
+  direction = "ltr",
+}: AnnouncementBarProps) {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const marqueeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchAnnouncements() {
-      setLoading(true)
+      setLoading(true);
       try {
-        const res = await fetch("/api/admin/announcements")
-        if (!res.ok) throw new Error("Failed to fetch announcements")
-        const data = await res.json()
-        setAnnouncements(data.announcements || [])
+        const res = await fetch("/api/admin/announcements");
+        if (!res.ok) throw new Error("Failed to fetch announcements");
+        const data = await res.json();
+        setAnnouncements(data.announcements || []);
       } catch (err) {
-        setAnnouncements([])
+        setAnnouncements([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    fetchAnnouncements()
-  }, [])
+    fetchAnnouncements();
+  }, []);
 
   // Only show announcements that have the type 'banner'
-  const displayAnnouncements = announcements.filter((a) => (a.type || []).some((t) => t?.toLowerCase() === "banner"))
+  const displayAnnouncements = announcements.filter((a) =>
+    (a.type || []).some((t) => t?.toLowerCase() === "banner")
+  );
 
   // Build a unified items array from children, fetched announcements, or defaults
   const items: React.ReactNode[] = children
@@ -48,36 +54,32 @@ export function AnnouncementBar({ children, durationSeconds = 25, direction = "l
       ? (children as React.ReactNode[])
       : [children]
     : displayAnnouncements.length > 0
-      ? displayAnnouncements.map((a) => (
-          <span key={a._id} className="inline-flex items-center">
-            <strong className="mr-1">{a.title}:</strong>
-            <span>{a.content}</span>
-          </span>
-        ))
-      : [
-          <span key="def-1" className="text-sm md:text-base">
-            Limited time: Free shipping on all orders
-          </span>,
-          <span key="def-2" className="text-sm md:text-base">
-            New features dropping weekly
-          </span>,
-          <span key="def-3" className="text-sm md:text-base">
-            Subscribe for product updates
-          </span>,
-        ]
+    ? displayAnnouncements.map((a) => (
+        <span key={a._id} className="inline-flex items-center">
+          <strong className="mr-1">{a.title}:</strong>
+          <span>{a.content}</span>
+        </span>
+      ))
+    : [];
 
   // Insert a "•" separator after every item (including the last) so the loop seam is also separated
   const itemsWithSeparators = items.flatMap((item, idx) => [
     <span key={`item-${idx}`} className="inline-flex items-center">
       {item}
     </span>,
-    <span key={`sep-${idx}`} aria-hidden="true" className="opacity-60 px-3 sm:px-4">
+    <span
+      key={`sep-${idx}`}
+      aria-hidden="true"
+      className="opacity-60 px-3 sm:px-4"
+    >
       {"•"}
     </span>,
-  ])
+  ]);
 
   // If loading, don't render until we know what to show
-  if (loading) return null
+  if (loading) return null;
+
+  if (items.length === 0) return null;
 
   return (
     <div
@@ -127,7 +129,7 @@ export function AnnouncementBar({ children, durationSeconds = 25, direction = "l
         }
       `}</style>
     </div>
-  )
+  );
 }
 
-export default AnnouncementBar
+export default AnnouncementBar;
