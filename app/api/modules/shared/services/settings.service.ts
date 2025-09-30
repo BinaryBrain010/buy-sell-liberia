@@ -219,7 +219,7 @@ export class SettingsService {
    */
   private static getDefaultSettings(): Record<string, any> {
     return {
-      [this.SETTING_KEYS.PLATFORM_CURRENCY]: "USD",
+      [this.SETTING_KEYS.PLATFORM_CURRENCY]: "LRD",
       [this.SETTING_KEYS.PLATFORM_LOGO]: "",
       [this.SETTING_KEYS.LISTING_EXPIRATION_DAYS]: 90,
       [this.SETTING_KEYS.MAX_LISTING_PHOTOS]: 10,
@@ -227,8 +227,46 @@ export class SettingsService {
       [this.SETTING_KEYS.REGISTRATION_ENABLED]: true,
       [this.SETTING_KEYS.MAINTENANCE_MODE]: false,
       [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
-      [this.SETTING_KEYS.MONETIZATION_PRICES]: {},
-      [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {},
+      [this.SETTING_KEYS.MONETIZATION_PRICES]: {
+        featured_listing: {
+          "3_days": { 
+            price: 150, 
+            duration: 3, 
+            label: "3 Days",
+            description: "Feature your listing for 3 days"
+          },
+          "7_days": { 
+            price: 300, 
+            duration: 7, 
+            label: "7 Days",
+            description: "Feature your listing for 1 week"
+          },
+          "14_days": { 
+            price: 500, 
+            duration: 14, 
+            label: "14 Days",
+            description: "Feature your listing for 2 weeks"
+          }
+        }
+      },
+      [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {
+        mtn: {
+          number: "",
+          name: "",
+          instructions: "Send payment to the MTN number above and enter your transaction ID"
+        },
+        orange: {
+          number: "",
+          name: "",
+          instructions: "Send payment to the Orange number above and enter your transaction ID"
+        },
+        bank: {
+          accountNumber: "",
+          accountName: "",
+          bankName: "",
+          instructions: "Transfer to the bank account above and upload your payment receipt"
+        }
+      },
     };
   }
 

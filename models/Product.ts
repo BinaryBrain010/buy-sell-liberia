@@ -156,6 +156,9 @@ export interface IProduct extends Document {
   status: "active" | "sold" | "expired" | "removed" | "pending"
   listingType: "sale" | "rent" | "service" | "job"
   featured: boolean
+  featuredExpiresAt?: Date
+  featuredStartedAt?: Date
+  featuredDuration?: number
   views: number
   added_at: Date
   expires_at: Date
@@ -274,6 +277,18 @@ const productSchema = new Schema<IProduct>(
     featured: {
       type: Boolean,
       default: false,
+    },
+    featuredExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    featuredStartedAt: {
+      type: Date,
+      default: null,
+    },
+    featuredDuration: {
+      type: Number,
+      default: null,
     },
     views: {
       type: Number,

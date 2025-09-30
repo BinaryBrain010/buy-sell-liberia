@@ -46,14 +46,33 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       // No body or not JSON, ignore
     }
 
+    // Validate and set reviewedBy (only if valid ObjectId)
+    let reviewedById: mongoose.Types.ObjectId | null = null;
+    if (adminId && mongoose.Types.ObjectId.isValid(adminId)) {
+      reviewedById = new mongoose.Types.ObjectId(adminId);
+    } else if (payload.email) {
+      // Try to find admin by email if ID is not valid ObjectId
+      const adminUser = await User.findOne({ email: payload.email });
+      if (adminUser) {
+        reviewedById = adminUser._id as mongoose.Types.ObjectId;
+      }
+    }
+
     // Mark payment as approved
     payment.status = 'approved';
-    payment.reviewedBy = adminId;
+    if (reviewedById) {
+      payment.reviewedBy = reviewedById as any;
+    }
     payment.reviewedAt = new Date();
     payment.adminNotes = adminNotes;
     await payment.save();
 
-    // Mark product as featured (direct update, no validation)
+    // Calculate feature expiration date
+    const now = new Date();
+    const featureDuration = payment.featureDuration || 7; // Default to 7 days if not set
+    const featuredExpiresAt = new Date(now.getTime() + featureDuration * 24 * 60 * 60 * 1000);
+
+    // Mark product as featured with expiration (direct update, no validation)
     let productDoc = null;
     if (payment.listing && typeof payment.listing === 'object' && 'featured' in payment.listing) {
       productDoc = payment.listing;
@@ -62,19 +81,22 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
     if (productDoc && typeof productDoc === 'object' && productDoc !== null) {
       const productIdToUpdate = productDoc._id || payment.listing;
-      await Product.updateOne({ _id: productIdToUpdate }, { $set: { featured: true } });
+      await Product.updateOne(
+        { _id: productIdToUpdate }, 
+        { 
+          $set: { 
+            featured: true,
+            featuredExpiresAt: featuredExpiresAt,
+            featuredStartedAt: now,
+            featuredDuration: featureDuration
+          } 
+        }
+      );
     }
 
     // Send message to user via chat
     const userId = payment.user._id;
-    let senderId = adminId;
-    // Defensive: ensure senderId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(senderId)) {
-      // Try to fetch admin by email or fallback
-      const adminUser = await User.findOne({ email: payload.email });
-      if (adminUser) senderId = adminUser._id;
-      else senderId = userId; // fallback to userId to avoid validation error
-    }
+    let senderId = reviewedById || userId; // Use reviewedById or fallback to userId for system messages
     const productTitle = productDoc && typeof productDoc === 'object' && productDoc !== null && 'title' in productDoc ? productDoc.title : '';
     const productId = (productDoc && typeof productDoc === 'object' && productDoc !== null && '_id' in productDoc ? productDoc._id : payment.listing) as string | mongoose.Types.ObjectId;
     let chat = await Chat.findOne({ product: productId, user2: userId });
@@ -82,7 +104,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
       console.log('Created new chat:', chat._id);
     }
-    chat.messages.push({ sender: senderId, content: `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured.`, sentAt: new Date(), readBy: [] });
+    const featurePlanLabel = payment.featurePlan === '3_days' ? '3 days' : payment.featurePlan === '7_days' ? '7 days' : '14 days';
+    chat.messages.push({ sender: senderId, content: `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured for ${featurePlanLabel}.`, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
     console.log('Pushed message to chat:', chat._id, 'Sender:', senderId);
     await chat.save();

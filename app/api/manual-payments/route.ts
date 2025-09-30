@@ -5,6 +5,7 @@ import Product from "../../../models/Product";
 import { verifyToken } from "../modules/auth/middlewares/next-auth-middleware";
 import { parseFiles } from "@/lib/multer";
 import { uploadProductImagesToLocal, validateImageFilesForLocal } from "@/lib/local-file-upload";
+import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,12 +20,40 @@ export async function POST(request: NextRequest) {
     const { files, fields } = await parseFiles(request);
     console.log('Parsed fields:', fields);
     console.log('Parsed files:', files);
-    const { listing, amount, method, transactionId, userNotes = "" } = fields;
+    const { listing, method, transactionId, userNotes = "", featurePlan } = fields;
 
     // Validate required fields
-    if (!listing || !amount || !method || !transactionId || files.length === 0) {
-      return NextResponse.json({ error: "All fields are required and screenshot must be uploaded." }, { status: 400 });
+    if (!listing || !method || !transactionId || !featurePlan || files.length === 0) {
+      return NextResponse.json({ error: "All fields (listing, method, transactionId, featurePlan) and screenshot are required." }, { status: 400 });
     }
+
+    // Validate feature plan
+    if (!["3_days", "7_days", "14_days"].includes(featurePlan)) {
+      return NextResponse.json({ error: "Invalid feature plan. Must be 3_days, 7_days, or 14_days." }, { status: 400 });
+    }
+
+    // Check if monetization is enabled
+    const settings = await SettingsService.getAllSettings();
+    if (!settings.monetizationEnabled) {
+      return NextResponse.json({ error: "Monetization features are currently disabled." }, { status: 403 });
+    }
+
+    // Get pricing from settings
+    const prices = settings.monetizationPrices || {};
+    const featuredPricing = prices.featured_listing || {
+      "3_days": { price: 150, duration: 3, label: "3 Days" },
+      "7_days": { price: 300, duration: 7, label: "7 Days" },
+      "14_days": { price: 500, duration: 14, label: "14 Days" }
+    };
+
+    const selectedPlan = featuredPricing[featurePlan];
+    if (!selectedPlan) {
+      return NextResponse.json({ error: "Selected plan not found in settings." }, { status: 400 });
+    }
+
+    // Auto-calculate amount and duration from plan
+    const amount = selectedPlan.price;
+    const featureDuration = selectedPlan.duration;
 
     // Validate screenshot file
     const validation = validateImageFilesForLocal(files);
@@ -77,6 +106,9 @@ export async function POST(request: NextRequest) {
       screenshot,
       userNotes,
       status: "pending",
+      featureType: "featured_listing",
+      featurePlan,
+      featureDuration,
     });
 
     return NextResponse.json(payment, { status: 201 });

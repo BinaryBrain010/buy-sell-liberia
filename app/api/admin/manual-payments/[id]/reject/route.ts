@@ -46,10 +46,24 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       // No body or not JSON, ignore
     }
 
+    // Validate and set reviewedBy (only if valid ObjectId)
+    let reviewedById: mongoose.Types.ObjectId | null = null;
+    if (adminId && mongoose.Types.ObjectId.isValid(adminId)) {
+      reviewedById = new mongoose.Types.ObjectId(adminId);
+    } else if (payload.email) {
+      // Try to find admin by email if ID is not valid ObjectId
+      const adminUser = await User.findOne({ email: payload.email });
+      if (adminUser) {
+        reviewedById = adminUser._id as mongoose.Types.ObjectId;
+      }
+    }
+
     const previousStatus = payment.status;
     payment.status = 'rejected';
     payment.adminNotes = adminNotes;
-    payment.reviewedBy = adminId;
+    if (reviewedById) {
+      payment.reviewedBy = reviewedById as any;
+    }
     payment.reviewedAt = new Date();
     await payment.save();
 
@@ -69,6 +83,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
     // Send message to user via chat
     const userId = payment.user._id;
+    const senderId = reviewedById || userId; // Use reviewedById or fallback to userId for system messages
     let productTitle = '';
     if (payment.listing && typeof payment.listing === 'object' && 'title' in payment.listing) {
       productTitle = (payment.listing as any)?.title ?? '';
@@ -76,9 +91,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const productId = payment.listing && typeof payment.listing === 'object' && '_id' in payment.listing ? payment.listing._id : payment.listing;
     let chat = await Chat.findOne({ product: productId, user2: userId });
     if (!chat) {
-      chat = await Chat.create({ product: productId, user1: adminId, user2: userId, messages: [] });
+      chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
     }
-    chat.messages.push({ sender: adminId, content: `Your manual payment for featuring the product "${productTitle}" has been rejected. Reason: ${adminNotes || 'No reason provided.'}`, sentAt: new Date(), readBy: [] });
+    chat.messages.push({ sender: senderId, content: `Your manual payment for featuring the product "${productTitle}" has been rejected. Reason: ${adminNotes || 'No reason provided.'}`, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
     await chat.save();
 

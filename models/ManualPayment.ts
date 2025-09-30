@@ -2,6 +2,8 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export type ManualPaymentStatus = "pending" | "approved" | "rejected";
 export type ManualPaymentMethod = "MTN" | "Orange" | "Bank";
+export type FeatureType = "featured_listing"; // Future: "bump", "subscription", etc.
+export type FeaturePlan = "3_days" | "7_days" | "14_days";
 
 export interface IManualPayment extends Document {
   user: mongoose.Types.ObjectId;
@@ -17,6 +19,11 @@ export interface IManualPayment extends Document {
   reviewedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  
+  // Feature-specific fields
+  featureType: FeatureType;
+  featurePlan: FeaturePlan;
+  featureDuration: number; // Duration in days (3, 7, or 14)
 }
 
 const manualPaymentSchema = new Schema<IManualPayment>({
@@ -31,6 +38,11 @@ const manualPaymentSchema = new Schema<IManualPayment>({
   userNotes: { type: String },
   reviewedBy: { type: Schema.Types.ObjectId, ref: "Admin" },
   reviewedAt: { type: Date },
+  
+  // Feature-specific fields
+  featureType: { type: String, enum: ["featured_listing"], required: true, default: "featured_listing" },
+  featurePlan: { type: String, enum: ["3_days", "7_days", "14_days"], required: true },
+  featureDuration: { type: Number, required: true, min: 1, max: 365 }, // Days
 }, {
   timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" }
 });

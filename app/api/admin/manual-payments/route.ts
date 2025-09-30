@@ -61,6 +61,10 @@ export async function GET(request: NextRequest) {
       createdAt: payment.createdAt,
       reviewedBy: payment.reviewedBy,
       reviewedAt: payment.reviewedAt,
+      // Feature-specific details
+      featureType: (payment as any).featureType || 'featured_listing',
+      featurePlan: (payment as any).featurePlan || null,
+      featureDuration: (payment as any).featureDuration || null,
     }));
 
     return NextResponse.json({
