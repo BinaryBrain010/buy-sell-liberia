@@ -82,20 +82,20 @@ export default function ProductDetail(productData: ProductDetailProps) {
   // ESC key functionality for gallery modal
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showGallery) {
+      if (event.key === "Escape" && showGallery) {
         setShowGallery(false);
       }
     };
 
     if (showGallery) {
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
       // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "unset";
     };
   }, [showGallery]);
 
@@ -214,11 +214,11 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
   return (
     <>
-      <div className="max-w-7xl mx-auto py-8 px-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 lg:py-12">
         <FadeIn>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 gap-8 md:gap-10 lg:gap-12 xl:gap-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] items-start">
             {/* Enhanced Image Gallery */}
-            <div className="space-y-4">
+            <div className="space-y-5 md:space-y-6">
               {/* Main Image - Enhanced design */}
               <motion.div
                 className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 group shadow-xl border-2 border-border/20"
@@ -346,24 +346,24 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
             {/* Enhanced Product Details */}
             <FadeIn>
-              <div className="space-y-6">
+              <div className="space-y-6 md:space-y-8 lg:space-y-10 lg:sticky lg:top-28">
                 {/* Enhanced Header */}
                 <div className="relative">
                   {/* Background accent */}
                   <div className="absolute -inset-2 bg-gradient-to-r from-primary/5 via-v0-green/5 to-primary/5 rounded-2xl opacity-50" />
-                  
+
                   <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h1 className="text-3xl md:text-4xl font-bold leading-tight mb-3 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight mb-3 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                           {productData.title || "Untitled Product"}
                         </h1>
-                        <div className="text-4xl md:text-5xl font-bold text-primary mb-4">
+                        <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-4">
                           {formatPrice(productData.price)}
                         </div>
-                        
+
                         {/* Trust indicators */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                           <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             <span className="text-sm font-medium text-green-700 dark:text-green-300">
@@ -373,23 +373,45 @@ export default function ProductDetail(productData: ProductDetailProps) {
                           {productData.featured && (
                             <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
                               <Star className="h-3 w-3" />
-                              <span className="text-sm font-medium">Featured</span>
+                              <span className="text-sm font-medium">
+                                Featured
+                              </span>
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      {/* Quick actions */}
+                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <Button
+                          variant={liked ? "default" : "outline"}
+                          onClick={() => setLiked((prev) => !prev)}
+                          className="w-full sm:w-auto px-5"
+                          aria-pressed={liked}
+                        >
+                          <Heart
+                            className={cn(
+                              "h-4 w-4 mr-2 transition-colors",
+                              liked ? "fill-current" : ""
+                            )}
+                          />
+                          {liked ? "Saved to favorites" : "Save this listing"}
+                        </Button>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Enhanced Meta Information */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
                       <MapPin className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">Location</p>
+                      <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                        Location
+                      </p>
                       <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
                         {productData.location?.city ||
                           productData.location?.state ||
@@ -398,13 +420,15 @@ export default function ProductDetail(productData: ProductDetailProps) {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
                       <Clock className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-green-700 dark:text-green-300">Listed</p>
+                      <p className="text-xs font-medium text-green-700 dark:text-green-300">
+                        Listed
+                      </p>
                       <p className="text-sm font-semibold text-green-900 dark:text-green-100">
                         {getTimeAgo(
                           productData.created_at || productData.createdAt || ""
@@ -412,13 +436,15 @@ export default function ProductDetail(productData: ProductDetailProps) {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
                       <Eye className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-purple-700 dark:text-purple-300">Views</p>
+                      <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                        Views
+                      </p>
                       <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                         {productData.views || 0}
                       </p>
@@ -428,7 +454,9 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
                 {/* Enhanced Tags and Categories */}
                 <div className="space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground">Product Details</h3>
+                  <h3 className="text-lg font-semibold text-foreground">
+                    Product Details
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {productData.category && (
                       <Badge className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 text-primary hover:bg-gradient-to-r hover:from-primary/20 hover:to-v0-green/20 transition-colors">
@@ -449,7 +477,10 @@ export default function ProductDetail(productData: ProductDetailProps) {
                       productData.tags
                         .slice(0, 4)
                         .map((tag: string, idx: number) => (
-                          <Badge key={idx} className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-purple-600 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-purple-600/20 transition-colors">
+                          <Badge
+                            key={idx}
+                            className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-purple-600 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-purple-600/20 transition-colors"
+                          >
                             #{tag}
                           </Badge>
                         ))}
@@ -460,14 +491,18 @@ export default function ProductDetail(productData: ProductDetailProps) {
                 <div className="relative">
                   {/* Background accent */}
                   <div className="absolute -inset-2 bg-gradient-to-r from-muted/30 via-muted/20 to-muted/30 rounded-2xl opacity-50" />
-                  
+
                   <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-                    <h3 className="text-lg font-semibold mb-4 text-foreground">Description</h3>
+                    <h3 className="text-lg font-semibold mb-4 text-foreground">
+                      Description
+                    </h3>
                     <div
                       ref={descRef}
                       className={cn(
-                        "relative text-gray-700 dark:text-gray-300 leading-relaxed text-base overflow-hidden",
-                        descExpanded ? "max-h-none" : "max-h-40"
+                        "relative text-gray-700 dark:text-gray-300 leading-relaxed text-sm sm:text-base overflow-hidden",
+                        descExpanded
+                          ? "max-h-none"
+                          : "max-h-[11rem] sm:max-h-[15rem]"
                       )}
                     >
                       {productData.description || (
@@ -499,13 +534,13 @@ export default function ProductDetail(productData: ProductDetailProps) {
                   productData.customFields.length > 0 && (
                     <div>
                       <h3 className="text-base font-semibold mb-2">Details</h3>
-                      <div className="grid grid-cols-1 gap-1.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {productData.customFields
                           .slice(0, 3)
                           .map((field: any, idx: number) => (
                             <div
                               key={idx}
-                              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                              className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
                             >
                               <span className="font-medium">
                                 {field.fieldName}
@@ -528,30 +563,25 @@ export default function ProductDetail(productData: ProductDetailProps) {
                   <div className="relative">
                     {/* Background accent */}
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-                    
+
                     <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-                      <h3 className="text-lg font-semibold mb-4 text-foreground">Seller Information</h3>
-                      
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <h3 className="text-lg font-semibold mb-4 text-foreground">
+                        Seller Information
+                      </h3>
+
+                      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
                         <div className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
                             <User className="h-8 w-8 text-white" />
                           </div>
                           <div>
-                            <div className="text-xl font-bold text-foreground">{displayName}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Verified Seller
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                                <span className="text-xs text-muted-foreground">4.8 (24 reviews)</span>
-                              </div>
+                            <div className="text-xl font-bold text-foreground">
+                              {displayName}
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="flex flex-col sm:flex-row gap-3">
+
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                           <ContactSellerButton
                             sellerId={
                               productData.seller?._id ||
@@ -559,18 +589,25 @@ export default function ProductDetail(productData: ProductDetailProps) {
                               ""
                             }
                             productId={productData._id || productData.id}
-                            productTitle={productData.title || "Untitled Product"}
-                            showPhoneNumber={productData.showPhoneNumber ?? true}
+                            productTitle={
+                              productData.title || "Untitled Product"
+                            }
+                            showPhoneNumber={
+                              productData.showPhoneNumber ?? true
+                            }
                             sellerName={displayName}
                             contactInfo={productData.contactInfo}
                             variant="both"
                             size="lg"
+                            className="w-full sm:w-auto justify-center"
                           />
                           <ReportProductButton
                             productId={productData._id || productData.id}
                             currentUserId={productData.currentUserId}
-                            triggerLabel="Report"
+                            triggerLabel="Report Listing"
                             size="lg"
+                            variant="outline"
+                            className="w-full sm:w-auto"
                           />
                         </div>
                       </div>
@@ -609,7 +646,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
               >
                 <X className="h-6 w-6" />
               </button>
-              
+
               {/* Additional close hint */}
               <div className="absolute top-6 right-20 z-20 bg-black/70 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
                 Press ESC to close
