@@ -1,31 +1,31 @@
-import AnnouncementBar from "@/components/AnnouncementBar";
+import { AnnouncementBar } from "@/components/announcement-bar";
 import { HeroSection } from "@/components/hero-section";
 import { CategoriesSection } from "@/components/categories-section";
 import { FeaturedListings } from "@/components/featured-listings";
 import { StatsSection } from "@/components/stats-section";
-import { TestimonialsSection } from "@/components/testimonials-section";
+// import { TestimonialsSection } from "@/components/testimonials-section"; // Disabled for redesign
 import { HowItWorksSection } from "@/components/how-it-works-section";
 import { TrustBadgesSection } from "@/components/trust-badges-section";
-import { NewsletterSection } from "@/components/newsletter-section";
+// import { NewsletterSection } from "@/components/newsletter-section"; // Disabled for redesign
 import { FadeIn } from "@/components/static-pages/Animated";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="relative   bg-gradient-to-b from-background to-muted/20">
+    <div className="relative overflow-hidden bg-gradient-to-b from-background to-muted/20">
       {/* Enhanced decorative background accents */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-gradient-to-br from-primary/15 to-transparent blur-3xl"
+        className="pointer-events-none absolute -top-10 -right-10 sm:-top-16 sm:-right-16 lg:-top-20 lg:-right-20 h-32 w-32 sm:h-48 sm:w-48 lg:h-64 lg:w-64 rounded-full bg-gradient-to-br from-primary/15 to-transparent blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute top-1/3 -left-20 h-48 w-48 rounded-full bg-gradient-to-br from-v0-green/15 to-transparent blur-3xl"
+        className="pointer-events-none absolute top-1/3 -left-10 sm:-left-16 lg:-left-20 h-24 w-24 sm:h-36 sm:w-36 lg:h-48 lg:w-48 rounded-full bg-gradient-to-br from-v0-green/15 to-transparent blur-3xl"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute bottom-1/4 right-1/4 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/15 to-transparent blur-3xl"
+        className="pointer-events-none absolute bottom-1/4 right-1/4 h-16 w-16 sm:h-24 sm:w-24 lg:h-32 lg:w-32 rounded-full bg-gradient-to-br from-v0-orange/15 to-transparent blur-3xl"
       />
 
       <AnnouncementBar />
@@ -51,9 +51,9 @@ export default function Home() {
       </FadeIn>
 
       {/* Testimonials */}
-      <FadeIn>
+      {/* <FadeIn>
         <TestimonialsSection />
-      </FadeIn>
+      </FadeIn> */}
 
       {/* How It Works */}
       <FadeIn>
@@ -66,14 +66,13 @@ export default function Home() {
       </FadeIn>
 
       {/* Newsletter */}
-      <FadeIn>
+      {/* <FadeIn>
         <NewsletterSection />
-      </FadeIn>
+      </FadeIn> */}
 
       {/* Call to Action */}
-      <FadeIn>
+      {/* <FadeIn>
         <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-v0-green/5 py-16 md:py-20">
-          {/* Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute top-1/4 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
             <div className="absolute bottom-1/4 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-green/20 to-transparent blur-3xl" />
@@ -86,28 +85,49 @@ export default function Home() {
                 Ready to Get Started?
               </h2>
               <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 leading-relaxed">
-                Join thousands of users buying and selling on Liberia's most trusted marketplace. 
-                List your items in minutes or discover amazing deals from verified sellers.
+                Join thousands of users buying and selling on Liberia's most
+                trusted marketplace. List your items in minutes or discover
+                amazing deals from verified sellers.
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
                 <div className="hover:scale-105 transition-transform">
                   <Link href="/sell">
-                    <Button 
-                      size="lg" 
+                    <Button
+                      size="lg"
                       className="px-8 py-4 text-base font-semibold bg-gradient-to-r from-primary to-v0-dark-blue text-primary-foreground hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl group"
                     >
-                      <svg className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      <svg
+                        className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
                       </svg>
                       Start Selling Today
-                      <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </Button>
                   </Link>
                 </div>
-                
+
                 <div className="hover:scale-105 transition-transform">
                   <Link href="/products">
                     <Button
@@ -115,19 +135,38 @@ export default function Home() {
                       variant="outline"
                       className="px-8 py-4 text-base font-semibold border-2 border-primary/20 text-foreground hover:bg-gradient-to-r hover:from-v0-green/10 hover:to-v0-orange/10 hover:border-primary/40 transition-all duration-300 rounded-xl backdrop-blur-sm"
                     >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
                       </svg>
                       Browse Products
-                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-4 h-4 ml-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </Button>
                   </Link>
                 </div>
               </div>
 
-              {/* Trust Indicators */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
@@ -145,7 +184,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </FadeIn>
+      </FadeIn> */}
     </div>
   );
 }

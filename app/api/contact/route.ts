@@ -27,7 +27,11 @@ export async function POST(req: NextRequest) {
     const pass = process.env.SMTP_PASS;
     const secure =
       String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
-    const to = process.env.CONTACT_EMAIL_TO || process.env.SMTP_USER;
+    // Destination address: explicit env var, otherwise hard‑coded business inbox, finally fallback to SMTP user
+    const to =
+      process.env.CONTACT_EMAIL_TO ||
+      "info@buysellliberia.com" ||
+      process.env.SMTP_USER;
     const from =
       process.env.CONTACT_EMAIL_FROM ||
       process.env.SMTP_USER ||
@@ -63,7 +67,11 @@ export async function POST(req: NextRequest) {
       <p><strong>Subject:</strong> ${escapeHtml(subjectLine)}</p>
       <p><strong>Message:</strong></p>
       <p>${escapeHtml(message).replace(/\n/g, "<br/>")}</p>
+      <hr/>
+      <p style="font-size:12px;color:#666">This message was sent via the website contact form.</p>
     `;
+
+    const text = `New Contact Message\n\nName: ${name}\nEmail: ${email}\nSubject: ${subjectLine}\n\nMessage:\n${message}`;
 
     await transporter.sendMail({
       from,
@@ -71,6 +79,7 @@ export async function POST(req: NextRequest) {
       replyTo: email,
       subject: subjectLine,
       html,
+      text,
     });
 
     return NextResponse.json({ success: true, message: "Message sent" });

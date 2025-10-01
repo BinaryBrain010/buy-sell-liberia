@@ -39,10 +39,21 @@ export async function GET(req: NextRequest) {
     .populate("product", "title images")
     .sort({ lastMessageAt: -1 });
 
-  // Debug logging to see what's actually being returned
-  console.log('🔍 Chat API - Raw chats data:', JSON.stringify(chats, null, 2));
+  const normalizedChats = chats.map((chat) => {
+    const plain = chat.toObject({ virtuals: true });
 
-  return NextResponse.json(chats);
+    if (!plain.product) {
+      plain.product = {
+        _id: "announcement",
+        title: "Announcement",
+        images: [],
+      };
+    }
+
+    return plain;
+  });
+
+  return NextResponse.json(normalizedChats);
 }
 
 // POST: Create a new chat or add a message
@@ -135,7 +146,10 @@ export async function POST(req: NextRequest) {
   await updatedChat.populate("product", "title images");
 
   // Debug logging for created/updated chat
-  console.log('🔍 Chat API - Updated chat data:', JSON.stringify(updatedChat, null, 2));
+  console.log(
+    "🔍 Chat API - Updated chat data:",
+    JSON.stringify(updatedChat, null, 2)
+  );
 
   return NextResponse.json(updatedChat);
 }
