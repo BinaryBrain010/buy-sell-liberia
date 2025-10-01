@@ -57,7 +57,9 @@ export default function AboutPage() {
               <div className="relative z-10">
                 <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
                   <span className="text-2xl">ℹ️</span>
-                  <span className="text-sm font-semibold text-primary">About</span>
+                  <span className="text-sm font-semibold text-primary">
+                    About
+                  </span>
                 </div>
                 <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                   {page.title || "About BuySell"}
@@ -124,7 +126,9 @@ export default function AboutPage() {
             <div className="relative z-10">
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
                 <span className="text-2xl">🏪</span>
-                <span className="text-sm font-semibold text-primary">About Us</span>
+                <span className="text-sm font-semibold text-primary">
+                  About Us
+                </span>
               </div>
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                 {heroTitle}
@@ -200,7 +204,10 @@ export default function AboutPage() {
                   Building the Future of Local Commerce
                 </h3>
                 <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                  We're continuously improving the platform with better discovery, safer transactions, and tools that empower individuals and businesses. Stay tuned for upcoming features and innovations.
+                  We're continuously improving the platform with better
+                  discovery, safer transactions, and tools that empower
+                  individuals and businesses. Stay tuned for upcoming features
+                  and innovations.
                 </p>
               </div>
             </div>
