@@ -21,7 +21,7 @@ async function sendGenericEmail(
   html: string
 ) {
   await emailService["transporter"].sendMail({
-    from: `"BuySell Platform" <${process.env.SMTP_USER}>`,
+    from: `"BuySell Liberia" <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,
