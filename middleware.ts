@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
   }
 
   // CORS: Allow requests from http://localhost:5173
-  const allowedOrigin = "https://admin.buysellliberia.com";
+  const allowedOrigin = "http://localhost:5173";
   const origin = request.headers.get("origin");
 
   // Handle CORS preflight

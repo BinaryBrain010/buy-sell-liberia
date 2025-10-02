@@ -237,7 +237,7 @@ export default async function TermsPage() {
                 </span>
               </div>
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
-                Terms of Use
+                Terms of Service
               </h1>
               <p className="mt-2 text-muted-foreground text-sm md:text-base">
                 Last updated: {new Date().getFullYear()}
@@ -255,37 +255,34 @@ export default async function TermsPage() {
               <CardContent>
                 <nav className="space-y-2 text-sm">
                   <span className="block hover:text-primary transition-colors">
-                    1. Introduction
+                    1. Eligibility
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    2. Eligibility & Account
+                    2. Your Account
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    3. Acceptable Use
+                    3. Listings and Content
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    4. Listings & Transactions
+                    4. Payments and Delivery
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    5. Safety
+                    5. Messaging System
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    6. Intellectual Property
+                    6. Prohibited Conduct
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    7. Disclaimers
+                    7. Termination
                   </span>
                   <span className="block hover:text-primary transition-colors">
                     8. Limitation of Liability
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    9. Termination
+                    9. Changes to Terms
                   </span>
                   <span className="block hover:text-primary transition-colors">
-                    10. Changes to these Terms
-                  </span>
-                  <span className="block hover:text-primary transition-colors">
-                    11. Contact
+                    10. Contact
                   </span>
                 </nav>
               </CardContent>
@@ -295,62 +292,81 @@ export default async function TermsPage() {
             <FadeInStagger className="space-y-8">
               {[
                 {
-                  title: "1. Introduction",
+                  title: "Welcome to BuySell Liberia",
                   body: (
-                    <p>
-                      Welcome to BuySell Liberia (the "Platform"). By accessing
-                      or using the Platform, you agree to these Terms of Use. If
-                      you do not agree, please do not use the Platform.
-                    </p>
+                    <div>
+                      <p>
+                        These Terms of Service ("Terms") govern your use of our
+                        website, services, and features available at
+                        buysellliberia.com (the "Platform").
+                      </p>
+                      <p>
+                        By accessing or using the Platform, you agree to these
+                        Terms. If you do not agree, please do not use the
+                        Platform.
+                      </p>
+                    </div>
                   ),
                 },
                 {
-                  title: "2. Eligibility & Account",
+                  title: "1. Eligibility",
+                  body: <p>To use BuySell Liberia, you must:</p>,
                   list: [
-                    "You must be at least 18 years old or have parental consent.",
-                    "You are responsible for maintaining the confidentiality of your account credentials and all activities under your account.",
+                    "Be at least 18 years old (or have parental permission).",
+                    "Provide accurate and complete information when signing up.",
+                    "Comply with all applicable local laws and these Terms.",
                   ],
                 },
                 {
-                  title: "3. Acceptable Use",
+                  title: "2. Your Account",
                   list: [
-                    "No unlawful, fraudulent, or harmful activities.",
-                    "No spam, misleading content, or impersonation.",
-                    "No uploading of malicious code.",
+                    "You are responsible for all activity under your account.",
+                    "Do not share your login details with others.",
+                    "One unified account allows you to act as both a buyer and a seller.",
                   ],
                 },
                 {
-                  title: "4. Listings & Transactions",
+                  title: "3. Listings and Content",
                   list: [
-                    "Listings must be accurate, lawful, and placed in the correct category.",
-                    "Prohibited items/services are not allowed. We may remove listings that violate our policies.",
-                    "Except where specified (e.g., manual payment verification), payments are arranged directly between buyer and seller.",
+                    "You may post listings for new or used items, including vehicles, electronics, property, and fashion.",
+                    "All listings must be accurate, lawful, and not misleading.",
+                    "Prohibited content includes illegal items, scams, counterfeit goods, and fake accounts.",
+                    "We reserve the right to remove any content without notice.",
+                    "Listings may expire automatically after a set period.",
                   ],
                 },
                 {
-                  title: "5. Safety",
+                  title: "4. Payments and Delivery",
                   list: [
-                    "Meet in public places where possible and verify items before paying.",
-                    "Report suspicious behavior using the reporting tools on listings.",
+                    "BuySell Liberia does not process payments directly unless expressly stated.",
+                    "Transactions (including mobile money, cryptocurrency, or cash) are strictly between buyer and seller.",
+                    "Delivery is arranged by sellers. We do not guarantee delivery, product quality, or timeliness.",
                   ],
                 },
                 {
-                  title: "6. Intellectual Property",
+                  title: "5. Messaging System",
+                  list: [
+                    "Users may communicate through our in-app messaging system.",
+                    "Spam, harassment, or abusive behavior is strictly prohibited.",
+                  ],
+                },
+                {
+                  title: "6. Prohibited Conduct",
+                  body: <p>You agree not to:</p>,
+                  list: [
+                    "Post offensive, fraudulent, illegal, or stolen goods.",
+                    "Use bots, scrape content, or attempt to hack the platform.",
+                    "Impersonate another person or entity.",
+                    "Upload viruses, malware, or malicious code.",
+                  ],
+                },
+                {
+                  title: "7. Termination",
                   body: (
                     <p>
-                      You retain ownership of the content you post, but grant us
-                      a license to host and display it on the Platform. Do not
-                      post content you do not have rights to use.
-                    </p>
-                  ),
-                },
-                {
-                  title: "7. Disclaimers",
-                  body: (
-                    <p>
-                      The Platform is provided on an "as is" basis without
-                      warranties of any kind. We do not control user-generated
-                      listings nor guarantee transactions.
+                      We reserve the right to suspend or terminate your account
+                      if you violate these Terms or engage in suspicious
+                      activity.
                     </p>
                   ),
                 },
@@ -358,37 +374,29 @@ export default async function TermsPage() {
                   title: "8. Limitation of Liability",
                   body: (
                     <p>
-                      To the maximum extent permitted by law, we are not liable
-                      for indirect, incidental, or consequential damages arising
-                      from your use of the Platform.
+                      BuySell Liberia is not responsible for any direct,
+                      indirect, incidental, or consequential losses arising from
+                      the use of our platform, including disputes between buyers
+                      and sellers, fraud, delivery issues, or misrepresentation
+                      of items.
                     </p>
                   ),
                 },
                 {
-                  title: "9. Termination",
+                  title: "9. Changes to Terms",
                   body: (
                     <p>
-                      We may suspend or terminate accounts that violate these
-                      Terms. You may also delete your account at any time
-                      through your settings.
+                      We may update these Terms from time to time. Continued use
+                      of the platform means you accept any changes.
                     </p>
                   ),
                 },
                 {
-                  title: "10. Changes to these Terms",
+                  title: "10. Contact",
                   body: (
                     <p>
-                      We may update these Terms occasionally. Continued use
-                      after changes constitutes acceptance of the updated Terms.
-                    </p>
-                  ),
-                },
-                {
-                  title: "11. Contact",
-                  body: (
-                    <p>
-                      Questions about these Terms? Contact us via the Contact
-                      page on the Platform.
+                      For any issues or inquiries, contact us at:{" "}
+                      <strong>support@buysellliberia.com</strong>
                     </p>
                   ),
                 },
