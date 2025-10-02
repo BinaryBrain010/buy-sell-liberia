@@ -4,7 +4,17 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Heart, Search, Loader2, Grid3X3, List, Eye, Calendar, MapPin, Star } from "lucide-react";
+import {
+  Heart,
+  Search,
+  Grid3X3,
+  List,
+  Eye,
+  Calendar,
+  MapPin,
+  Star,
+} from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { ProductService } from "@/app/services/Product.Service";
 import type { Product } from "@/app/services/Product.Service";
 import { ProductCard } from "@/components/product-card";
@@ -156,15 +166,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center py-16">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-          </div>
-        </div>
-        <div className="text-center mt-4">
-          <p className="text-muted-foreground">Loading your favorites...</p>
-        </div>
+        <BuySellLoader label="Loading your favorites..." />
       </div>
     );
   }
@@ -176,10 +178,12 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
           <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
             <Heart className="h-10 w-10 text-white" />
           </div>
-          <h3 className="text-2xl font-semibold mb-2">Error Loading Favorites</h3>
+          <h3 className="text-2xl font-semibold mb-2">
+            Error Loading Favorites
+          </h3>
           <p className="text-muted-foreground mb-6">{error}</p>
-          <Button 
-            onClick={() => window.location.reload()} 
+          <Button
+            onClick={() => window.location.reload()}
             className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
           >
             Try Again
@@ -195,7 +199,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 via-pink-500/5 to-red-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             {/* Title Section */}
@@ -205,30 +209,37 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                   <Heart className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">Your Favorites</h2>
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Your Favorites
+                  </h2>
                   <p className="text-muted-foreground">
-                    {favourites.length} saved listing{favourites.length !== 1 ? "s" : ""} you love
+                    {favourites.length} saved listing
+                    {favourites.length !== 1 ? "s" : ""} you love
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Statistics */}
             {favourites.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
-                  <div className="text-2xl font-bold text-red-600">{favourites.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Saved</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {favourites.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Saved
+                  </div>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
                   <div className="text-2xl font-bold text-green-600">
-                    {favourites.filter(f => f.status === "active").length}
+                    {favourites.filter((f) => f.status === "active").length}
                   </div>
                   <div className="text-sm text-muted-foreground">Active</div>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
                   <div className="text-2xl font-bold text-blue-600">
-                    {favourites.filter(f => f.featured).length}
+                    {favourites.filter((f) => f.featured).length}
                   </div>
                   <div className="text-sm text-muted-foreground">Featured</div>
                 </div>
@@ -236,7 +247,9 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                   <div className="text-2xl font-bold text-purple-600">
                     {favourites.reduce((sum, f) => sum + (f.views || 0), 0)}
                   </div>
-                  <div className="text-sm text-muted-foreground">Total Views</div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Views
+                  </div>
                 </div>
               </div>
             )}
@@ -247,7 +260,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       {/* Enhanced Search and Filter Section */}
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-pink-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
@@ -260,18 +273,20 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                 className="pl-12 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-base"
               />
             </div>
-            
+
             {/* View Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                View:
+              </span>
               <div className="flex border-2 border-border/30 rounded-xl overflow-hidden">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("grid")}
                   className={`h-10 px-4 ${
-                    viewMode === "grid" 
-                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                    viewMode === "grid"
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
@@ -282,8 +297,8 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                   size="sm"
                   onClick={() => setViewMode("list")}
                   className={`h-10 px-4 ${
-                    viewMode === "list" 
-                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                    viewMode === "list"
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
@@ -299,17 +314,18 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       {filteredFavourites.length > 0 ? (
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-pink-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-foreground">
                 Your Favorites ({filteredFavourites.length})
               </h3>
               <div className="text-sm text-muted-foreground">
-                Showing {filteredFavourites.length} of {favourites.length} favorites
+                Showing {filteredFavourites.length} of {favourites.length}{" "}
+                favorites
               </div>
             </div>
-            
+
             {/* Conditional Rendering based on View Mode */}
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -333,7 +349,12 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                         disabled={removingItems.has(listing._id)}
                       >
                         {removingItems.has(listing._id) ? (
-                          <Loader2 className="h-5 w-5 text-red-500 animate-spin" />
+                          <BuySellLoader
+                            variant="inline"
+                            size={20}
+                            hideLabel
+                            label="Removing"
+                          />
                         ) : (
                           <Heart className="h-5 w-5 text-red-500 fill-red-500" />
                         )}
@@ -363,7 +384,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
         /* Enhanced Empty States */
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-12 border border-border/30">
             {searchTerm ? (
               <div className="text-center space-y-6">
@@ -371,9 +392,12 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                   <Search className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">No matching favorites</h3>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    No matching favorites
+                  </h3>
                   <p className="text-muted-foreground mb-6">
-                    No favorites match your search criteria. Try adjusting your search terms.
+                    No favorites match your search criteria. Try adjusting your
+                    search terms.
                   </p>
                 </div>
                 <Button
@@ -390,13 +414,16 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                   <Heart className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">No favorites yet</h3>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    No favorites yet
+                  </h3>
                   <p className="text-muted-foreground mb-6">
-                    Start browsing listings and save your favorites here. They'll appear in this section!
+                    Start browsing listings and save your favorites here.
+                    They'll appear in this section!
                   </p>
                 </div>
-                <Button 
-                  onClick={() => window.location.href = '/products'}
+                <Button
+                  onClick={() => (window.location.href = "/products")}
                   className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Browse Listings
@@ -411,13 +438,13 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 }
 
 // Enhanced List View Item Component for Favorites
-function FavoriteListItem({ 
-  listing, 
-  onRemove, 
-  isRemoving 
-}: { 
-  listing: Product; 
-  onRemove: () => void; 
+function FavoriteListItem({
+  listing,
+  onRemove,
+  isRemoving,
+}: {
+  listing: Product;
+  onRemove: () => void;
   isRemoving: boolean;
 }) {
   // Image URL resolution function
@@ -433,11 +460,16 @@ function FavoriteListItem({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "sold": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-      case "draft": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "expired": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "sold":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "expired":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
@@ -445,7 +477,7 @@ function FavoriteListItem({
     return new Date(dateString).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "2-digit",
-      year: "numeric"
+      year: "numeric",
     });
   };
 
@@ -464,7 +496,8 @@ function FavoriteListItem({
                   alt={listing.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                    (e.currentTarget as HTMLImageElement).src =
+                      "/placeholder.jpg";
                   }}
                 />
               ) : (
@@ -486,13 +519,21 @@ function FavoriteListItem({
                   </h3>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl font-bold text-primary">
-                      {currencySymbol}{listing.price?.amount || 0}
+                      {currencySymbol}
+                      {listing.price?.amount || 0}
                     </span>
                     {listing.price?.negotiable && (
-                      <span className="text-sm text-muted-foreground">(Negotiable)</span>
+                      <span className="text-sm text-muted-foreground">
+                        (Negotiable)
+                      </span>
                     )}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(listing.status || "active")}`}>
-                      {listing.status?.charAt(0).toUpperCase() + listing.status?.slice(1) || "Active"}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        listing.status || "active"
+                      )}`}
+                    >
+                      {listing.status?.charAt(0).toUpperCase() +
+                        listing.status?.slice(1) || "Active"}
                     </span>
                     {listing.featured && (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 dark:from-orange-900/20 dark:to-yellow-900/20 dark:text-orange-400">
@@ -519,7 +560,14 @@ function FavoriteListItem({
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>Listed {formatDate(typeof listing.createdAt === "string" ? listing.createdAt : listing.createdAt.toISOString())}</span>
+                  <span>
+                    Listed{" "}
+                    {formatDate(
+                      typeof listing.createdAt === "string"
+                        ? listing.createdAt
+                        : listing.createdAt.toISOString()
+                    )}
+                  </span>
                 </div>
                 {listing.location?.city && (
                   <div className="flex items-center gap-1">
@@ -532,7 +580,9 @@ function FavoriteListItem({
               {/* Actions */}
               <div className="flex items-center gap-3 mt-auto">
                 <Button
-                  onClick={() => window.location.href = `/products/${listing._id}`}
+                  onClick={() =>
+                    (window.location.href = `/products/${listing._id}`)
+                  }
                   className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
                 >
                   View Details
@@ -546,7 +596,13 @@ function FavoriteListItem({
                 >
                   {isRemoving ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <BuySellLoader
+                        variant="inline"
+                        size={16}
+                        hideLabel
+                        label="Removing"
+                        className="mr-2"
+                      />
                       Removing...
                     </>
                   ) : (

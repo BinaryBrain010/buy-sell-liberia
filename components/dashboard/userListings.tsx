@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -10,7 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Package, Grid3X3, List, Eye, Calendar, MapPin } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Package,
+  Grid3X3,
+  List,
+  Eye,
+  Calendar,
+  MapPin,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategoryService } from "@/app/services/Category.Service";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
@@ -214,7 +224,7 @@ export default function UserListings({ userId }: UserListingsProps) {
       const response = await fetch(`/api/products/${listingId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images: updatedImages.map(img => img.url) }),
+        body: JSON.stringify({ images: updatedImages.map((img) => img.url) }),
       });
       if (!response.ok) throw new Error("Failed to remove image");
       await response.json();
@@ -257,7 +267,7 @@ export default function UserListings({ userId }: UserListingsProps) {
       const resp = await fetch(`/api/products/${listingId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images: updatedImages.map(img => img.url) }),
+        body: JSON.stringify({ images: updatedImages.map((img) => img.url) }),
       });
       if (!resp.ok) throw new Error("Failed to save images");
       await resp.json();
@@ -297,15 +307,7 @@ export default function UserListings({ userId }: UserListingsProps) {
   if (loading)
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center py-16">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-          </div>
-        </div>
-        <div className="text-center mt-4">
-          <p className="text-muted-foreground">Loading your listings...</p>
-        </div>
+        <BuySellLoader label="Loading your listings..." />
       </div>
     );
 
@@ -316,10 +318,12 @@ export default function UserListings({ userId }: UserListingsProps) {
           <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
             <Package className="h-10 w-10 text-white" />
           </div>
-          <h3 className="text-2xl font-semibold mb-2">Failed to Load Listings</h3>
+          <h3 className="text-2xl font-semibold mb-2">
+            Failed to Load Listings
+          </h3>
           <p className="text-muted-foreground mb-6">{error}</p>
-          <Button 
-            onClick={fetchUserListings} 
+          <Button
+            onClick={fetchUserListings}
             className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
           >
             Try Again
@@ -334,7 +338,7 @@ export default function UserListings({ userId }: UserListingsProps) {
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             {/* Title Section */}
@@ -344,14 +348,16 @@ export default function UserListings({ userId }: UserListingsProps) {
                   <Package className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">My Listings</h2>
+                  <h2 className="text-3xl font-bold text-foreground">
+                    My Listings
+                  </h2>
                   <p className="text-muted-foreground">
                     Manage your posted items and track their performance
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex gap-3">
               <Button
@@ -369,13 +375,17 @@ export default function UserListings({ userId }: UserListingsProps) {
               </Button>
             </div>
           </div>
-          
+
           {/* Enhanced Statistics */}
           {listings.length > 0 && (
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                <div className="text-2xl font-bold text-primary">{listings.length}</div>
-                <div className="text-sm text-muted-foreground">Total Listings</div>
+                <div className="text-2xl font-bold text-primary">
+                  {listings.length}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Listings
+                </div>
               </div>
               <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
                 <div className="text-2xl font-bold text-green-600">
@@ -403,7 +413,7 @@ export default function UserListings({ userId }: UserListingsProps) {
       {/* Enhanced Search and Filter Section */}
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search and Filter */}
@@ -430,18 +440,20 @@ export default function UserListings({ userId }: UserListingsProps) {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* View Toggle */}
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">View:</span>
+              <span className="text-sm font-medium text-muted-foreground">
+                View:
+              </span>
               <div className="flex border-2 border-border/30 rounded-xl overflow-hidden">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("grid")}
                   className={`h-10 px-4 ${
-                    viewMode === "grid" 
-                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                    viewMode === "grid"
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
@@ -452,8 +464,8 @@ export default function UserListings({ userId }: UserListingsProps) {
                   size="sm"
                   onClick={() => setViewMode("list")}
                   className={`h-10 px-4 ${
-                    viewMode === "list" 
-                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg" 
+                    viewMode === "list"
+                      ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
@@ -469,7 +481,7 @@ export default function UserListings({ userId }: UserListingsProps) {
       {filteredListings.length > 0 ? (
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-green-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-foreground">
@@ -479,7 +491,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                 Showing {filteredListings.length} of {listings.length} listings
               </div>
             </div>
-            
+
             {/* Conditional Rendering based on View Mode */}
             {viewMode === "grid" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -512,7 +524,7 @@ export default function UserListings({ userId }: UserListingsProps) {
         /* Enhanced Empty States */
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-12 border border-border/30">
             {searchTerm || statusFilter !== "all" ? (
               <div className="text-center space-y-6">
@@ -520,9 +532,12 @@ export default function UserListings({ userId }: UserListingsProps) {
                   <Search className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">No listings found</h3>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    No listings found
+                  </h3>
                   <p className="text-muted-foreground mb-6">
-                    No listings match your current search criteria. Try adjusting your filters.
+                    No listings match your current search criteria. Try
+                    adjusting your filters.
                   </p>
                 </div>
                 <Button
@@ -542,12 +557,15 @@ export default function UserListings({ userId }: UserListingsProps) {
                   <Package className="h-10 w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">No listings yet</h3>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    No listings yet
+                  </h3>
                   <p className="text-muted-foreground mb-6">
-                    You haven't created any listings yet. Start selling by creating your first listing!
+                    You haven't created any listings yet. Start selling by
+                    creating your first listing!
                   </p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => router.push("/sell")}
                   className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
@@ -580,20 +598,20 @@ export default function UserListings({ userId }: UserListingsProps) {
 }
 
 // Enhanced List View Item Component
-function ListingListItem({ 
-  listing, 
-  onEdit, 
-  onDelete, 
-  currencySymbol 
-}: { 
-  listing: Listing; 
-  onEdit: () => void; 
-  onDelete: (id: string) => void; 
+function ListingListItem({
+  listing,
+  onEdit,
+  onDelete,
+  currencySymbol,
+}: {
+  listing: Listing;
+  onEdit: () => void;
+  onDelete: (id: string) => void;
   currencySymbol: string;
 }) {
   const [expandedDescription, setExpandedDescription] = useState(false);
   const maxDescriptionLength = 150;
-  
+
   // Image URL resolution function (same as ListingCard)
   const resolveImageUrl = (raw?: string) => {
     if (!raw) return "/placeholder.jpg";
@@ -604,7 +622,7 @@ function ListingListItem({
     if (/\.[a-zA-Z0-9]{2,5}$/.test(cleaned)) return `/api/uploads/${cleaned}`;
     return "/placeholder.jpg";
   };
-  
+
   const truncateDescription = (text: string) => {
     if (text.length <= maxDescriptionLength) return text;
     return text.substring(0, maxDescriptionLength) + "...";
@@ -612,11 +630,16 @@ function ListingListItem({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
-      case "sold": return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
-      case "draft": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "expired": return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+      case "active":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      case "sold":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "draft":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+      case "expired":
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
     }
   };
 
@@ -624,7 +647,7 @@ function ListingListItem({
     return new Date(dateString).toLocaleDateString("en-US", {
       day: "2-digit",
       month: "2-digit",
-      year: "numeric"
+      year: "numeric",
     });
   };
 
@@ -641,7 +664,8 @@ function ListingListItem({
                   alt={listing.images[0].alt || listing.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                    (e.currentTarget as HTMLImageElement).src =
+                      "/placeholder.jpg";
                   }}
                 />
               ) : (
@@ -663,13 +687,21 @@ function ListingListItem({
                   </h3>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl font-bold text-primary">
-                      {currencySymbol}{listing.price.amount}
+                      {currencySymbol}
+                      {listing.price.amount}
                     </span>
                     {listing.price.negotiable && (
-                      <span className="text-sm text-muted-foreground">(Negotiable)</span>
+                      <span className="text-sm text-muted-foreground">
+                        (Negotiable)
+                      </span>
                     )}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(listing.status)}`}>
-                      {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        listing.status
+                      )}`}
+                    >
+                      {listing.status.charAt(0).toUpperCase() +
+                        listing.status.slice(1)}
                     </span>
                     {listing.featured && (
                       <span className="px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 dark:from-orange-900/20 dark:to-yellow-900/20 dark:text-orange-400">
@@ -683,7 +715,9 @@ function ListingListItem({
               {/* Description */}
               <div className="mb-4">
                 <p className="text-muted-foreground leading-relaxed">
-                  {expandedDescription ? listing.description : truncateDescription(listing.description)}
+                  {expandedDescription
+                    ? listing.description
+                    : truncateDescription(listing.description)}
                 </p>
                 {listing.description.length > maxDescriptionLength && (
                   <button
@@ -758,4 +792,3 @@ function ListingListItem({
     </div>
   );
 }
-

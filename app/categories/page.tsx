@@ -4,13 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowRight,
-  Loader2,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard, type Product } from "@/components/product-card";
@@ -245,11 +240,8 @@ export default function CategoriesPage() {
 
   if (loadingCategories) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading categories...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <BuySellLoader label="Loading categories" size={170} />
       </div>
     );
   }
@@ -266,17 +258,19 @@ export default function CategoriesPage() {
               <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/20 to-transparent blur-3xl" />
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/15 to-transparent blur-2xl" />
             </div>
-            
+
             <div className="relative z-10">
               <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
                 <span className="text-2xl">📂</span>
-                <span className="text-sm font-semibold text-primary">All Categories</span>
+                <span className="text-sm font-semibold text-primary">
+                  All Categories
+                </span>
               </div>
-              
+
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                 {selectedCategory ? selectedCategory.name : "Browse Categories"}
               </h1>
-              
+
               <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
                 {selectedCategory
                   ? `Discover amazing products and explore subcategories in ${selectedCategory.name}`
@@ -336,11 +330,11 @@ export default function CategoriesPage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
                   <span className="relative z-10">{category.icon}</span>
                 </div>
-                
+
                 <h2 className="text-lg font-bold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                   {category.name}
                 </h2>
-                
+
                 <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
                   {category.description}
                 </p>
@@ -368,7 +362,8 @@ export default function CategoriesPage() {
                 <div className="flex items-center gap-6">
                   <div
                     className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
-                      categoryColors[selectedCategory.slug] || "from-gray-500 to-gray-600"
+                      categoryColors[selectedCategory.slug] ||
+                      "from-gray-500 to-gray-600"
                     } flex items-center justify-center text-3xl shadow-lg text-white`}
                   >
                     {selectedCategory.icon}
@@ -379,17 +374,19 @@ export default function CategoriesPage() {
                     </h2>
                     <p className="text-base sm:text-lg text-muted-foreground">
                       Choose a specific subcategory or view all products in{" "}
-                      <span className="font-semibold text-primary">{selectedCategory.name}</span>
+                      <span className="font-semibold text-primary">
+                        {selectedCategory.name}
+                      </span>
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <Link
                     href={getViewAllProductsUrl()}
                     className="w-full sm:w-auto"
                   >
-                    <Button 
+                    <Button
                       size="lg"
                       className="btn-shadow w-full sm:w-auto bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90"
                     >
@@ -437,7 +434,7 @@ export default function CategoriesPage() {
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
                         />
-                        
+
                         {/* Enhanced Overlay gradients */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -554,9 +551,12 @@ export default function CategoriesPage() {
             </FadeIn>
 
             {loadingProducts ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading products...</p>
+              <div className="py-12">
+                <BuySellLoader
+                  label="Loading products..."
+                  size={72}
+                  variant="subtle"
+                />
               </div>
             ) : products.length > 0 ? (
               <>

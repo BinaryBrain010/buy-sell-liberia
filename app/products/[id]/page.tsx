@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { ProductService } from "@/app/services/Product.Service";
 import { useParams } from "next/navigation";
 import ProductDetail from "./ProductDetail";
-import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
+// import { ProductDetailSkeleton } from "@/components/product-detail-skeleton"; // replaced by lottie loader
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { FeaturedListings } from "@/components/featured-listings";
 import { FadeIn } from "@/components/static-pages/Animated";
 
@@ -67,9 +68,11 @@ export default function ProductDetailPage() {
 
   if (loading)
     return (
-      <FadeIn>
-        <ProductDetailSkeleton />
-      </FadeIn>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <FadeIn>
+          <BuySellLoader label="Loading product" size={170} />
+        </FadeIn>
+      </div>
     );
 
   if (error) {
@@ -115,14 +118,14 @@ export default function ProductDetailPage() {
           <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-gradient-to-br from-primary/5 to-transparent blur-3xl" />
           <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-v0-green/5 to-transparent blur-3xl" />
         </div>
-        
+
         <div className="relative z-10">
           <FadeIn>
             <ProductDetail {...product} />
           </FadeIn>
         </div>
       </div>
-      
+
       {/* Enhanced Related Products Section */}
       <div className="relative">
         <div className="max-w-7xl mx-auto px-4 py-12">

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { ProductThumbnail } from "./product-thumbnail";
 import { UserStatus } from "./user-status";
 
@@ -43,7 +44,12 @@ export const ChatItem = ({
               </h3>
               <UserStatus isOnline={isOtherUserOnline} />
               {otherUserName === "Loading..." && (
-                <div className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-blue-500 dark:border-blue-400" />
+                <BuySellLoader
+                  variant="inline"
+                  size={12}
+                  hideLabel
+                  label="Loading user"
+                />
               )}
             </div>
             <ChevronRight

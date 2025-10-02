@@ -312,9 +312,9 @@ export async function GET(request: NextRequest) {
         sortOptions[sortBy] = sortOrder;
       }
     } else {
-      // Default sort: featured first then newest
+      // Default sort: featured first then newest by createdAt
       sortOptions.featured = -1;
-      sortOptions.added_at = -1;
+      sortOptions.createdAt = -1;
     }
 
     // Parse pagination

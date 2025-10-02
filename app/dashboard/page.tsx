@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { User, Package, Heart, MessageCircle, Shield } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { useToast } from "@/hooks/use-toast";
 import { MessagesComponent } from "@/components/dashboard/MessagesComponent";
 import UserListings from "@/components/dashboard/userListings";
@@ -34,9 +35,13 @@ const decodeJWT = (token: string) => {
 };
 
 // Child Components
-const ProfileTab = ({ userId, onProfileUpdate }: { userId: string; onProfileUpdate?: () => void }) => (
-  <ProfileForm userId={userId} onProfileUpdate={onProfileUpdate} />
-);
+const ProfileTab = ({
+  userId,
+  onProfileUpdate,
+}: {
+  userId: string;
+  onProfileUpdate?: () => void;
+}) => <ProfileForm userId={userId} onProfileUpdate={onProfileUpdate} />;
 
 const ListingsTab = ({ userId }: { userId: string }) => (
   <UserListings userId={userId} />
@@ -117,24 +122,27 @@ export default function DashboardPage() {
 
       console.log("🔄 Refreshing user data for:", user.id);
       const response = await fetch(`/api/users/${user.id}`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
       });
 
       if (response.ok) {
         const apiUserData = await response.json();
         console.log("✅ Successfully refreshed user data:", apiUserData);
-        
+
         setUser({
           id: apiUserData._id || apiUserData.id,
           fullName: apiUserData.fullName || apiUserData.name,
           username: apiUserData.username,
           email: apiUserData.email,
-          profile: { 
-            avatar: apiUserData.profile?.avatar || apiUserData.avatar || "/placeholder-user.jpg" 
+          profile: {
+            avatar:
+              apiUserData.profile?.avatar ||
+              apiUserData.avatar ||
+              "/placeholder-user.jpg",
           },
         });
       } else {
@@ -333,19 +341,14 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center">
         <div className="relative">
-          {/* Background accent */}
           <div className="absolute -inset-2 bg-gradient-to-r from-primary/5 via-v0-green/5 to-primary/5 rounded-2xl opacity-50" />
-          
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8 shadow-xl">
-            <div className="text-center space-y-6">
-              <div className="relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Loading Dashboard</h2>
-                <p className="text-muted-foreground">Setting up your personalized experience...</p>
-              </div>
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-10 shadow-xl flex flex-col items-center gap-6">
+            <BuySellLoader label="Loading dashboard..." />
+            <div className="text-center">
+              <h2 className="text-xl font-semibold mb-2">Loading Dashboard</h2>
+              <p className="text-muted-foreground">
+                Setting up your personalized experience...
+              </p>
             </div>
           </div>
         </div>
@@ -359,7 +362,7 @@ export default function DashboardPage() {
         <div className="relative">
           {/* Background accent */}
           <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 via-red-600/5 to-red-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8 shadow-xl">
             <div className="text-center space-y-6">
               <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg">
@@ -386,7 +389,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20"> 
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         {/* Enhanced Header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-background border-b border-border/30">
@@ -395,7 +398,7 @@ export default function DashboardPage() {
             <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
             <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
           </div>
-          
+
           <div className="container mx-auto px-4 py-8 relative z-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               {/* Enhanced Welcome Section */}
@@ -413,7 +416,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Enhanced Welcome Badge */}
                 <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -430,7 +433,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
               </div>
-              
+
               {/* Enhanced Navigation Tabs */}
               <div className="flex-shrink-0">
                 <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:flex lg:gap-1 bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg">
@@ -440,7 +443,9 @@ export default function DashboardPage() {
                     className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <User className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">Profile</span>
+                    <span className="hidden sm:inline font-medium">
+                      Profile
+                    </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="listings"
@@ -448,7 +453,9 @@ export default function DashboardPage() {
                     className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Package className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">Listings</span>
+                    <span className="hidden sm:inline font-medium">
+                      Listings
+                    </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="favourites"
@@ -456,7 +463,9 @@ export default function DashboardPage() {
                     className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">Favourites</span>
+                    <span className="hidden sm:inline font-medium">
+                      Favourites
+                    </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="messages"
@@ -464,7 +473,9 @@ export default function DashboardPage() {
                     className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">Messages</span>
+                    <span className="hidden sm:inline font-medium">
+                      Messages
+                    </span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -479,9 +490,12 @@ export default function DashboardPage() {
               <div className="relative">
                 {/* Background accent */}
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-                
+
                 <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
-                  <ProfileTab userId={user?.id || user?._id} onProfileUpdate={refreshUserData} />
+                  <ProfileTab
+                    userId={user?.id || user?._id}
+                    onProfileUpdate={refreshUserData}
+                  />
                 </div>
               </div>
             ) : (
@@ -490,7 +504,9 @@ export default function DashboardPage() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
                   <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
                     <User className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <h3 className="text-2xl font-semibold mb-2">
+                      User ID Not Found
+                    </h3>
                     <p className="text-muted-foreground">
                       Unable to load profile: User ID is missing
                     </p>
@@ -505,7 +521,7 @@ export default function DashboardPage() {
               <div className="relative">
                 {/* Background accent */}
                 <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
-                
+
                 <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
                   <ListingsTab userId={user?.id || user?._id} />
                 </div>
@@ -516,7 +532,9 @@ export default function DashboardPage() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
                   <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
                     <Package className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <h3 className="text-2xl font-semibold mb-2">
+                      User ID Not Found
+                    </h3>
                     <p className="text-muted-foreground">
                       Unable to load listings: User ID is missing
                     </p>
@@ -531,7 +549,7 @@ export default function DashboardPage() {
               <div className="relative">
                 {/* Background accent */}
                 <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/5 via-red-500/5 to-pink-500/5 rounded-2xl opacity-50" />
-                
+
                 <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
                   <FavouritesTab userId={user?.id || user?._id} />
                 </div>
@@ -542,7 +560,9 @@ export default function DashboardPage() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
                   <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
                     <Heart className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold mb-2">User ID Not Found</h3>
+                    <h3 className="text-2xl font-semibold mb-2">
+                      User ID Not Found
+                    </h3>
                     <p className="text-muted-foreground">
                       Unable to load favourites: User ID is missing
                     </p>
@@ -556,7 +576,7 @@ export default function DashboardPage() {
             <div className="relative">
               {/* Background accent */}
               <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
-              
+
               <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 shadow-xl overflow-hidden">
                 <MessagesComponent
                   sellerId={chatParams.sellerId}
