@@ -211,126 +211,116 @@ export default async function PrivacyPage() {
             </div>
           </section>
         </FadeIn>
-        <FadeInStagger className="space-y-8">
-          {[
-            {
-              title: "1. Information We Collect",
-              list: [
-                "Account information (name, email, phone, username).",
-                "Listing details (titles, descriptions, photos, location).",
-                "Usage data (device, log data, interactions).",
-                "Communications through the Platform (messages, reports).",
-              ],
-            },
-            {
-              title: "2. How We Use Your Information",
-              list: [
-                "Provide and improve the Platform and its features.",
-                "Facilitate user-to-user communications and transactions.",
-                "Prevent fraud, abuse, and ensure safety.",
-                "Send service-related notices and updates.",
-              ],
-            },
-            {
-              title: "3. Sharing of Information",
-              body: (
-                <p>
-                  We do not sell your personal information. We may share limited
-                  data with service providers (e.g., hosting, analytics) under
-                  strict agreements. We may also share information when required
-                  by law or to protect rights and safety.
-                </p>
-              ),
-            },
-            {
-              title: "4. Data Retention",
-              body: (
-                <p>
-                  We keep your data as long as your account is active or as
-                  needed to provide services and comply with legal obligations.
-                </p>
-              ),
-            },
-            {
-              title: "5. Security",
-              body: (
-                <p>
-                  We use reasonable safeguards to protect your information.
-                  However, no method of transmission or storage is 100% secure.
-                </p>
-              ),
-            },
-            {
-              title: "6. Cookies & Tracking",
-              body: (
-                <p>
-                  We use cookies and similar technologies to remember
-                  preferences, analyze usage, and improve the Platform. You can
-                  manage cookie preferences in your browser settings.
-                </p>
-              ),
-            },
-            {
-              title: "7. Your Rights",
-              list: [
-                "Access, update, or delete your account information.",
-                "Request a copy of your data, where applicable.",
-                "Opt out of non-essential communications.",
-              ],
-            },
-            {
-              title: "8. Children’s Privacy",
-              body: (
-                <p>
-                  The Platform is not intended for children under 13. If you
-                  believe a child provided us information, contact us to remove
-                  it.
-                </p>
-              ),
-            },
-            {
-              title: "9. Changes to this Policy",
-              body: (
-                <p>
-                  We may update this Privacy Policy from time to time. We
-                  encourage you to review it periodically.
-                </p>
-              ),
-            },
-            {
-              title: "10. Contact",
-              body: (
-                <p>
-                  Questions about this Privacy Policy? Contact us via the
-                  Contact page on the Platform.
-                </p>
-              ),
-            },
-          ].map((sec, i) => (
-            <Card
-              key={i}
-              className="relative overflow-hidden border-2 border-border/40 bg-gradient-to-br from-background/80 via-background/60 to-background/80 shadow-xl"
-            >
-              <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.07),transparent)]" />
-              <CardHeader className="relative z-10 pb-3">
-                <CardTitle className="text-lg md:text-xl bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-                  {sec.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 prose prose-zinc dark:prose-invert max-w-none">
-                {sec.body}
-                {sec.list && (
-                  <AnimatedList
-                    className="list-disc pl-6"
-                    items={sec.list.map((item, idx2) => (
-                      <span key={idx2}>{item}</span>
-                    ))}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </FadeInStagger>
+        <FadeIn className="prose prose-zinc dark:prose-invert max-w-none">
+          <div className="rounded-2xl border-2 border-border/40 bg-background/60 backdrop-blur p-6 md:p-10 shadow-xl">
+            <div className="space-y-6">
+              <p className="text-muted-foreground">
+                This Privacy Policy explains how BuySell Liberia ("we", "our",
+                or "us") collects, uses, and protects your information.
+              </p>
+              <div className="space-y-6">
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    1. Information We Collect
+                  </h2>
+                  <p className="mb-2">We may collect:</p>
+                  <ul className="list-disc pl-6 space-y-1">
+                    <li>Name, phone number, and email address</li>
+                    <li>Location (optional)</li>
+                    <li>Listings you post and messages you send</li>
+                    <li>IP address, browser type, and device information</li>
+                  </ul>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    2. How We Use Your Data
+                  </h2>
+                  <p className="mb-2">We use your data to:</p>
+                  <ul className="list-disc pl-6 space-y-1">
+                    <li>Create and manage your account</li>
+                    <li>Display your listings and content</li>
+                    <li>Enable communication between users</li>
+                    <li>Improve and secure our platform</li>
+                    <li>Notify you of updates or changes</li>
+                  </ul>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    3. Sharing of Data
+                  </h2>
+                  <p className="mb-2">
+                    We do not sell your personal data. We may share it only:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-1">
+                    <li>
+                      With third-party tools we use (e.g., Firebase,
+                      authentication services)
+                    </li>
+                    <li>With law enforcement if legally required</li>
+                    <li>With payment processors if integrated in the future</li>
+                  </ul>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    4. Cookies & Tracking
+                  </h2>
+                  <p>
+                    We may use cookies and analytics tools to understand user
+                    behavior and improve the platform.
+                  </p>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    5. Data Retention
+                  </h2>
+                  <p>
+                    We retain your data as long as your account is active, or as
+                    required for legal, regulatory, or security purposes.
+                  </p>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">6. Your Rights</h2>
+                  <p className="mb-2">You have the right to:</p>
+                  <ul className="list-disc pl-6 space-y-1">
+                    <li>Access or correct your personal information</li>
+                    <li>Request deletion of your data</li>
+                    <li>Opt out of marketing communications</li>
+                  </ul>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">7. Security</h2>
+                  <p>
+                    We take steps to protect your information, but no platform
+                    is completely secure. Use strong passwords and report any
+                    suspicious activity immediately.
+                  </p>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    8. Children’s Privacy
+                  </h2>
+                  <p>
+                    Our platform is not intended for users under 13. If you
+                    believe a child is using the platform, please contact us.
+                  </p>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">
+                    9. Changes to Privacy Policy
+                  </h2>
+                  <p>
+                    We may update this policy periodically. Continued use of the
+                    platform means you accept the latest version.
+                  </p>
+                </section>
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">10. Contact</h2>
+                  <p>support@buysellliberia.com</p>
+                </section>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
       </div>
     </main>
   );
