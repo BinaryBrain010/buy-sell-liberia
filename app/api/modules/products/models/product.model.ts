@@ -222,6 +222,8 @@ ProductSchema.index({ seller: 1, status: 1 });
 ProductSchema.index({ category_id: 1, status: 1 });
 ProductSchema.index({ "location.city": 1, "location.country": 1 });
 ProductSchema.index({ price: 1 });
+// Index nested amount for range queries
+ProductSchema.index({ "price.amount": 1 });
 ProductSchema.index({ createdAt: -1 });
 ProductSchema.index({ title: "text", description: "text", tags: "text" });
 ProductSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

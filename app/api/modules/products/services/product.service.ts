@@ -246,12 +246,12 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters.subcategory_id = filters.subcategory_id;
       }
 
+      // Price range (use nested path price.amount)
       if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-        queryFilters.price = {};
-        if (filters.minPrice !== undefined)
-          queryFilters.price.$gte = filters.minPrice;
-        if (filters.maxPrice !== undefined)
-          queryFilters.price.$lte = filters.maxPrice;
+        const priceAmount: any = queryFilters["price.amount"] || {};
+        if (filters.minPrice !== undefined) priceAmount.$gte = filters.minPrice;
+        if (filters.maxPrice !== undefined) priceAmount.$lte = filters.maxPrice;
+        queryFilters["price.amount"] = priceAmount;
       }
 
       if (filters.condition && filters.condition.length > 0) {
@@ -282,7 +282,7 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       if (filters.negotiable !== undefined) {
-        queryFilters.negotiable = filters.negotiable;
+        queryFilters["price.negotiable"] = filters.negotiable;
       }
 
       if (filters.featured !== undefined) {
@@ -290,7 +290,12 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       if (filters.search) {
+        // Prefer $text if index present; fallback to regex OR
         queryFilters.$text = { $search: filters.search };
+      }
+      // Preserve any pre-built $or (e.g., regex search from API layer) if provided
+      if ((filters as any).$or) {
+        (queryFilters as any).$or = (filters as any).$or;
       }
 
       // Use base service find method
@@ -1128,7 +1133,9 @@ export class ProductService extends BaseService<IProduct> {
   async incrementViews(productId: string): Promise<IProduct | null> {
     try {
       await this.ensureConnection();
-      const updatedProduct = await this.updateById(productId, { $inc: { views: 1 } });
+      const updatedProduct = await this.updateById(productId, {
+        $inc: { views: 1 },
+      });
       return updatedProduct;
     } catch (error: any) {
       this.handleError(error, "increment views");

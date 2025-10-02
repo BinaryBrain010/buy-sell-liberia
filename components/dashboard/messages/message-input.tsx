@@ -4,6 +4,7 @@ import type React from "react";
 
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 
 interface MessageInputProps {
   value: string;
@@ -45,7 +46,7 @@ export const MessageInput = ({
         className="h-9 px-3 rounded-lg"
       >
         {disabled ? (
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+          <BuySellLoader variant="inline" size={16} hideLabel label="Sending" />
         ) : (
           <Send className="h-4 w-4" />
         )}

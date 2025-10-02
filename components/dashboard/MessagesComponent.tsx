@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, ArrowLeft, Users, Clock, Send, Plus, Search } from "lucide-react";
+import {
+  MessageCircle,
+  ArrowLeft,
+  Users,
+  Clock,
+  Send,
+  Plus,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { useChats } from "@/hooks/use-chats";
 import { userClient } from "@/app/services/User.Service";
 import { socket } from "@/lib/socket";
@@ -541,15 +550,7 @@ export const MessagesComponent = ({
   if (isLoading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center py-16">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-          </div>
-        </div>
-        <div className="text-center mt-4">
-          <p className="text-muted-foreground">Loading your messages...</p>
-        </div>
+        <BuySellLoader label="Loading your messages..." />
       </div>
     );
   }
@@ -561,10 +562,12 @@ export const MessagesComponent = ({
           <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
             <MessageCircle className="h-10 w-10 text-white" />
           </div>
-          <h3 className="text-2xl font-semibold mb-2">Error Loading Messages</h3>
+          <h3 className="text-2xl font-semibold mb-2">
+            Error Loading Messages
+          </h3>
           <p className="text-muted-foreground mb-6">{error}</p>
-          <Button 
-            onClick={clearError} 
+          <Button
+            onClick={clearError}
             className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
           >
             Try Again
@@ -580,7 +583,7 @@ export const MessagesComponent = ({
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             {/* Title Section */}
@@ -590,20 +593,26 @@ export const MessagesComponent = ({
                   <MessageCircle className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">Messages</h2>
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Messages
+                  </h2>
                   <p className="text-muted-foreground">
                     Connect with buyers and sellers
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Statistics */}
             {chats.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                  <div className="text-2xl font-bold text-blue-600">{chats.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Chats</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {chats.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Chats
+                  </div>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
                   <div className="text-2xl font-bold text-green-600">
@@ -613,16 +622,27 @@ export const MessagesComponent = ({
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
                   <div className="text-2xl font-bold text-purple-600">
-                    {chats.reduce((sum, chat) => sum + (chat.messages?.length || 0), 0)}
+                    {chats.reduce(
+                      (sum, chat) => sum + (chat.messages?.length || 0),
+                      0
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">Messages</div>
                 </div>
                 <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
                   <div className="text-2xl font-bold text-orange-600">
-                    {chats.filter(chat => {
-                      const lastMessage = chat.messages?.[chat.messages.length - 1];
-                      return lastMessage && !lastMessage.readBy?.includes(currentUserId || getCurrentUserId() || '');
-                    }).length}
+                    {
+                      chats.filter((chat) => {
+                        const lastMessage =
+                          chat.messages?.[chat.messages.length - 1];
+                        return (
+                          lastMessage &&
+                          !lastMessage.readBy?.includes(
+                            currentUserId || getCurrentUserId() || ""
+                          )
+                        );
+                      }).length
+                    }
                   </div>
                   <div className="text-sm text-muted-foreground">Unread</div>
                 </div>
@@ -635,7 +655,7 @@ export const MessagesComponent = ({
       {/* Enhanced Messages Interface */}
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 overflow-hidden">
           {/* Messages Header */}
           <div className="p-6 border-b border-border/30">
@@ -653,10 +673,12 @@ export const MessagesComponent = ({
                 )}
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-semibold text-foreground">Your Conversations</h3>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Your Conversations
+                  </h3>
                 </div>
               </div>
-              
+
               {sellerId && productId && (
                 <Button
                   onClick={handleCreateNewChat}
@@ -673,10 +695,13 @@ export const MessagesComponent = ({
               <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-red-600">⚠️</span>
-                  <span className="font-medium text-red-800 dark:text-red-200">Invalid Product ID</span>
+                  <span className="font-medium text-red-800 dark:text-red-200">
+                    Invalid Product ID
+                  </span>
                 </div>
                 <p className="text-sm text-red-700 dark:text-red-300">
-                  The product ID "{productId}" is not in the correct format. Chat creation may fail.
+                  The product ID "{productId}" is not in the correct format.
+                  Chat creation may fail.
                 </p>
               </div>
             )}
@@ -701,7 +726,7 @@ export const MessagesComponent = ({
                   />
                 </div>
               </div>
-              
+
               {/* Chat List */}
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2 space-y-2">
@@ -721,7 +746,9 @@ export const MessagesComponent = ({
                   ) : (
                     <div className="p-8 text-center">
                       <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">No conversations yet</p>
+                      <p className="text-muted-foreground">
+                        No conversations yet
+                      </p>
                     </div>
                   )}
                 </div>
@@ -755,11 +782,15 @@ export const MessagesComponent = ({
                     </div>
                     <div>
                       <h3 className="text-2xl font-semibold mb-2">
-                        {sellerId && productId ? "Ready to start chatting?" : "No conversation selected"}
+                        {sellerId && productId
+                          ? "Ready to start chatting?"
+                          : "No conversation selected"}
                       </h3>
                       <p className="text-muted-foreground mb-6">
                         {sellerId && productId
-                          ? `Start a conversation about: ${propProductTitle || "this product"}`
+                          ? `Start a conversation about: ${
+                              propProductTitle || "this product"
+                            }`
                           : "Select a conversation from the list to start messaging"}
                       </p>
                     </div>
@@ -771,7 +802,13 @@ export const MessagesComponent = ({
                       >
                         {isCreatingChat ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                            <BuySellLoader
+                              variant="inline"
+                              size={16}
+                              hideLabel
+                              label="Creating Chat"
+                              className="mr-2"
+                            />
                             Creating Chat...
                           </>
                         ) : (

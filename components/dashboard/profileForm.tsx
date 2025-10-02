@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -206,15 +207,7 @@ export default function ProfileForm({
   if (loading) {
     return (
       <div className="p-6">
-        <div className="flex items-center justify-center py-12">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-v0-green animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-          </div>
-        </div>
-        <div className="text-center mt-4">
-          <p className="text-muted-foreground">Loading profile information...</p>
-        </div>
+        <BuySellLoader label="Loading profile information..." />
       </div>
     );
   }
@@ -230,8 +223,8 @@ export default function ProfileForm({
           <p className="text-muted-foreground mb-6">
             Unable to load profile information. Please try again.
           </p>
-          <Button 
-            onClick={() => fetchProfile()} 
+          <Button
+            onClick={() => fetchProfile()}
             variant="outline"
             className="px-6 py-2"
           >
@@ -248,7 +241,7 @@ export default function ProfileForm({
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
-        
+
         <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             {/* User Avatar & Info */}
@@ -268,13 +261,11 @@ export default function ProfileForm({
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     Active
                   </span>
-                  <span className="text-muted-foreground">
-                    {profile.email}
-                  </span>
+                  <span className="text-muted-foreground">{profile.email}</span>
                 </div>
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex items-center gap-3">
               {!editing && (
@@ -288,21 +279,27 @@ export default function ProfileForm({
               )}
               {editing && (
                 <>
-                  <Button 
-                    onClick={handleCancel} 
-                    variant="outline" 
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
                     className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={saving} 
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {saving ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        <BuySellLoader
+                          variant="inline"
+                          size={16}
+                          hideLabel
+                          label="Saving"
+                          className="mr-2"
+                        />
                         Saving...
                       </>
                     ) : (
@@ -324,37 +321,49 @@ export default function ProfileForm({
         {/* Personal Information */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-            <h3 className="text-xl font-semibold mb-6 text-foreground">Personal Information</h3>
-            
+            <h3 className="text-xl font-semibold mb-6 text-foreground">
+              Personal Information
+            </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-sm font-semibold">Full Name</Label>
+                <Label htmlFor="fullName" className="text-sm font-semibold">
+                  Full Name
+                </Label>
                 <Input
                   id="fullName"
                   value={formData.fullName}
-                  onChange={(e) => handleInputChange("fullName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("fullName", e.target.value)
+                  }
                   disabled={!editing}
                   className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
                   placeholder="Enter full name"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-semibold">Username</Label>
+                <Label htmlFor="username" className="text-sm font-semibold">
+                  Username
+                </Label>
                 <Input
                   id="username"
                   value={formData.username}
-                  onChange={(e) => handleInputChange("username", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
                   disabled={!editing}
                   className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
                   placeholder="Enter username"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-semibold">Email Address</Label>
+                <Label htmlFor="email" className="text-sm font-semibold">
+                  Email Address
+                </Label>
                 <div className="flex items-center gap-3">
                   <Input
                     id="email"
@@ -363,11 +372,13 @@ export default function ProfileForm({
                     className="flex-1 h-12 border-2 border-border/30 rounded-xl bg-muted/50"
                     placeholder="Email address"
                   />
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    profile.emailVerified 
-                      ? 'bg-green-100 dark:bg-green-900/20' 
-                      : 'bg-yellow-100 dark:bg-yellow-900/20'
-                  }`}>
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      profile.emailVerified
+                        ? "bg-green-100 dark:bg-green-900/20"
+                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                    }`}
+                  >
                     {profile.emailVerified ? (
                       <CheckCircle className="h-6 w-6 text-green-600" />
                     ) : (
@@ -375,13 +386,21 @@ export default function ProfileForm({
                     )}
                   </div>
                 </div>
-                <p className={`text-xs ${profile.emailVerified ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {profile.emailVerified ? 'Email verified' : 'Email not verified'}
+                <p
+                  className={`text-xs ${
+                    profile.emailVerified ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {profile.emailVerified
+                    ? "Email verified"
+                    : "Email not verified"}
                 </p>
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-sm font-semibold">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm font-semibold">
+                  Phone Number
+                </Label>
                 <div className="flex items-center gap-3">
                   <Input
                     id="phone"
@@ -391,11 +410,13 @@ export default function ProfileForm({
                     className="flex-1 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
                     placeholder="Enter phone number"
                   />
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    profile.phoneVerified 
-                      ? 'bg-green-100 dark:bg-green-900/20' 
-                      : 'bg-yellow-100 dark:bg-yellow-900/20'
-                  }`}>
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      profile.phoneVerified
+                        ? "bg-green-100 dark:bg-green-900/20"
+                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                    }`}
+                  >
                     {profile.phoneVerified ? (
                       <CheckCircle className="h-6 w-6 text-green-600" />
                     ) : (
@@ -403,8 +424,14 @@ export default function ProfileForm({
                     )}
                   </div>
                 </div>
-                <p className={`text-xs ${profile.phoneVerified ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {profile.phoneVerified ? 'Phone verified' : 'Phone not verified'}
+                <p
+                  className={`text-xs ${
+                    profile.phoneVerified ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {profile.phoneVerified
+                    ? "Phone verified"
+                    : "Phone not verified"}
                 </p>
               </div>
             </div>
@@ -414,13 +441,17 @@ export default function ProfileForm({
         {/* Location Information */}
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
-          
+
           <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-            <h3 className="text-xl font-semibold mb-6 text-foreground">Location Information</h3>
-            
+            <h3 className="text-xl font-semibold mb-6 text-foreground">
+              Location Information
+            </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="city" className="text-sm font-semibold">City</Label>
+                <Label htmlFor="city" className="text-sm font-semibold">
+                  City
+                </Label>
                 <Input
                   id="city"
                   value={formData.city}
@@ -430,9 +461,11 @@ export default function ProfileForm({
                   placeholder="Enter city"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="state" className="text-sm font-semibold">State/Province</Label>
+                <Label htmlFor="state" className="text-sm font-semibold">
+                  State/Province
+                </Label>
                 <Input
                   id="state"
                   value={formData.state}
@@ -442,9 +475,11 @@ export default function ProfileForm({
                   placeholder="Enter state"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="country" className="text-sm font-semibold">Country</Label>
+                <Label htmlFor="country" className="text-sm font-semibold">
+                  Country
+                </Label>
                 <Select
                   value={formData.country || undefined}
                   onValueChange={(value) => handleInputChange("country", value)}
@@ -456,7 +491,9 @@ export default function ProfileForm({
                   <SelectContent>
                     <SelectItem value="Liberia">Liberia</SelectItem>
                     <SelectItem value="United States">United States</SelectItem>
-                    <SelectItem value="United Kingdom">United Kingdom</SelectItem>
+                    <SelectItem value="United Kingdom">
+                      United Kingdom
+                    </SelectItem>
                     <SelectItem value="Canada">Canada</SelectItem>
                     <SelectItem value="Australia">Australia</SelectItem>
                     <SelectItem value="Germany">Germany</SelectItem>

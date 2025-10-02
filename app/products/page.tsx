@@ -7,20 +7,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/product-card";
-import {
-  Loader2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  ArrowRight,
-} from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, X, ArrowRight } from "lucide-react";
 import { FiltersSection } from "@/components/filters/filter-section";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePagination } from "@/hooks/use-pagination";
 import { useProductsApi } from "@/hooks/use-product-api";
-import ProductListSkeleton from "@/components/ProductListSkeleton";
+// import ProductListSkeleton from "@/components/ProductListSkeleton"; // replaced by lottie loader
+import BuySellLoader from "@/components/loader/BuySellLoader";
 
 const ITEMS_PER_PAGE = 30;
 
@@ -391,22 +385,19 @@ export default function ProductsPage() {
             </FadeIn>
           )}
 
-          {/* Enhanced Loading State */}
+          {/* Enhanced Loading State (Lottie) */}
           {isLoading || isSearching ? (
             <FadeIn>
-              <div className="mb-8">
-                <div className="flex items-center justify-center gap-3 mb-6 px-4 py-2 rounded-full bg-gradient-to-r from-primary/5 to-v0-green/5 border border-primary/10 w-fit mx-auto">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="text-sm font-medium text-primary">
-                    {isSearching
-                      ? "Searching products..."
-                      : "Loading products..."}
-                  </span>
-                </div>
-                <ProductListSkeleton
-                  variant={viewMode}
-                  count={ITEMS_PER_PAGE / 3}
+              <div className="mb-16 flex flex-col items-center justify-center py-12">
+                <BuySellLoader
+                  label={isSearching ? "Searching products" : "Loading products"}
+                  size={160}
                 />
+                <p className="mt-6 text-sm text-muted-foreground max-w-sm text-center">
+                  {isSearching
+                    ? "Refining your results. Please wait a moment."
+                    : "Fetching the freshest listings for you."}
+                </p>
               </div>
             </FadeIn>
           ) : products.length > 0 ? (

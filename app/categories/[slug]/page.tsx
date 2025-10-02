@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   Search,
-  Loader2,
   ChevronDown,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import Link from "next/link";
 import { ProductCard, type Product } from "@/components/product-card";
 
@@ -307,10 +307,11 @@ export default function CategoryPage() {
     return (
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-20">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading category...</p>
-          </div>
+          <BuySellLoader
+            label="Loading category..."
+            size={80}
+            variant="subtle"
+          />
         </div>
       </div>
     );
@@ -373,7 +374,7 @@ export default function CategoryPage() {
               <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
               <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
             </div>
-            
+
             <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-6 md:gap-8">
                 <div
@@ -625,9 +626,12 @@ export default function CategoryPage() {
         {/* Products Grid */}
         <FadeIn>
           {loadingProducts ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading products...</p>
+            <div className="py-12">
+              <BuySellLoader
+                label="Loading products..."
+                size={72}
+                variant="subtle"
+              />
             </div>
           ) : products.length === 0 ? (
             <FadeIn className="text-center py-20">
