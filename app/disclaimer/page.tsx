@@ -38,8 +38,9 @@ export default function DisclaimerPage() {
                 Disclaimer
               </h1>
               <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-                Please review this information carefully. Using our platform
-                means you agree to these terms.
+                This Disclaimer explains the limitations of BuySell Liberia
+                regarding the use of our platform. By accessing or using our
+                services, you acknowledge and agree to the following:
               </p>
             </div>
           </section>
@@ -48,35 +49,48 @@ export default function DisclaimerPage() {
           <FadeInStagger className="space-y-10">
             {[
               {
-                title: "General Information",
+                title: "1. Marketplace Role",
                 body: [
-                  "BuySell Liberia is an online marketplace that connects buyers and sellers. We do not own, manufacture, or inspect items listed on the platform. Listings, descriptions, prices, and availability are provided by sellers.",
-                  "We strive for accuracy, but we cannot guarantee that listings or communications are error-free, complete, or current. Use your best judgment and verify details before making a purchase.",
+                  "BuySell Liberia is an online classifieds platform. We do not act as a buyer, seller, agent, or delivery provider.",
                 ],
               },
               {
-                title: "Transactions and Responsibility",
-                body: [
-                  "All transactions are directly between buyers and sellers. BuySell Liberia is not a party to any transaction and does not provide warranties of any kind for listed items.",
-                ],
+                title: "2. No Guarantee of Listings",
+                body: ["We make no guarantees regarding:"],
                 list: [
-                  "Meet in safe, public locations whenever possible.",
-                  "Verify item condition and authenticity before paying.",
-                  "Beware of suspicious requests (e.g., upfront payments, gift cards, or off-platform communications).",
+                  "The quality, safety, legality, or availability of items listed",
+                  "The truth or accuracy of listings, prices, or photos",
+                  "The identity, conduct, or reliability of users",
                 ],
               },
               {
-                title: "Limitations of Liability",
+                title: "3. Transactions at User's Risk",
                 body: [
-                  "To the fullest extent permitted by law, BuySell Liberia and its affiliates are not liable for any direct, indirect, incidental, consequential, or punitive damages resulting from your use of the platform.",
-                  "We may suspend or remove content or accounts that violate our policies. We reserve the right to modify or discontinue services at any time.",
+                  "All transactions are strictly between buyers and sellers. BuySell Liberia is not responsible for payment disputes, fraud, missing deliveries, or misrepresented items.",
                 ],
               },
               {
-                title: "Reporting and Support",
+                title: "4. No Endorsement or Verification",
                 body: [
-                  "If you encounter suspicious activity, scams, or policy violations, please report it immediately using the report buttons on listings or via our contact page.",
-                  "For more information, see our Privacy Policy, Terms of Service, and Safety Tips pages.",
+                  "We do not pre-screen, endorse, or guarantee any listing or user on the platform.",
+                ],
+              },
+              {
+                title: "5. Limitation of Liability",
+                body: [
+                  "To the fullest extent permitted by law, BuySell Liberia disclaims all liability for any direct, indirect, incidental, or consequential damages arising from use of our platform. Users assume all responsibility for their transactions.",
+                ],
+              },
+              {
+                title: "6. Changes to Disclaimer",
+                body: [
+                  "We may update this Disclaimer as our services evolve. Continued use indicates acceptance of the latest version.",
+                ],
+              },
+              {
+                title: "7. Contact",
+                body: [
+                  "For any questions or concerns regarding this disclaimer, please contact us at: support@buysellliberia.com",
                 ],
               },
             ].map((sec, i) => (
@@ -104,9 +118,9 @@ export default function DisclaimerPage() {
                       ))}
                     />
                   )}
-                  {sec.title === "Reporting and Support" && (
+                  {sec.title === "7. Contact" && (
                     <p className="text-sm text-muted-foreground/70">
-                      Need help? Visit{" "}
+                      For additional information, please see our{" "}
                       <Link
                         href="/privacy"
                         className="underline hover:text-primary"
@@ -118,7 +132,7 @@ export default function DisclaimerPage() {
                         href="/terms"
                         className="underline hover:text-primary"
                       >
-                        Terms
+                        Terms of Service
                       </Link>
                       , or{" "}
                       <Link
