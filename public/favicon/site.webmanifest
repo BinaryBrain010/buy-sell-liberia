@@ -1,0 +1,15 @@
+{
+  "name": "BuySell - Buy & Sell Anything Online",
+  "short_name": "BuySell",
+  "icons": [
+    {
+      "src": "/favicon/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}
