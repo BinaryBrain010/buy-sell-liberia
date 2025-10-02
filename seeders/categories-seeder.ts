@@ -3,11 +3,18 @@ import Category from "../models/Category";
 
 interface CustomField {
   fieldName: string;
-  fieldType: string;
+  fieldType: "text" | "number" | "select" | "boolean" | "textarea" | "date";
   label: string;
   required?: boolean;
   options?: string[];
   placeholder?: string;
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+    minLength?: number;
+    maxLength?: number;
+  };
 }
 
 interface Subcategory {
@@ -29,7 +36,7 @@ interface CategoryType {
   subcategories: Subcategory[];
 }
 
-// Initial categories data matching the frontend expectations
+// Comprehensive categories data for Liberian marketplace
 const initialCategories: CategoryType[] = [
   {
     name: "Electronics",
@@ -57,6 +64,10 @@ const initialCategories: CategoryType[] = [
               "Huawei",
               "Xiaomi",
               "OnePlus",
+              "Tecno",
+              "Infinix",
+              "Itel",
+              "Nokia",
               "Other",
             ],
           },
@@ -65,7 +76,7 @@ const initialCategories: CategoryType[] = [
             fieldType: "text",
             label: "Model",
             required: true,
-            placeholder: "e.g. iPhone 13 Pro",
+            placeholder: "e.g. iPhone 13 Pro, Galaxy S21",
           },
           {
             fieldName: "condition",
@@ -84,7 +95,13 @@ const initialCategories: CategoryType[] = [
             fieldName: "color",
             fieldType: "text",
             label: "Color",
-            placeholder: "e.g. Space Gray",
+            placeholder: "e.g. Space Gray, Midnight Black",
+          },
+          {
+            fieldName: "network",
+            fieldType: "select",
+            label: "Network",
+            options: ["2G", "3G", "4G LTE", "5G"],
           },
         ],
       },
@@ -888,7 +905,9 @@ async function seedCategories(): Promise<void> {
   try {
     // Connect to MongoDB
     const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/buysell";
+      process.env.MONGODB_URI ||
+      process.env.MONGO_URI ||
+      "mongodb://localhost:27017/buysell";
     await mongoose.connect(mongoUri);
     console.log("Connected to MongoDB");
 
@@ -901,19 +920,27 @@ async function seedCategories(): Promise<void> {
     console.log(`Successfully seeded ${categories.length} categories`);
 
     // Log the created categories
-    categories.forEach((category: CategoryType) => {
+    categories.forEach((category: any) => {
       console.log(
         `- ${category.name} (${category.subcategories.length} subcategories)`
       );
     });
 
-    console.log("Category seeding completed successfully!");
+    console.log("\n✅ Category seeding completed successfully!");
+    console.log(
+      "📄 All subcategories use placeholder images: /placeholder.jpg"
+    );
+
     process.exit(0);
   } catch (error) {
-    console.error("Error seeding categories:", error);
+    console.error("❌ Error seeding categories:", error);
     process.exit(1);
   }
 }
 
-// Run the seeder
-seedCategories();
+// Run the seeder if this file is executed directly
+if (require.main === module) {
+  seedCategories();
+}
+
+export default seedCategories;
