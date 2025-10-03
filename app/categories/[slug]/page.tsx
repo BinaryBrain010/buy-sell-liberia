@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FiltersSection } from "@/components/filters/filter-section";
 import {
   ArrowLeft,
   Search,
@@ -60,10 +61,21 @@ export default function CategoryPage() {
   const [pendingMinPrice, setPendingMinPrice] = useState("");
   const [pendingMaxPrice, setPendingMaxPrice] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
+  // Structured location filters (applied)
+  const [locCity, setLocCity] = useState<string>("");
+  const [locState, setLocState] = useState<string>("");
+  const [locCountry, setLocCountry] = useState<string>("");
+  // Structured location filters (pending UI)
+  const [pendingCity, setPendingCity] = useState<string>("");
+  const [pendingState, setPendingState] = useState<string>("");
+  const [pendingCountry, setPendingCountry] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalProducts, setTotalProducts] = useState(0);
   const itemsPerPage = 20;
+  // Sorting and view
+  const [sortMenu, setSortMenu] = useState<string>("newest");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
@@ -169,9 +181,23 @@ export default function CategoryPage() {
       if (selectedConditions.length > 0) filters.condition = selectedConditions;
       if (minPrice) filters.minPrice = Number(minPrice);
       if (maxPrice) filters.maxPrice = Number(maxPrice);
+      // Location filters
+      if (locCity || locState || locCountry) {
+        filters.location = {} as any;
+        if (locCity) filters.location.city = locCity;
+        if (locState) filters.location.state = locState;
+        if (locCountry) filters.location.country = locCountry;
+      }
 
-      // No sort options, always use default sort
+      // Sort options mapped from UI menu
       let sortOptions: any = {};
+      if (sortMenu === "price-low") {
+        sortOptions = { "price.amount": 1 };
+      } else if (sortMenu === "price-high") {
+        sortOptions = { "price.amount": -1 };
+      } else if (sortMenu === "newest") {
+        sortOptions = { createdAt: -1 };
+      }
       // Pagination
       const pagination = { page: currentPage, limit: itemsPerPage };
 
@@ -244,7 +270,10 @@ export default function CategoryPage() {
     selectedConditions,
     minPrice,
     maxPrice,
-    // sortBy removed
+    locCity,
+    locState,
+    locCountry,
+    sortMenu,
   ]);
 
   // Fetch products whenever filters/search/page change
@@ -269,20 +298,30 @@ export default function CategoryPage() {
     selectedConditions,
     minPrice,
     maxPrice,
+    locCity,
+    locState,
+    locCountry,
     selectedSubcategory?._id,
+    sortMenu,
   ]);
 
-  // Sync pending state with applied state when category/subcategory changes
+  // Sync pending state with applied state when category/subcategory changes (kept for compatibility)
   useEffect(() => {
     setPendingSearch(searchQuery);
     setPendingMinPrice(minPrice);
     setPendingMaxPrice(maxPrice);
     setPendingConditions(selectedConditions);
+    setPendingCity(locCity);
+    setPendingState(locState);
+    setPendingCountry(locCountry);
   }, [
     searchQuery,
     minPrice,
     maxPrice,
     selectedConditions,
+    locCity,
+    locState,
+    locCountry,
     currentCategory?._id,
     selectedSubcategory?._id,
   ]);
@@ -457,170 +496,36 @@ export default function CategoryPage() {
           </div>
         </FadeIn>
 
-        {/* Enhanced Search and Filters section */}
+        {/* Filters: shared component */}
         <FadeIn>
-          <div className="bg-gradient-to-br from-background/80 via-background/60 to-background/80 rounded-2xl p-6 sm:p-8 border-2 border-border/30 card-shadow mb-12 shadow-xl">
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              {/* Enhanced Search Bar */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-                  <Input
-                    placeholder={`Search in ${
-                      selectedSubcategory?.name || currentCategory?.name
-                    }...`}
-                    value={pendingSearch}
-                    onChange={(e) => setPendingSearch(e.target.value)}
-                    className="pl-12 pr-4 py-3 text-base rounded-xl border-2 border-border/30 focus:border-primary/50 transition-colors input-shadow"
-                  />
-                </div>
-              </div>
-
-              {/* Enhanced Filters Button */}
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setShowFilters(!showFilters)}
-                className="btn-shadow w-full sm:w-auto border-2 border-border/30 hover:border-primary/50 transition-colors px-6 py-3"
-                aria-expanded={showFilters}
-                aria-label="Toggle filters"
-              >
-                <SlidersHorizontal className="h-5 w-5 mr-2" />
-                Advanced Filters
-                <ChevronDown
-                  className={`h-5 w-5 ml-2 transition-transform ${
-                    showFilters ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
-            </div>
-
-            {/* Enhanced Advanced Filters */}
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-6 pt-6 border-t-2 border-border/30"
-              >
-                <div className="space-y-6">
-                  {/* Condition Filter */}
-                  <div>
-                    <label className="text-lg font-semibold mb-4 block text-foreground">
-                      Product Condition
-                    </label>
-                    <div className="flex flex-wrap gap-3">
-                      {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
-                        (condition) => (
-                          <Button
-                            key={condition}
-                            variant={
-                              pendingConditions.includes(condition)
-                                ? "default"
-                                : "outline"
-                            }
-                            size="sm"
-                            className={`btn-shadow transition-all duration-200 ${
-                              pendingConditions.includes(condition)
-                                ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white border-0"
-                                : "bg-transparent border-2 border-border/30 hover:border-primary/50"
-                            }`}
-                            onClick={() => {
-                              setPendingConditions((prev) =>
-                                prev.includes(condition)
-                                  ? prev.filter((c) => c !== condition)
-                                  : [...prev, condition]
-                              );
-                            }}
-                          >
-                            {condition}
-                          </Button>
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Enhanced Price Range */}
-                  <div>
-                    <label className="text-lg font-semibold mb-4 block text-foreground">
-                      Price Range
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                          Minimum Price
-                        </label>
-                        <Input
-                          placeholder="$0"
-                          className="input-shadow border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
-                          value={pendingMinPrice}
-                          onChange={(e) =>
-                            setPendingMinPrice(
-                              e.target.value.replace(/[^\d.]/g, "")
-                            )
-                          }
-                          inputMode="numeric"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-2 block text-muted-foreground">
-                          Maximum Price
-                        </label>
-                        <Input
-                          placeholder="$10,000"
-                          className="input-shadow border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
-                          value={pendingMaxPrice}
-                          onChange={(e) =>
-                            setPendingMaxPrice(
-                              e.target.value.replace(/[^\d.]/g, "")
-                            )
-                          }
-                          inputMode="numeric"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Enhanced Apply/Clear Filters Buttons */}
-                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4">
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => {
-                        setPendingSearch("");
-                        setPendingMinPrice("");
-                        setPendingMaxPrice("");
-                        setPendingConditions([]);
-                        setSearchQuery("");
-                        setMinPrice("");
-                        setMaxPrice("");
-                        setSelectedConditions([]);
-                        setCurrentPage(1);
-                        setShowFilters(false);
-                      }}
-                      className="w-full sm:w-auto border-2 border-border/30 hover:border-red-500/50 hover:text-red-600 transition-colors px-6"
-                    >
-                      Clear All Filters
-                    </Button>
-                    <Button
-                      size="lg"
-                      onClick={() => {
-                        setSearchQuery(pendingSearch);
-                        setMinPrice(pendingMinPrice);
-                        setMaxPrice(pendingMaxPrice);
-                        setSelectedConditions(pendingConditions);
-                        setCurrentPage(1);
-                        setShowFilters(false);
-                      }}
-                      className="w-full sm:w-auto bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 px-6"
-                    >
-                      Apply Filters
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </div>
+          <FiltersSection
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            sortBy={sortMenu}
+            onSortChange={setSortMenu}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            onFiltersApply={(f) => {
+              // sort menu selection from component
+              if (f.sortBy) setSortMenu(f.sortBy);
+              // apply filters
+              setSearchQuery(f.search || "");
+              setSelectedConditions(f.condition || []);
+              setMinPrice(
+                typeof f.priceMin === "number" ? String(f.priceMin) : ""
+              );
+              setMaxPrice(
+                typeof f.priceMax === "number" ? String(f.priceMax) : ""
+              );
+              setLocCity(f.city || "");
+              setLocState(f.state || "");
+              setLocCountry(f.country || "");
+              setCurrentPage(1);
+              setShowFilters(false);
+            }}
+          />
         </FadeIn>
 
         {/* Products Grid */}

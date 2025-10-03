@@ -35,6 +35,9 @@ interface FiltersSectionProps {
     condition?: string[];
     priceMin?: number;
     priceMax?: number;
+    city?: string;
+    state?: string;
+    country?: string;
   }) => void;
 }
 
@@ -57,6 +60,10 @@ export function FiltersSection(props: FiltersSectionProps) {
   );
   const [localPriceMin, setLocalPriceMin] = useState<string>("");
   const [localPriceMax, setLocalPriceMax] = useState<string>("");
+  // Structured location input
+  const [city, setCity] = useState<string>("");
+  const [state, setState] = useState<string>("");
+  const [country, setCountry] = useState<string>("");
 
   // Sync local state with props if they change externally
   useEffect(() => {
@@ -79,6 +86,9 @@ export function FiltersSection(props: FiltersSectionProps) {
         condition: conditionArray,
         priceMin: priceMinNum,
         priceMax: priceMaxNum,
+        city: city || undefined,
+        state: state || undefined,
+        country: country || undefined,
       });
     }
   };
@@ -89,6 +99,9 @@ export function FiltersSection(props: FiltersSectionProps) {
     setSelectedCondition(null);
     setLocalPriceMin("");
     setLocalPriceMax("");
+    setCity("");
+    setState("");
+    setCountry("");
     onSearchChange("");
     onSortChange("newest");
     if (props.onFiltersApply) {
@@ -244,6 +257,45 @@ export function FiltersSection(props: FiltersSectionProps) {
                       Min price cannot exceed Max price.
                     </p>
                   )}
+              </div>
+            </div>
+            {/* Location Filter (City/State/Country) */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Location</label>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground mb-1">
+                    City
+                  </span>
+                  <Input
+                    placeholder="e.g. Monrovia"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground mb-1">
+                    State
+                  </span>
+                  <Input
+                    placeholder="e.g. Montserrado"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-muted-foreground mb-1">
+                    Country
+                  </span>
+                  <Input
+                    placeholder="e.g. Liberia"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-40"
+                  />
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2">

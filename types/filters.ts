@@ -1,7 +1,12 @@
 export interface FilterState {
   category?: string
   subcategory?: string
+  // Back-compat single location search (mapped to city if used)
   location?: string
+  // Structured location filters for location API
+  city?: string
+  state?: string
+  country?: string
   priceMin?: number
   priceMax?: number
   timeFilter?: string

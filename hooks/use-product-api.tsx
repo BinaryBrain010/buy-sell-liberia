@@ -31,9 +31,15 @@ export function useProductsApi() {
     if (params.filters.subcategory)
       urlParams.append("subcategory_id", params.filters.subcategory);
 
-    // Location
-    if (params.filters.location)
-      urlParams.append("location", params.filters.location);
+    // Location: support both legacy 'location' and structured city/state/country
+    if (params.filters.city) urlParams.append("city", params.filters.city);
+    if (params.filters.state) urlParams.append("state", params.filters.state);
+    if (params.filters.country)
+      urlParams.append("country", params.filters.country);
+    // Back-compat: map 'location' to city if provided
+    if (!params.filters.city && params.filters.location) {
+      urlParams.append("city", params.filters.location);
+    }
 
     // Price
     if (params.filters.priceMin !== undefined)
@@ -83,12 +89,21 @@ export function useProductsApi() {
 
       try {
         const urlParams = buildApiParams(params);
-        const response = await axios.get(
-          `/api/products?${urlParams.toString()}`
+        const hasStructuredLocation = Boolean(
+          params.filters.city || params.filters.state || params.filters.country
         );
+        const endpoint = hasStructuredLocation
+          ? "/api/products/location"
+          : "/api/products";
+        const response = await axios.get(`${endpoint}?${urlParams.toString()}`);
 
         const productsData = response.data.products || [];
-        const totalItems = response.data.totalItems || productsData.length || 0;
+        // Support both endpoints' totals: totalItems (legacy) or total
+        const totalItems =
+          response.data.totalItems ??
+          response.data.total ??
+          productsData.length ??
+          0;
 
         setProducts(productsData);
         setTotalResults(totalItems);

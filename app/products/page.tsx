@@ -25,6 +25,12 @@ export default function ProductsPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [priceMin, setPriceMin] = useState<number | undefined>(undefined);
   const [priceMax, setPriceMax] = useState<number | undefined>(undefined);
+  // Structured location filters
+  const [city, setCity] = useState<string | undefined>(undefined);
+  const [locationState, setLocationState] = useState<string | undefined>(
+    undefined
+  );
+  const [country, setCountry] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,7 +66,15 @@ export default function ProductsPage() {
     setCurrentPage(1);
     setShowFilters(false);
     fetchProducts({
-      filters: { sortBy, sortOrder, priceMin, priceMax },
+      filters: {
+        sortBy,
+        sortOrder,
+        priceMin,
+        priceMax,
+        city,
+        state: locationState,
+        country,
+      },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
@@ -70,6 +84,9 @@ export default function ProductsPage() {
     sortOrder,
     priceMin,
     priceMax,
+    city,
+    locationState,
+    country,
     debouncedSearchQuery,
     fetchProducts,
   ]);
@@ -79,7 +96,15 @@ export default function ProductsPage() {
     (page: number) => {
       setCurrentPage(page);
       fetchProducts({
-        filters: { sortBy, sortOrder, priceMin, priceMax },
+        filters: {
+          sortBy,
+          sortOrder,
+          priceMin,
+          priceMax,
+          city,
+          state: locationState,
+          country,
+        },
         page,
         search: debouncedSearchQuery,
         itemsPerPage: ITEMS_PER_PAGE,
@@ -103,6 +128,9 @@ export default function ProductsPage() {
     setPriceMin(undefined);
     setPriceMax(undefined);
     setSearchQuery("");
+    setCity(undefined);
+    setLocationState(undefined);
+    setCountry(undefined);
     setCurrentPage(1);
     clearError();
     fetchProducts({
@@ -161,7 +189,15 @@ export default function ProductsPage() {
 
     setCurrentPage(1);
     fetchProducts({
-      filters: { sortBy, sortOrder, priceMin, priceMax },
+      filters: {
+        sortBy,
+        sortOrder,
+        priceMin,
+        priceMax,
+        city,
+        state: locationState,
+        country,
+      },
       page: 1,
       search: debouncedSearchQuery,
       itemsPerPage: ITEMS_PER_PAGE,
@@ -172,6 +208,9 @@ export default function ProductsPage() {
     sortOrder,
     priceMin,
     priceMax,
+    city,
+    locationState,
+    country,
     fetchProducts,
   ]);
 
@@ -299,6 +338,10 @@ export default function ProductsPage() {
               );
               setPriceMin(f.priceMin);
               setPriceMax(f.priceMax);
+              // Persist structured location filters
+              setCity(f.city);
+              setLocationState(f.state);
+              setCountry(f.country);
               fetchProducts({
                 filters: {
                   sortBy:
@@ -316,6 +359,9 @@ export default function ProductsPage() {
                   condition: mappedConditions,
                   priceMin: f.priceMin,
                   priceMax: f.priceMax,
+                  city: f.city,
+                  state: f.state,
+                  country: f.country,
                 },
                 page: 1,
                 search: f.search,
