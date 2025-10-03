@@ -7,7 +7,7 @@ import { Heart, MapPin, Clock, Eye, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { Price } from "@/app/api/modules/products/services/product.service";
+import type { Price } from "@/types/products";
 import Link from "next/link";
 import { FavouriteButton } from "@/components/FavouriteButton";
 
