@@ -160,15 +160,15 @@ export function Footer() {
             <div className="space-y-3 mb-4">
               <div className="flex items-center text-muted-foreground">
                 <Mail className="h-4 w-4 mr-2" />
-                <span className="text-sm">info@buysell.com</span>
+                <span className="text-sm">info@buysellliberia.com</span>
               </div>
               <div className="flex items-center text-muted-foreground">
                 <Phone className="h-4 w-4 mr-2" />
-                <span className="text-sm">+1 (555) 123-4567</span>
+                <span className="text-sm">+231 77 7647548</span>
               </div>
               <div className="flex items-center text-muted-foreground">
                 <MapPin className="h-4 w-4 mr-2" />
-                <span className="text-sm">Global Marketplace</span>
+                <span className="text-sm">Key Hole, Old Road-Sinkor Monrovia-Liberia</span>
               </div>
             </div>
 
@@ -186,9 +186,6 @@ export function Footer() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-muted-foreground text-sm">
               © 2025 BuySell. All rights reserved.
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Made with ❤️ for everyone
             </p>
           </div>
         </FadeIn>

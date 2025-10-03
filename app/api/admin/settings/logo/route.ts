@@ -9,33 +9,22 @@ import { existsSync } from 'fs';
 import { createAdminAuditLogger } from '../../../../../lib/admin-audit-middleware';
 import { OperationType, ModuleType } from '../../../../../lib/audit-logger';
 
-// GET: Get current logo
-export async function GET(req: NextRequest) {
+// GET: Public - Get current logo (authorization removed for public consumption)
+export async function GET(_req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'No token' }, { status: 401 });
-    }
-    const token = authHeader.split(' ')[1];
-    const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== 'object' || (payload.role !== 'admin' && payload.role !== 'super_admin')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Direct database query for logo
     const { Setting } = await import('@/app/api/modules/shared/models/setting.model');
     const { connectDB } = await import('@/lib/mongoose');
     await connectDB();
-    
+
     const logoDoc = await Setting.findOne({ key: 'platform_logo' });
     const logoUrl = logoDoc?.value || '';
-    
+
     return NextResponse.json({
       logoUrl,
       hasLogo: !!logoUrl
-    });
+    }, { status: 200 });
   } catch (error: any) {
-    console.error('Error in /api/admin/settings/logo GET:', error);
+    console.error('Error in /api/admin/settings/logo GET (public):', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

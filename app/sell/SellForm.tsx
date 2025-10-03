@@ -162,9 +162,15 @@ export default function  SellForm() {
     <div className="w-full mx-auto">
       <StepIndicator currentStep={currentStep} />
 
-      <Card className="shadow-lg">
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <Card className="relative bg-gradient-to-br from-background/90 via-background/80 to-background/90 border-2 border-border/30 shadow-2xl overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 transform translate-x-8 -translate-y-8 rotate-45 bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 transform -translate-x-6 translate-y-6 rotate-45 bg-gradient-to-br from-v0-green/5 to-transparent opacity-50" />
+        </div>
+
+        <CardContent className="relative z-10 p-6 md:p-8 lg:p-12">
+          <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
             {currentStep === 1 && (
               <Step1BasicInfo
                 formData={formData}
@@ -193,65 +199,87 @@ export default function  SellForm() {
                   setTagInput={setTagInput}
                   setErrors={setErrors}
                 />
-                <div className="mt-6 flex justify-end gap-2">
+                <div className="mt-8 flex flex-col sm:flex-row justify-end gap-3">
                   <Button
                     type="button"
                     variant="outline"
+                    size="lg"
                     onClick={() => setShowReview((prev) => !prev)}
+                    className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
                   >
-                    {showReview ? "Hide Review" : "Show Review"}
+                    {showReview ? "Hide Review" : "Preview Listing"}
                   </Button>
                   <Button
                     type="button"
-                    variant="default"
+                    size="lg"
                     onClick={() => setShowCreateButton(true)}
+                    className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
                   >
-                    Show Create Listing
+                    Ready to Create Listing
                   </Button>
                 </div>
               </>
             )}
 
-            <div className="flex items-center justify-between pt-6 border-t">
+            {/* Enhanced Navigation Section */}
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-6 md:pt-8 border-t-2 border-border/30 gap-4">
               <Button
                 type="button"
                 variant="outline"
+                size="lg"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className="flex items-center gap-2"
+                className="flex items-center gap-3 px-8 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" />
-                Previous
+                <ArrowLeft className="w-5 h-5" />
+                Previous Step
               </Button>
 
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Step {currentStep} of 3</span>
+              {/* Progress Indicator */}
+              <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20">
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3].map((step) => (
+                    <div
+                      key={step}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                        step <= currentStep
+                          ? "bg-gradient-to-r from-primary to-v0-green"
+                          : "bg-muted-foreground/30"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-medium text-primary">
+                  {currentStep} of 3
+                </span>
               </div>
 
               {currentStep < 3 ? (
                 <Button
                   type="button"
+                  size="lg"
                   onClick={nextStep}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
                 >
-                  Next
-                  <ArrowRight className="w-4 h-4" />
+                  Next Step
+                  <ArrowRight className="w-5 h-5" />
                 </Button>
               ) : (
                 showCreateButton && (
                   <Button
                     type="submit"
+                    size="lg"
                     disabled={loading}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-3 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {loading ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Creating...
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Creating Listing...
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-5 h-5" />
                         Create Listing
                       </>
                     )}

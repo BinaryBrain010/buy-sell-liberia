@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   Search,
-  Loader2,
   ChevronDown,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import Link from "next/link";
 import { ProductCard, type Product } from "@/components/product-card";
 
@@ -307,10 +307,11 @@ export default function CategoryPage() {
     return (
       <div className="min-h-screen">
         <div className="container mx-auto px-4 py-20">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading category...</p>
-          </div>
+          <BuySellLoader
+            label="Loading category..."
+            size={80}
+            variant="subtle"
+          />
         </div>
       </div>
     );
@@ -365,28 +366,41 @@ export default function CategoryPage() {
           </nav>
         </FadeIn>
 
-        {/* Category Header */}
+        {/* Enhanced Category Header */}
         <FadeIn>
-          <div className="bg-gradient-to-r from-background to-muted/30 rounded-2xl p-6 md:p-8 mb-8 border border-border/50 card-shadow">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-4 md:gap-6">
+          <div className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-background rounded-3xl p-8 md:p-12 mb-12 border-2 border-border/30 shadow-2xl">
+            {/* Background Elements */}
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+            </div>
+
+            <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-6 md:gap-8">
                 <div
-                  className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
+                  className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${
                     categoryColors[currentCategory?.slug] ||
                     "from-gray-500 to-gray-600"
-                  } flex items-center justify-center text-4xl shadow-lg text-white`}
+                  } flex items-center justify-center text-5xl shadow-2xl text-white ring-8 ring-white/20`}
                 >
                   {selectedSubcategory?.icon || currentCategory?.icon}
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight break-words">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 leading-tight break-words bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                     {selectedSubcategory
                       ? selectedSubcategory.name
                       : currentCategory?.name}
                   </h1>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-                    {totalProducts} products available
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <p className="text-muted-foreground text-lg md:text-xl">
+                      {totalProducts} products available
+                    </p>
+                    <div className="px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                      <span className="text-sm font-semibold text-green-700 dark:text-green-300">
+                        Active Category
+                      </span>
+                    </div>
+                  </div>
 
                   {/* Subcategory Selection */}
                   {currentCategory?.subcategories?.length > 0 && (
@@ -443,58 +457,59 @@ export default function CategoryPage() {
           </div>
         </FadeIn>
 
-        {/* Search and Filters section */}
+        {/* Enhanced Search and Filters section */}
         <FadeIn>
-          <div className="bg-background/50 rounded-xl p-4 sm:p-6 border border-border/50 card-shadow mb-8">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              {/* Search Bar */}
+          <div className="bg-gradient-to-br from-background/80 via-background/60 to-background/80 rounded-2xl p-6 sm:p-8 border-2 border-border/30 card-shadow mb-12 shadow-xl">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+              {/* Enhanced Search Bar */}
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                   <Input
                     placeholder={`Search in ${
                       selectedSubcategory?.name || currentCategory?.name
                     }...`}
                     value={pendingSearch}
                     onChange={(e) => setPendingSearch(e.target.value)}
-                    className="pl-10 input-shadow"
+                    className="pl-12 pr-4 py-3 text-base rounded-xl border-2 border-border/30 focus:border-primary/50 transition-colors input-shadow"
                   />
                 </div>
               </div>
 
-              {/* Filters Button */}
+              {/* Enhanced Filters Button */}
               <Button
                 variant="outline"
+                size="lg"
                 onClick={() => setShowFilters(!showFilters)}
-                className="btn-shadow w-full sm:w-auto"
+                className="btn-shadow w-full sm:w-auto border-2 border-border/30 hover:border-primary/50 transition-colors px-6 py-3"
                 aria-expanded={showFilters}
                 aria-label="Toggle filters"
               >
-                <SlidersHorizontal className="h-4 w-4 mr-2" />
-                Filters
+                <SlidersHorizontal className="h-5 w-5 mr-2" />
+                Advanced Filters
                 <ChevronDown
-                  className={`h-4 w-4 ml-2 transition-transform ${
+                  className={`h-5 w-5 ml-2 transition-transform ${
                     showFilters ? "rotate-180" : ""
                   }`}
                 />
               </Button>
             </div>
 
-            {/* Advanced Filters */}
+            {/* Enhanced Advanced Filters */}
             {showFilters && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50"
+                className="mt-6 pt-6 border-t-2 border-border/30"
               >
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {/* Condition Filter */}
                   <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Condition
+                    <label className="text-lg font-semibold mb-4 block text-foreground">
+                      Product Condition
                     </label>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {["Brand New", "Like New", "Good", "Fair", "Poor"].map(
                         (condition) => (
                           <Button
@@ -505,7 +520,11 @@ export default function CategoryPage() {
                                 : "outline"
                             }
                             size="sm"
-                            className="btn-shadow bg-transparent"
+                            className={`btn-shadow transition-all duration-200 ${
+                              pendingConditions.includes(condition)
+                                ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white border-0"
+                                : "bg-transparent border-2 border-border/30 hover:border-primary/50"
+                            }`}
                             onClick={() => {
                               setPendingConditions((prev) =>
                                 prev.includes(condition)
@@ -521,60 +540,52 @@ export default function CategoryPage() {
                     </div>
                   </div>
 
-                  {/* Price Range */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Min Price
-                      </label>
-                      <Input
-                        placeholder="$0"
-                        className="input-shadow"
-                        value={pendingMinPrice}
-                        onChange={(e) =>
-                          setPendingMinPrice(
-                            e.target.value.replace(/[^\d.]/g, "")
-                          )
-                        }
-                        inputMode="numeric"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Max Price
-                      </label>
-                      <Input
-                        placeholder="$10,000"
-                        className="input-shadow"
-                        value={pendingMaxPrice}
-                        onChange={(e) =>
-                          setPendingMaxPrice(
-                            e.target.value.replace(/[^\d.]/g, "")
-                          )
-                        }
-                        inputMode="numeric"
-                      />
+                  {/* Enhanced Price Range */}
+                  <div>
+                    <label className="text-lg font-semibold mb-4 block text-foreground">
+                      Price Range
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                          Minimum Price
+                        </label>
+                        <Input
+                          placeholder="$0"
+                          className="input-shadow border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                          value={pendingMinPrice}
+                          onChange={(e) =>
+                            setPendingMinPrice(
+                              e.target.value.replace(/[^\d.]/g, "")
+                            )
+                          }
+                          inputMode="numeric"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block text-muted-foreground">
+                          Maximum Price
+                        </label>
+                        <Input
+                          placeholder="$10,000"
+                          className="input-shadow border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                          value={pendingMaxPrice}
+                          onChange={(e) =>
+                            setPendingMaxPrice(
+                              e.target.value.replace(/[^\d.]/g, "")
+                            )
+                          }
+                          inputMode="numeric"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Apply/Clear Filters Buttons */}
-                  <div className="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4">
-                    <Button
-                      variant="default"
-                      onClick={() => {
-                        setSearchQuery(pendingSearch);
-                        setMinPrice(pendingMinPrice);
-                        setMaxPrice(pendingMaxPrice);
-                        setSelectedConditions(pendingConditions);
-                        setCurrentPage(1);
-                        setShowFilters(false);
-                      }}
-                      className="w-full sm:w-auto"
-                    >
-                      Apply Filters
-                    </Button>
+                  {/* Enhanced Apply/Clear Filters Buttons */}
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4">
                     <Button
                       variant="outline"
+                      size="lg"
                       onClick={() => {
                         setPendingSearch("");
                         setPendingMinPrice("");
@@ -587,9 +598,23 @@ export default function CategoryPage() {
                         setCurrentPage(1);
                         setShowFilters(false);
                       }}
-                      className="w-full sm:w-auto"
+                      className="w-full sm:w-auto border-2 border-border/30 hover:border-red-500/50 hover:text-red-600 transition-colors px-6"
                     >
-                      Clear Filters
+                      Clear All Filters
+                    </Button>
+                    <Button
+                      size="lg"
+                      onClick={() => {
+                        setSearchQuery(pendingSearch);
+                        setMinPrice(pendingMinPrice);
+                        setMaxPrice(pendingMaxPrice);
+                        setSelectedConditions(pendingConditions);
+                        setCurrentPage(1);
+                        setShowFilters(false);
+                      }}
+                      className="w-full sm:w-auto bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 px-6"
+                    >
+                      Apply Filters
                     </Button>
                   </div>
                 </div>
@@ -601,9 +626,12 @@ export default function CategoryPage() {
         {/* Products Grid */}
         <FadeIn>
           {loadingProducts ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading products...</p>
+            <div className="py-12">
+              <BuySellLoader
+                label="Loading products..."
+                size={72}
+                variant="subtle"
+              />
             </div>
           ) : products.length === 0 ? (
             <FadeIn className="text-center py-20">

@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { ProductService } from "@/app/services/Product.Service";
 import { useParams } from "next/navigation";
 import ProductDetail from "./ProductDetail";
-import { ProductDetailSkeleton } from "@/components/product-detail-skeleton";
+// import { ProductDetailSkeleton } from "@/components/product-detail-skeleton"; // replaced by lottie loader
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { FeaturedListings } from "@/components/featured-listings";
 import { FadeIn } from "@/components/static-pages/Animated";
 
@@ -67,9 +68,11 @@ export default function ProductDetailPage() {
 
   if (loading)
     return (
-      <FadeIn>
-        <ProductDetailSkeleton />
-      </FadeIn>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <FadeIn>
+          <BuySellLoader label="Loading product" size={170} />
+        </FadeIn>
+      </div>
     );
 
   if (error) {
@@ -107,14 +110,34 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <FadeIn>
-        <ProductDetail {...product} />
-      </FadeIn>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      {/* Enhanced Product Detail Section */}
+      <div className="relative">
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-gradient-to-br from-primary/5 to-transparent blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-v0-green/5 to-transparent blur-3xl" />
+        </div>
 
-      <div className="border-t bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto py-8 px-4">
+        <div className="relative z-10">
           <FadeIn>
+            <ProductDetail {...product} />
+          </FadeIn>
+        </div>
+      </div>
+
+      {/* Enhanced Related Products Section */}
+      <div className="relative">
+        <div className="max-w-7xl mx-auto px-4 py-12">
+          <FadeIn>
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                More Great Finds
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Discover other amazing products you might love
+              </p>
+            </div>
             <FeaturedListings />
           </FadeIn>
         </div>

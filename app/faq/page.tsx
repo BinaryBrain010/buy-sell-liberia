@@ -104,55 +104,96 @@ export default async function FAQPage() {
   // If CMS provides an HTML content (no structured groups), render it
   if (cms && !groups && cms.content) {
     return (
-      <main className="container mx-auto max-w-5xl px-4 py-10">
-        <NetworkProbe slug="faq" />
-        <FadeIn>
-          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12">
-            <div className="relative z-10">
-              <Badge className="mb-3" variant="secondary">Help</Badge>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{cms.title || "Frequently Asked Questions"}</h1>
-            </div>
-            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
-          </section>
-        </FadeIn>
-        <FadeIn className="prose prose-zinc dark:prose-invert max-w-none mt-10">
-          <div dangerouslySetInnerHTML={{ __html: cms.content }} />
-        </FadeIn>
+      <main className="min-h-screen">
+        <div className="container mx-auto max-w-6xl md:max-w-7xl px-4 py-10">
+          <NetworkProbe slug="faq" />
+          <FadeIn>
+            <section className="relative overflow-hidden rounded-3xl border-2 border-border/50 bg-gradient-to-br from-background via-background to-muted/30 p-8 md:p-16 mb-12 shadow-2xl text-center">
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
+                <div className="absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-gradient-to-br from-v0-green/25 to-transparent blur-3xl" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-36 w-36 rounded-full bg-gradient-to-br from-v0-orange/20 to-transparent blur-2xl" />
+              </div>
+              <div className="relative z-10">
+                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
+                  <span className="text-2xl">❓</span>
+                  <span className="text-sm font-semibold text-primary">
+                    Help
+                  </span>
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                  {cms.title || "Frequently Asked Questions"}
+                </h1>
+              </div>
+            </section>
+          </FadeIn>
+          <FadeIn className="prose prose-zinc dark:prose-invert max-w-none">
+            <div
+              className="rounded-2xl border-2 border-border/40 bg-background/60 backdrop-blur p-6 md:p-10 shadow-xl"
+              dangerouslySetInnerHTML={{ __html: cms.content }}
+            />
+          </FadeIn>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="container mx-auto max-w-6xl px-4 py-10">
-      <NetworkProbe slug="faq" />
-      <FadeIn>
-        <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12">
-          <div className="relative z-10">
-            <Badge className="mb-3" variant="secondary">Help</Badge>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Frequently Asked Questions</h1>
-            <p className="text-muted-foreground mt-2">Quick answers to the most common questions about using the marketplace.</p>
-          </div>
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
-        </section>
-      </FadeIn>
-
-      <section className="mt-10 space-y-8">
-        <FadeInStagger>
-          {(groups || fallbackFaqs).map((group, idx) => (
-            <div key={idx}>
-              <h2 className="text-xl font-semibold mb-3">{group.category}</h2>
-              <Accordion type="single" collapsible className="w-full">
-                {group.items.map((item, i) => (
-                  <AccordionItem key={i} value={`${group.category}-${i}`}>
-                    <AccordionTrigger>{item.q}</AccordionTrigger>
-                    <AccordionContent>{item.a}</AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+    <main className="min-h-screen">
+      <div className="container mx-auto max-w-6xl md:max-w-7xl px-4 py-10">
+        <NetworkProbe slug="faq" />
+        <FadeIn>
+          <section className="relative overflow-hidden rounded-3xl border-2 border-border/50 bg-gradient-to-br from-background via-background to-muted/30 p-8 md:p-16 mb-12 shadow-2xl text-center">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-gradient-to-br from-v0-green/25 to-transparent blur-3xl" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-36 w-36 rounded-full bg-gradient-to-br from-v0-orange/20 to-transparent blur-2xl" />
             </div>
-          ))}
-        </FadeInStagger>
-      </section>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
+                <span className="text-2xl">❓</span>
+                <span className="text-sm font-semibold text-primary">Help</span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                Frequently Asked Questions
+              </h1>
+              <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+                Quick answers to the most common questions about using the
+                marketplace.
+              </p>
+            </div>
+          </section>
+        </FadeIn>
+        <section className="space-y-14">
+          <FadeInStagger>
+            {(groups || fallbackFaqs).map((group, idx) => (
+              <div
+                key={idx}
+                className="relative overflow-hidden rounded-2xl border-2 border-border/40 bg-gradient-to-br from-background/80 via-background/60 to-background/80 p-6 shadow-xl"
+              >
+                <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.07),transparent)]" />
+                <div className="relative z-10">
+                  <h2 className="text-xl md:text-2xl font-semibold mb-4 bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                    {group.category}
+                  </h2>
+                  <Accordion type="single" collapsible className="w-full">
+                    {group.items.map((item, i) => (
+                      <AccordionItem key={i} value={`${group.category}-${i}`}>
+                        <AccordionTrigger className="text-left">
+                          {item.q}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                          {item.a}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              </div>
+            ))}
+          </FadeInStagger>
+        </section>
+      </div>
     </main>
   );
 }

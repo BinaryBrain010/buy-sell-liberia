@@ -4,13 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowRight,
-  Loader2,
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCard, type Product } from "@/components/product-card";
@@ -245,11 +240,8 @@ export default function CategoriesPage() {
 
   if (loadingCategories) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading categories...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <BuySellLoader label="Loading categories" size={170} />
       </div>
     );
   }
@@ -257,114 +249,182 @@ export default function CategoriesPage() {
   return (
     <div className="min-h-screen">
       <div className="container mx-auto max-w-7xl px-4 py-10">
-        {/* Hero */}
+        {/* Enhanced Hero */}
         <FadeIn>
-          <section className="relative overflow-hidden rounded-xl border bg-gradient-to-b from-background to-muted p-8 md:p-12 text-center mb-10">
-            <div className="relative z-10">
-              <Badge className="mb-3" variant="secondary">
-                Categories
-              </Badge>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                All Categories
-              </h1>
-              <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-2">
-                {selectedCategory
-                  ? `Explore ${selectedCategory.name} products and subcategories`
-                  : "Explore products by category"}
-              </p>
+          <section className="relative overflow-hidden rounded-3xl border-2 border-border/50 bg-gradient-to-br from-background via-background to-muted/30 p-8 md:p-16 text-center mb-12 shadow-2xl">
+            {/* Background Elements */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/20 to-transparent blur-3xl" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/15 to-transparent blur-2xl" />
             </div>
-            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
+
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
+                <span className="text-2xl">📂</span>
+                <span className="text-sm font-semibold text-primary">
+                  All Categories
+                </span>
+              </div>
+
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                {selectedCategory ? selectedCategory.name : "Browse Categories"}
+              </h1>
+
+              <p className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+                {selectedCategory
+                  ? `Discover amazing products and explore subcategories in ${selectedCategory.name}`
+                  : "Find exactly what you're looking for by browsing our carefully curated categories"}
+              </p>
+
+              {/* Stats */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-8">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    {categories.length} Categories
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                    Verified Sellers
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                    Secure Transactions
+                  </span>
+                </div>
+              </div>
+            </div>
           </section>
         </FadeIn>
 
-        {/* Grid of Category Cards */}
-        <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-16">
+        {/* Enhanced Category Cards Grid */}
+        <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-16">
           {categories.map((category) => (
             <Card
               key={category._id}
               onClick={() => handleCategoryClick(category)}
-              className={`bg-background/50 rounded-xl p-3 border border-border/50 card-shadow hover:scale-105 transition-transform cursor-pointer h-full flex flex-col items-center justify-center text-center
+              className={`group relative bg-gradient-to-br from-background/80 via-background/60 to-background/80 rounded-2xl p-4 border-2 border-border/30 hover:border-primary/50 card-shadow hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center text-center overflow-hidden
                 ${
                   selectedCategory?._id === category._id
-                    ? "ring-2 ring-primary ring-offset-2"
-                    : ""
+                    ? "ring-2 ring-primary ring-offset-4 border-primary/60 shadow-2xl shadow-primary/20"
+                    : "hover:shadow-xl hover:shadow-primary/10"
                 }`}
             >
-              <CardContent className="flex flex-col items-center justify-center p-0">
+              {/* Decorative Elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 transform translate-x-4 -translate-y-4 rotate-45 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute bottom-0 left-0 w-12 h-12 transform -translate-x-3 translate-y-3 rotate-45 bg-gradient-to-br from-v0-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              </div>
+
+              <CardContent className="flex flex-col items-center justify-center p-0 relative z-10">
                 <div
-                  className={`w-16 h-16 rounded-full bg-gradient-to-br ${
+                  className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${
                     categoryColors[category.slug] || "from-gray-500 to-gray-600"
-                  } flex items-center justify-center text-3xl shadow-lg text-white mb-3`}
+                  } flex items-center justify-center text-4xl shadow-2xl text-white mb-4 ring-4 ring-white/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 relative overflow-hidden`}
                 >
-                  {category.icon}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
+                  <span className="relative z-10">{category.icon}</span>
                 </div>
-                <h2 className="text-base font-bold mb-1 line-clamp-1">
+
+                <h2 className="text-lg font-bold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                   {category.name}
                 </h2>
-                <p className="text-muted-foreground text-xs line-clamp-2">
+
+                <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
                   {category.description}
                 </p>
+
+                {/* Hover Arrow */}
+                <div className="absolute bottom-3 right-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+
+                {/* Decorative Bottom Accent */}
+                <div className="mt-4 w-16 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </CardContent>
             </Card>
           ))}
         </FadeInStagger>
 
-        {/* Subcategories Section */}
+        {/* Enhanced Subcategories Section */}
         {selectedCategory && (
           <div
             ref={subcategoriesSectionRef}
-            className="mt-16 pt-8 border-t border-border/50"
+            className="mt-20 pt-12 border-t-2 border-border/30"
           >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold mb-2 leading-tight break-words">
-                  {selectedCategory.name} Subcategories
-                </h2>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  Choose a specific subcategory or view all products in{" "}
-                  {selectedCategory.name}
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                <Link
-                  href={getViewAllProductsUrl()}
-                  className="w-full sm:w-auto"
-                >
-                  <Button className="btn-shadow w-full sm:w-auto">
-                    View All
-                    <ArrowRight className="h-4 w-4 ml-2" />
+            <div className="bg-gradient-to-br from-background/50 via-primary/5 to-background/50 rounded-3xl p-8 mb-12 border border-border/50 shadow-xl">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-6">
+                  <div
+                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${
+                      categoryColors[selectedCategory.slug] ||
+                      "from-gray-500 to-gray-600"
+                    } flex items-center justify-center text-3xl shadow-lg text-white`}
+                  >
+                    {selectedCategory.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-2 leading-tight break-words bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+                      {selectedCategory.name} Subcategories
+                    </h2>
+                    <p className="text-base sm:text-lg text-muted-foreground">
+                      Choose a specific subcategory or view all products in{" "}
+                      <span className="font-semibold text-primary">
+                        {selectedCategory.name}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <Link
+                    href={getViewAllProductsUrl()}
+                    className="w-full sm:w-auto"
+                  >
+                    <Button
+                      size="lg"
+                      className="btn-shadow w-full sm:w-auto bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90"
+                    >
+                      View All Products
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      setSelectedCategory(null);
+                      setProducts([]);
+                      setTotalProducts(0);
+                      setCurrentPage(1);
+                    }}
+                    aria-label="Clear category selection"
+                    className="flex items-center w-full sm:w-auto border-2 hover:bg-muted/50"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Selection
                   </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setProducts([]);
-                    setTotalProducts(0);
-                    setCurrentPage(1);
-                  }}
-                  aria-label="Clear category selection"
-                  className="flex items-center w-full sm:w-auto"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
+                </div>
               </div>
             </div>
 
             {selectedCategory.subcategories &&
             selectedCategory.subcategories.length > 0 ? (
-              <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {selectedCategory.subcategories.map((subcategory: any) => (
                   <Card
                     key={subcategory._id}
                     onClick={() => handleSubcategoryClick(subcategory)}
-                    className="bg-background/50 rounded-xl border border-border/50 card-shadow hover:scale-105 transition-all duration-300 cursor-pointer h-full flex flex-col overflow-hidden group"
+                    className="group relative bg-gradient-to-br from-background/80 via-background/60 to-background/80 rounded-2xl border-2 border-border/30 hover:border-primary/50 card-shadow hover:scale-105 hover:-translate-y-2 transition-all duration-300 cursor-pointer h-full flex flex-col overflow-hidden"
                   >
                     <CardContent className="p-0">
-                      {/* Subcategory Image */}
-                      <div className="relative w-full h-32 mb-3 overflow-hidden">
+                      {/* Enhanced Subcategory Image */}
+                      <div className="relative w-full h-40 mb-4 overflow-hidden rounded-t-2xl">
                         <Image
                           src={
                             getMappedSubcategoryImage(subcategory) ||
@@ -372,44 +432,54 @@ export default function CategoriesPage() {
                           }
                           alt={subcategory.name}
                           fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          className="object-cover group-hover:scale-110 transition-transform duration-500"
                         />
-                        {/* Overlay gradient for better text readability */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-                        {/* Category icon overlay */}
-                        <div className="absolute top-2 right-2">
+                        {/* Enhanced Overlay gradients */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                        {/* Enhanced Category icon overlay */}
+                        <div className="absolute top-3 right-3">
                           <div
-                            className={`w-8 h-8 rounded-full bg-gradient-to-br ${
+                            className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${
                               categoryColors[selectedCategory.slug] ||
                               "from-gray-500 to-gray-600"
-                            } flex items-center justify-center text-sm shadow-lg text-white opacity-90 backdrop-blur-sm`}
+                            } flex items-center justify-center text-lg shadow-xl text-white ring-4 ring-white/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}
                           >
                             {subcategory.icon || selectedCategory.icon}
                           </div>
                         </div>
 
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        {/* Product count badge */}
+                        {subcategory.productCount !== undefined && (
+                          <div className="absolute top-3 left-3">
+                            <div className="px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-semibold">
+                              {subcategory.productCount} items
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Hover arrow */}
+                        <div className="absolute bottom-3 right-3 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <ArrowRight className="w-5 h-5" />
+                        </div>
                       </div>
 
-                      {/* Subcategory Info */}
-                      <div className="px-3 pb-3">
-                        <h3 className="text-sm font-semibold mb-1 line-clamp-2 text-center group-hover:text-primary transition-colors">
+                      {/* Enhanced Subcategory Info */}
+                      <div className="px-4 pb-4">
+                        <h3 className="text-base font-bold mb-2 line-clamp-2 text-center group-hover:text-primary transition-colors">
                           {subcategory.name}
                         </h3>
                         {subcategory.description && (
-                          <p className="text-muted-foreground text-xs line-clamp-2 text-center">
+                          <p className="text-muted-foreground text-sm line-clamp-2 text-center leading-relaxed">
                             {subcategory.description}
                           </p>
                         )}
-                        {/* Product count if available */}
-                        {subcategory.productCount !== undefined && (
-                          <p className="text-xs text-muted-foreground text-center mt-1">
-                            {subcategory.productCount} products
-                          </p>
-                        )}
                       </div>
+
+                      {/* Decorative bottom accent */}
+                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </CardContent>
                   </Card>
                 ))}
@@ -481,9 +551,12 @@ export default function CategoriesPage() {
             </FadeIn>
 
             {loadingProducts ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading products...</p>
+              <div className="py-12">
+                <BuySellLoader
+                  label="Loading products..."
+                  size={72}
+                  variant="subtle"
+                />
               </div>
             ) : products.length > 0 ? (
               <>

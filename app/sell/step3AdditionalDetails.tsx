@@ -174,43 +174,6 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
               </div>
             </FadeInStagger>
 
-            {/* Quick Specs */}
-            <FadeIn>
-              <div>
-                <Label className="text-xs">Quick Specs (optional)</Label>
-                <FadeInStagger
-                  as="div"
-                  className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1"
-                >
-                  <Input
-                    placeholder="Brand"
-                    value={formData.specifications.brand || ""}
-                    onChange={(e) => handleSpecChange("brand", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder="Model"
-                    value={formData.specifications.model || ""}
-                    onChange={(e) => handleSpecChange("model", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder="Color"
-                    value={formData.specifications.color || ""}
-                    onChange={(e) => handleSpecChange("color", e.target.value)}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder="Warranty"
-                    value={formData.specifications.warranty || ""}
-                    onChange={(e) =>
-                      handleSpecChange("warranty", e.target.value)
-                    }
-                    className="h-8 text-xs"
-                  />
-                </FadeInStagger>
-              </div>
-            </FadeIn>
           </CardContent>
         </Card>
       </FadeIn>

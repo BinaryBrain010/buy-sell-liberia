@@ -1,5 +1,6 @@
 import { UserStatus } from "./user-status";
 import { ProductThumbnail } from "./product-thumbnail";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 
 interface ChatHeaderProps {
   chat: any;
@@ -27,7 +28,12 @@ export const ChatHeader = ({
             </h3>
             <UserStatus isOnline={isOtherUserOnline} />
             {otherUserName === "Loading..." && (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500 dark:border-blue-400" />
+              <BuySellLoader
+                variant="inline"
+                size={14}
+                hideLabel
+                label="Loading user"
+              />
             )}
           </div>
           <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">

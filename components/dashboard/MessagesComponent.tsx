@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, ArrowLeft } from "lucide-react";
+import {
+  MessageCircle,
+  ArrowLeft,
+  Users,
+  Clock,
+  Send,
+  Plus,
+  Search,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { useChats } from "@/hooks/use-chats";
 import { userClient } from "@/app/services/User.Service";
 import { socket } from "@/lib/socket";
@@ -540,144 +549,283 @@ export const MessagesComponent = ({
 
   if (isLoading) {
     return (
-      <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-            Messages
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LoadingState />
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <BuySellLoader label="Loading your messages..." />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-            <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-            Messages
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ErrorState error={error} onRetry={clearError} />
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <div className="text-center py-16">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
+            <MessageCircle className="h-10 w-10 text-white" />
+          </div>
+          <h3 className="text-2xl font-semibold mb-2">
+            Error Loading Messages
+          </h3>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button
+            onClick={clearError}
+            className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="shadow-sm h-[520px] flex flex-col dark:bg-gray-800 dark:border-gray-700">
-      <CardHeader className="pb-2 flex-shrink-0">
-        <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
-          {isMobileView && !showChatList && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToChats}
-              className="mr-2 p-1 h-8 w-8"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <MessageCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />
-          Messages
-        </CardTitle>
+    <div className="p-6 space-y-8">
+      {/* Enhanced Header Section */}
+      <div className="relative">
+        {/* Background accent */}
+        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
 
-        {sellerId && productId && !isValidObjectId(productId) && (
-          <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-2 mb-1">
-              <span>⚠️</span>
-              <span className="font-medium">Invalid Product ID</span>
-            </div>
-            <p>
-              The product ID "{productId}" is not in the correct format. Chat
-              creation may fail.
-            </p>
-          </div>
-        )}
-      </CardHeader>
-
-      <CardContent className="flex-1 flex overflow-hidden p-0">
-        {/* Left Column - Chat List */}
-        <div
-          className={`${
-            isMobileView ? (showChatList ? "w-full" : "hidden") : "w-64"
-          } border-r border-gray-200 dark:border-gray-700 flex flex-col`}
-        >
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-2 space-y-1.5">
-              {sortedChats.map((chat) => (
-                <ChatItem
-                  key={chat._id?.toString() || Date.now().toString()}
-                  chat={chat}
-                  isActive={currentChat?._id === chat._id}
-                  otherUserName={getOtherUserName(chat)}
-                  productTitle={getProductTitle(chat)}
-                  isOtherUserOnline={isOtherUserOnline(chat)}
-                  lastMessage={getLastMessage(chat)}
-                  onClick={() => handleChatSelect(chat)}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column - Message Thread */}
-        <div
-          className={`${
-            isMobileView ? (showChatList ? "hidden" : "w-full") : "flex-1"
-          } flex flex-col`}
-        >
-          {currentChat ? (
-            <MessageThread
-              chat={currentChat}
-              otherUserName={getOtherUserName(currentChat)}
-              productTitle={getProductTitle(currentChat)}
-              isOtherUserOnline={isOtherUserOnline(currentChat)}
-              messageInput={messageInput}
-              setMessageInput={setMessageInput}
-              onSendMessage={handleSendMessage}
-              isSending={isSending}
-              formatDate={formatDate}
-              getCurrentUserId={getCurrentUserId}
-            />
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-              <div className="text-center">
-                <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-                <p className="text-lg font-medium mb-2">
-                  {sellerId && productId
-                    ? "Ready to start chatting?"
-                    : "There are no messages yet"}
-                </p>
-                <p className="text-sm mb-4">
-                  {sellerId && productId
-                    ? `Click the button below to start a conversation about: ${
-                        propProductTitle || "this product"
-                      }`
-                    : "Start a conversation by selecting a product."}
-                </p>
-                {sellerId && productId && (
-                  <Button
-                    onClick={handleCreateNewChat}
-                    disabled={isCreatingChat}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isCreatingChat
-                      ? "Creating Chat..."
-                      : `Start Chat about ${propProductTitle || "Product"}`}
-                  </Button>
-                )}
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            {/* Title Section */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                  <MessageCircle className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-foreground">
+                    Messages
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Connect with buyers and sellers
+                  </p>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Statistics */}
+            {chats.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {chats.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Chats
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                  <div className="text-2xl font-bold text-green-600">
+                    {Object.values(onlineUsers).filter(Boolean).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Online</div>
+                </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {chats.reduce(
+                      (sum, chat) => sum + (chat.messages?.length || 0),
+                      0
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Messages</div>
+                </div>
+                <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {
+                      chats.filter((chat) => {
+                        const lastMessage =
+                          chat.messages?.[chat.messages.length - 1];
+                        return (
+                          lastMessage &&
+                          !lastMessage.readBy?.includes(
+                            currentUserId || getCurrentUserId() || ""
+                          )
+                        );
+                      }).length
+                    }
+                  </div>
+                  <div className="text-sm text-muted-foreground">Unread</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Enhanced Messages Interface */}
+      <div className="relative">
+        <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
+
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 overflow-hidden">
+          {/* Messages Header */}
+          <div className="p-6 border-b border-border/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {isMobileView && !showChatList && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleBackToChats}
+                    className="p-2 h-10 w-10 rounded-xl hover:bg-muted/50"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                )}
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Your Conversations
+                  </h3>
+                </div>
+              </div>
+
+              {sellerId && productId && (
+                <Button
+                  onClick={handleCreateNewChat}
+                  disabled={isCreatingChat}
+                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isCreatingChat ? "Creating..." : "New Chat"}
+                </Button>
+              )}
+            </div>
+
+            {sellerId && productId && !isValidObjectId(productId) && (
+              <div className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-red-600">⚠️</span>
+                  <span className="font-medium text-red-800 dark:text-red-200">
+                    Invalid Product ID
+                  </span>
+                </div>
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  The product ID "{productId}" is not in the correct format.
+                  Chat creation may fail.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Messages Content */}
+          <div className="flex h-[520px]">
+            {/* Left Column - Chat List */}
+            <div
+              className={`${
+                isMobileView ? (showChatList ? "w-full" : "hidden") : "w-80"
+              } border-r border-border/30 flex flex-col`}
+            >
+              {/* Chat List Header */}
+              <div className="p-4 border-b border-border/30">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-border/30 focus:border-primary/50 transition-colors bg-background/50"
+                  />
+                </div>
+              </div>
+
+              {/* Chat List */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-2 space-y-2">
+                  {sortedChats.length > 0 ? (
+                    sortedChats.map((chat) => (
+                      <ChatItem
+                        key={chat._id?.toString() || Date.now().toString()}
+                        chat={chat}
+                        isActive={currentChat?._id === chat._id}
+                        otherUserName={getOtherUserName(chat)}
+                        productTitle={getProductTitle(chat)}
+                        isOtherUserOnline={isOtherUserOnline(chat)}
+                        lastMessage={getLastMessage(chat)}
+                        onClick={() => handleChatSelect(chat)}
+                      />
+                    ))
+                  ) : (
+                    <div className="p-8 text-center">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <p className="text-muted-foreground">
+                        No conversations yet
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Message Thread */}
+            <div
+              className={`${
+                isMobileView ? (showChatList ? "hidden" : "w-full") : "flex-1"
+              } flex flex-col`}
+            >
+              {currentChat ? (
+                <MessageThread
+                  chat={currentChat}
+                  otherUserName={getOtherUserName(currentChat)}
+                  productTitle={getProductTitle(currentChat)}
+                  isOtherUserOnline={isOtherUserOnline(currentChat)}
+                  messageInput={messageInput}
+                  setMessageInput={setMessageInput}
+                  onSendMessage={handleSendMessage}
+                  isSending={isSending}
+                  formatDate={formatDate}
+                  getCurrentUserId={getCurrentUserId}
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center space-y-6">
+                    <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                      <MessageCircle className="h-10 w-10 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-semibold mb-2">
+                        {sellerId && productId
+                          ? "Ready to start chatting?"
+                          : "No conversation selected"}
+                      </h3>
+                      <p className="text-muted-foreground mb-6">
+                        {sellerId && productId
+                          ? `Start a conversation about: ${
+                              propProductTitle || "this product"
+                            }`
+                          : "Select a conversation from the list to start messaging"}
+                      </p>
+                    </div>
+                    {sellerId && productId && (
+                      <Button
+                        onClick={handleCreateNewChat}
+                        disabled={isCreatingChat}
+                        className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+                      >
+                        {isCreatingChat ? (
+                          <>
+                            <BuySellLoader
+                              variant="inline"
+                              size={16}
+                              hideLabel
+                              label="Creating Chat"
+                              className="mr-2"
+                            />
+                            Creating Chat...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Start Chat
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

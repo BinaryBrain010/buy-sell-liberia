@@ -1,39 +1,45 @@
-import mongoose, { Document, Model, FilterQuery, UpdateQuery, QueryOptions } from "mongoose"
-import { connectDB } from "@/lib/mongoose"
+import mongoose, {
+  Document,
+  Model,
+  FilterQuery,
+  UpdateQuery,
+  QueryOptions,
+} from "mongoose";
+import { connectDB } from "@/lib/mongoose";
 
 export interface PaginationOptions {
-  page?: number
-  limit?: number
+  page?: number;
+  limit?: number;
 }
 
 export interface PaginatedResult<T> {
-  data: T[]
-  total: number
-  pages: number
-  currentPage: number
-  hasNext: boolean
-  hasPrev: boolean
+  data: T[];
+  total: number;
+  pages: number;
+  currentPage: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface SortOptions {
-  sortBy?: string
-  sortOrder?: "asc" | "desc"
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export abstract class BaseService<T extends Document> {
-  protected model: Model<T>
-  protected serviceName: string
+  protected model: Model<T>;
+  protected serviceName: string;
 
   constructor(model: Model<T>, serviceName: string) {
-    this.model = model
-    this.serviceName = serviceName
+    this.model = model;
+    this.serviceName = serviceName;
   }
 
   /**
    * Ensure database connection
    */
   protected async ensureConnection(): Promise<void> {
-    await connectDB()
+    await connectDB();
   }
 
   /**
@@ -41,17 +47,22 @@ export abstract class BaseService<T extends Document> {
    */
   async create(data: Partial<T>): Promise<T> {
     try {
-      console.log(`[${this.serviceName}] Creating new document`)
-      await this.ensureConnection()
+      console.log(`[${this.serviceName}] Creating new document`);
+      await this.ensureConnection();
 
-      const document = new this.model(data)
-      const savedDocument = await document.save()
+      const document = new this.model(data);
+      const savedDocument = await document.save();
 
-      console.log(`[${this.serviceName}] Document created successfully:`, savedDocument._id)
-      return savedDocument
+      console.log(
+        `[${this.serviceName}] Document created successfully:`,
+        savedDocument._id
+      );
+      return savedDocument;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Create error:`, error.message)
-      throw new Error(error.message || `Failed to create ${this.serviceName.toLowerCase()}`)
+      console.error(`[${this.serviceName}] Create error:`, error.message);
+      throw new Error(
+        error.message || `Failed to create ${this.serviceName.toLowerCase()}`
+      );
     }
   }
 
@@ -60,26 +71,26 @@ export abstract class BaseService<T extends Document> {
    */
   async findById(id: string, populate?: string | string[]): Promise<T | null> {
     try {
-      console.log(`[${this.serviceName}] Finding document by ID:`, id)
-      await this.ensureConnection()
+      console.log(`[${this.serviceName}] Finding document by ID:`, id);
+      await this.ensureConnection();
 
-      let query = this.model.findById(id)
-      
+      let query = this.model.findById(id);
+
       if (populate) {
         if (Array.isArray(populate)) {
-          populate.forEach(field => {
-            query = query.populate(field)
-          })
+          populate.forEach((field) => {
+            query = query.populate(field);
+          });
         } else {
-          query = query.populate(populate)
+          query = query.populate(populate);
         }
       }
 
-      const document = await query.exec()
-      return document
+      const document = await query.exec();
+      return document;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Find by ID error:`, error.message)
-      throw new Error(`Failed to find ${this.serviceName.toLowerCase()}`)
+      console.error(`[${this.serviceName}] Find by ID error:`, error.message);
+      throw new Error(`Failed to find ${this.serviceName.toLowerCase()}`);
     }
   }
 
@@ -93,52 +104,62 @@ export abstract class BaseService<T extends Document> {
     populate?: string | string[]
   ): Promise<PaginatedResult<T>> {
     try {
-      console.log(`[${this.serviceName}] Finding documents with filters:`, filters)
-      await this.ensureConnection()
+      console.log(
+        `[${this.serviceName}] Finding documents with filters:`,
+        filters
+      );
+      await this.ensureConnection();
 
-      const { page = 1, limit = 20 } = pagination
-      const { sortBy = "createdAt", sortOrder = "desc" } = sortOptions
+      const { page = 1, limit = 20 } = pagination;
+      const { sortBy = "createdAt", sortOrder = "desc" } = sortOptions;
 
       // Detect text search to enable textScore sorting
-      const isTextSearch = !!(filters as any).$text && sortBy === "score"
+      const isTextSearch = !!(filters as any).$text && sortBy === "score";
 
       // Build query with optional projection for text score
       let query = isTextSearch
         ? this.model.find(filters, { score: { $meta: "textScore" } } as any)
-        : this.model.find(filters)
-      
+        : this.model.find(filters);
+
       if (populate) {
         if (Array.isArray(populate)) {
-          populate.forEach(field => {
-            query = query.populate(field)
-          })
+          populate.forEach((field) => {
+            query = query.populate(field);
+          });
         } else {
-          query = query.populate(populate)
+          query = query.populate(populate);
         }
       }
 
       // Build sort object
-      const sort: any = {}
+      const sort: any = {};
       if (isTextSearch) {
         // Sort by textScore when performing $text search
-        ;(sort as any).score = { $meta: "textScore" }
+        (sort as any).score = { $meta: "textScore" };
         // Optional secondary sorts can be appended after fetching if needed
       } else {
-        sort[sortBy] = sortOrder === "desc" ? -1 : 1
+        sort[sortBy] = sortOrder === "desc" ? -1 : 1;
       }
 
       // Execute query with pagination
-      const skip = (page - 1) * limit
+      const skip = (page - 1) * limit;
       const [data, total] = await Promise.all([
-        query.sort(sort as any).skip(skip).limit(limit).exec(),
-        this.model.countDocuments(filters)
-      ])
+        query
+          .sort(sort as any)
+          .skip(skip)
+          .limit(limit)
+          .exec(),
+        // Use the fully built internal query (not the raw incoming filters) for accurate counts
+        this.model.countDocuments((query as any).getQuery()),
+      ]);
 
-      const pages = Math.ceil(total / limit)
-      const hasNext = page < pages
-      const hasPrev = page > 1
+      const pages = Math.ceil(total / limit);
+      const hasNext = page < pages;
+      const hasPrev = page > 1;
 
-      console.log(`[${this.serviceName}] Found ${total} documents, page ${page}/${pages}`)
+      console.log(
+        `[${this.serviceName}] Found ${total} documents, page ${page}/${pages}`
+      );
 
       return {
         data,
@@ -146,39 +167,52 @@ export abstract class BaseService<T extends Document> {
         pages,
         currentPage: page,
         hasNext,
-        hasPrev
-      }
+        hasPrev,
+      };
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Find error:`, error.message)
-      throw new Error(`Failed to find ${this.serviceName.toLowerCase()}s`)
+      console.error(
+        `[${this.serviceName}] Find error:`,
+        error?.message,
+        "\nStack:",
+        error?.stack
+      );
+      throw new Error(
+        error?.message || `Failed to find ${this.serviceName.toLowerCase()}s`
+      );
     }
   }
 
   /**
    * Find one document with filters
    */
-  async findOne(filters: FilterQuery<T>, populate?: string | string[]): Promise<T | null> {
+  async findOne(
+    filters: FilterQuery<T>,
+    populate?: string | string[]
+  ): Promise<T | null> {
     try {
-      console.log(`[${this.serviceName}] Finding one document with filters:`, filters)
-      await this.ensureConnection()
+      console.log(
+        `[${this.serviceName}] Finding one document with filters:`,
+        filters
+      );
+      await this.ensureConnection();
 
-      let query = this.model.findOne(filters)
-      
+      let query = this.model.findOne(filters);
+
       if (populate) {
         if (Array.isArray(populate)) {
-          populate.forEach(field => {
-            query = query.populate(field)
-          })
+          populate.forEach((field) => {
+            query = query.populate(field);
+          });
         } else {
-          query = query.populate(populate)
+          query = query.populate(populate);
         }
       }
 
-      const document = await query.exec()
-      return document
+      const document = await query.exec();
+      return document;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Find one error:`, error.message)
-      throw new Error(`Failed to find ${this.serviceName.toLowerCase()}`)
+      console.error(`[${this.serviceName}] Find one error:`, error.message);
+      throw new Error(`Failed to find ${this.serviceName.toLowerCase()}`);
     }
   }
 
@@ -191,24 +225,26 @@ export abstract class BaseService<T extends Document> {
     options: QueryOptions = {}
   ): Promise<T | null> {
     try {
-      console.log(`[${this.serviceName}] Updating document:`, id)
-      await this.ensureConnection()
+      console.log(`[${this.serviceName}] Updating document:`, id);
+      await this.ensureConnection();
 
       const updatedDocument = await this.model.findByIdAndUpdate(
         id,
         updateData,
         { new: true, runValidators: true, ...options }
-      )
+      );
 
       if (!updatedDocument) {
-        throw new Error(`${this.serviceName} not found`)
+        throw new Error(`${this.serviceName} not found`);
       }
 
-      console.log(`[${this.serviceName}] Document updated successfully`)
-      return updatedDocument
+      console.log(`[${this.serviceName}] Document updated successfully`);
+      return updatedDocument;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Update error:`, error.message)
-      throw new Error(error.message || `Failed to update ${this.serviceName.toLowerCase()}`)
+      console.error(`[${this.serviceName}] Update error:`, error.message);
+      throw new Error(
+        error.message || `Failed to update ${this.serviceName.toLowerCase()}`
+      );
     }
   }
 
@@ -221,16 +257,25 @@ export abstract class BaseService<T extends Document> {
     options?: QueryOptions & { upsert?: boolean; arrayFilters?: any[] }
   ): Promise<{ modifiedCount: number }> {
     try {
-      console.log(`[${this.serviceName}] Updating multiple documents with filters:`, filters)
-      await this.ensureConnection()
+      console.log(
+        `[${this.serviceName}] Updating multiple documents with filters:`,
+        filters
+      );
+      await this.ensureConnection();
 
-  const result = await this.model.updateMany(filters, updateData, options as any)
-      
-      console.log(`[${this.serviceName}] Updated ${result.modifiedCount} documents`)
-      return { modifiedCount: result.modifiedCount }
+      const result = await this.model.updateMany(
+        filters,
+        updateData,
+        options as any
+      );
+
+      console.log(
+        `[${this.serviceName}] Updated ${result.modifiedCount} documents`
+      );
+      return { modifiedCount: result.modifiedCount };
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Update many error:`, error.message)
-      throw new Error(`Failed to update ${this.serviceName.toLowerCase()}s`)
+      console.error(`[${this.serviceName}] Update many error:`, error.message);
+      throw new Error(`Failed to update ${this.serviceName.toLowerCase()}s`);
     }
   }
 
@@ -239,19 +284,21 @@ export abstract class BaseService<T extends Document> {
    */
   async deleteById(id: string): Promise<void> {
     try {
-      console.log(`[${this.serviceName}] Deleting document:`, id)
-      await this.ensureConnection()
+      console.log(`[${this.serviceName}] Deleting document:`, id);
+      await this.ensureConnection();
 
-      const deletedDocument = await this.model.findByIdAndDelete(id)
-      
+      const deletedDocument = await this.model.findByIdAndDelete(id);
+
       if (!deletedDocument) {
-        throw new Error(`${this.serviceName} not found`)
+        throw new Error(`${this.serviceName} not found`);
       }
 
-      console.log(`[${this.serviceName}] Document deleted successfully`)
+      console.log(`[${this.serviceName}] Document deleted successfully`);
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Delete error:`, error.message)
-      throw new Error(error.message || `Failed to delete ${this.serviceName.toLowerCase()}`)
+      console.error(`[${this.serviceName}] Delete error:`, error.message);
+      throw new Error(
+        error.message || `Failed to delete ${this.serviceName.toLowerCase()}`
+      );
     }
   }
 
@@ -260,16 +307,21 @@ export abstract class BaseService<T extends Document> {
    */
   async deleteMany(filters: FilterQuery<T>): Promise<{ deletedCount: number }> {
     try {
-      console.log(`[${this.serviceName}] Deleting multiple documents with filters:`, filters)
-      await this.ensureConnection()
+      console.log(
+        `[${this.serviceName}] Deleting multiple documents with filters:`,
+        filters
+      );
+      await this.ensureConnection();
 
-      const result = await this.model.deleteMany(filters)
-      
-      console.log(`[${this.serviceName}] Deleted ${result.deletedCount} documents`)
-      return { deletedCount: result.deletedCount }
+      const result = await this.model.deleteMany(filters);
+
+      console.log(
+        `[${this.serviceName}] Deleted ${result.deletedCount} documents`
+      );
+      return { deletedCount: result.deletedCount };
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Delete many error:`, error.message)
-      throw new Error(`Failed to delete ${this.serviceName.toLowerCase()}s`)
+      console.error(`[${this.serviceName}] Delete many error:`, error.message);
+      throw new Error(`Failed to delete ${this.serviceName.toLowerCase()}s`);
     }
   }
 
@@ -278,11 +330,11 @@ export abstract class BaseService<T extends Document> {
    */
   async count(filters: FilterQuery<T> = {}): Promise<number> {
     try {
-      await this.ensureConnection()
-      return await this.model.countDocuments(filters)
+      await this.ensureConnection();
+      return await this.model.countDocuments(filters);
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Count error:`, error.message)
-      throw new Error(`Failed to count ${this.serviceName.toLowerCase()}s`)
+      console.error(`[${this.serviceName}] Count error:`, error.message);
+      throw new Error(`Failed to count ${this.serviceName.toLowerCase()}s`);
     }
   }
 
@@ -291,12 +343,14 @@ export abstract class BaseService<T extends Document> {
    */
   async exists(filters: FilterQuery<T>): Promise<boolean> {
     try {
-      await this.ensureConnection()
-      const count = await this.model.countDocuments(filters)
-      return count > 0
+      await this.ensureConnection();
+      const count = await this.model.countDocuments(filters);
+      return count > 0;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Exists error:`, error.message)
-      throw new Error(`Failed to check if ${this.serviceName.toLowerCase()} exists`)
+      console.error(`[${this.serviceName}] Exists error:`, error.message);
+      throw new Error(
+        `Failed to check if ${this.serviceName.toLowerCase()} exists`
+      );
     }
   }
 
@@ -305,14 +359,14 @@ export abstract class BaseService<T extends Document> {
    */
   async aggregate(pipeline: any[]): Promise<any[]> {
     try {
-      console.log(`[${this.serviceName}] Running aggregation pipeline`)
-      await this.ensureConnection()
-      
-      const result = await this.model.aggregate(pipeline)
-      return result
+      console.log(`[${this.serviceName}] Running aggregation pipeline`);
+      await this.ensureConnection();
+
+      const result = await this.model.aggregate(pipeline);
+      return result;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Aggregate error:`, error.message)
-      throw new Error(`Failed to aggregate ${this.serviceName.toLowerCase()}s`)
+      console.error(`[${this.serviceName}] Aggregate error:`, error.message);
+      throw new Error(`Failed to aggregate ${this.serviceName.toLowerCase()}s`);
     }
   }
 
@@ -321,14 +375,16 @@ export abstract class BaseService<T extends Document> {
    */
   async bulkWrite(operations: any[]): Promise<any> {
     try {
-      console.log(`[${this.serviceName}] Performing bulk write operations`)
-      await this.ensureConnection()
-      
-      const result = await this.model.bulkWrite(operations)
-      return result
+      console.log(`[${this.serviceName}] Performing bulk write operations`);
+      await this.ensureConnection();
+
+      const result = await this.model.bulkWrite(operations);
+      return result;
     } catch (error: any) {
-      console.error(`[${this.serviceName}] Bulk write error:`, error.message)
-      throw new Error(`Failed to perform bulk write on ${this.serviceName.toLowerCase()}s`)
+      console.error(`[${this.serviceName}] Bulk write error:`, error.message);
+      throw new Error(
+        `Failed to perform bulk write on ${this.serviceName.toLowerCase()}s`
+      );
     }
   }
 
@@ -336,36 +392,41 @@ export abstract class BaseService<T extends Document> {
    * Validate ObjectId
    */
   protected isValidObjectId(id: string): boolean {
-    return mongoose.Types.ObjectId.isValid(id)
+    return mongoose.Types.ObjectId.isValid(id);
   }
 
   /**
    * Create ObjectId
    */
   protected createObjectId(id: string): mongoose.Types.ObjectId {
-    return new mongoose.Types.ObjectId(id)
+    return new mongoose.Types.ObjectId(id);
   }
 
   /**
    * Handle database errors
    */
   protected handleError(error: any, operation: string): never {
-    console.error(`[${this.serviceName}] ${operation} error:`, error.message)
-    
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map((err: any) => err.message)
-      throw new Error(`Validation failed: ${validationErrors.join(', ')}`)
+    console.error(`[${this.serviceName}] ${operation} error:`, error.message);
+
+    if (error.name === "ValidationError") {
+      const validationErrors = Object.values(error.errors).map(
+        (err: any) => err.message
+      );
+      throw new Error(`Validation failed: ${validationErrors.join(", ")}`);
     }
-    
-    if (error.name === 'CastError') {
-      throw new Error(`Invalid ${error.path}: ${error.value}`)
+
+    if (error.name === "CastError") {
+      throw new Error(`Invalid ${error.path}: ${error.value}`);
     }
-    
+
     if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern)[0]
-      throw new Error(`${field} already exists`)
+      const field = Object.keys(error.keyPattern)[0];
+      throw new Error(`${field} already exists`);
     }
-    
-    throw new Error(error.message || `Failed to ${operation} ${this.serviceName.toLowerCase()}`)
+
+    throw new Error(
+      error.message ||
+        `Failed to ${operation} ${this.serviceName.toLowerCase()}`
+    );
   }
-} 
+}

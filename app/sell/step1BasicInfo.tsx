@@ -37,29 +37,40 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   }, [formData.description]);
 
   return (
-    <div className="max-w-4xl w-full mx-auto px-3 sm:px-4 space-y-3">
-      {/* Compact Single Card with animation */}
+    <div className="max-w-4xl w-full mx-auto space-y-6">
+      {/* Enhanced Single Card with animation */}
       <FadeIn>
-        <Card className="border border-border/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Package className="h-4 w-4" />
+        <Card className="relative bg-gradient-to-br from-background/80 via-primary/5 to-background/80 border-2 border-border/30 shadow-xl overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 transform translate-x-6 -translate-y-6 rotate-45 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
+          </div>
+
+          <CardHeader className="relative z-10 pb-4">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center">
+                <Package className="h-4 w-4 text-white" />
+              </div>
               Product Information
             </CardTitle>
+            <p className="text-sm text-muted-foreground mt-2">
+              Tell us about your product - the more details, the better!
+            </p>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="relative z-10 space-y-6">
             {/* Title and Category Row */}
             <FadeInStagger
               as="div"
-              className="grid grid-cols-1 md:grid-cols-2 gap-2"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
-              <div>
-                <Label htmlFor="title" className="text-xs">
-                  Title *
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+                  <span className="text-red-500">*</span>
+                  Product Title
                 </Label>
                 <Input
                   id="title"
-                  placeholder="Product title"
+                  placeholder="e.g., iPhone 13 Pro Max 256GB"
                   value={formData.title}
                   onChange={(e) => {
                     setFormData((prev) => ({ ...prev, title: e.target.value }));
@@ -67,20 +78,22 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                   }}
                   aria-invalid={!!errors.title}
                   className={cn(
-                    "h-8 text-xs",
-                    errors.title && "border-red-500"
+                    "h-12 text-base border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl",
+                    errors.title && "border-red-500 focus:border-red-500"
                   )}
                 />
                 {errors.title && (
-                  <p className="text-[10px] text-red-500 mt-1">
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <span className="text-red-500">⚠</span>
                     {errors.title}
                   </p>
                 )}
               </div>
 
-              <div>
-                <Label htmlFor="category" className="text-xs">
-                  Category *
+              <div className="space-y-2">
+                <Label htmlFor="category" className="text-sm font-semibold flex items-center gap-2">
+                  <span className="text-red-500">*</span>
+                  Category
                 </Label>
                 <Select
                   value={formData.category}

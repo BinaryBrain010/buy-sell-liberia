@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import BuySellLoader from "@/components/loader/BuySellLoader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -205,83 +206,106 @@ export default function ProfileForm({
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="p-6">
+        <BuySellLoader label="Loading profile information..." />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">Profile Not Found</h3>
-              <p className="text-muted-foreground">
-                Unable to load profile information
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="p-6">
+        <div className="text-center py-16">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
+            <AlertCircle className="h-10 w-10 text-white" />
+          </div>
+          <h3 className="text-2xl font-semibold mb-2">Profile Not Found</h3>
+          <p className="text-muted-foreground mb-6">
+            Unable to load profile information. Please try again.
+          </p>
+          <Button
+            onClick={() => fetchProfile()}
+            variant="outline"
+            className="px-6 py-2"
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="py-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <User className="h-4 w-4" />
-              Profile Information
-            </CardTitle>
-            <div className="flex items-center gap-2">
+    <div className="p-6 space-y-8">
+      {/* Enhanced Profile Header */}
+      <div className="relative">
+        {/* Background accent */}
+        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            {/* User Avatar & Info */}
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-xl">
+                <User className="h-12 w-12 text-white" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-foreground">
+                  {profile.fullName || "User"}
+                </h2>
+                <p className="text-lg text-muted-foreground">
+                  @{profile.username}
+                </p>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    Active
+                  </span>
+                  <span className="text-muted-foreground">{profile.email}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
               {!editing && (
                 <Button
                   onClick={() => setEditing(true)}
-                  variant="outline"
-                  size="sm"
+                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
-                  Update
+                  Edit Profile
                 </Button>
               )}
               {editing && (
                 <>
-                  <Button onClick={handleCancel} variant="outline" size="sm">
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                  >
                     Cancel
                   </Button>
-                  <Button onClick={handleSave} disabled={saving} size="sm">
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
                     {saving ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Saving
+                        <BuySellLoader
+                          variant="inline"
+                          size={16}
+                          hideLabel
+                          label="Saving"
+                          className="mr-2"
+                        />
+                        Saving...
                       </>
                     ) : (
                       <>
                         <Save className="h-4 w-4 mr-2" />
-                        Save
+                        Save Changes
                       </>
                     )}
                   </Button>
@@ -289,146 +313,201 @@ export default function ProfileForm({
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="pt-2 pb-3">
-          {/* Compact summary */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
-            <span className="font-medium text-foreground">
-              {profile.fullName}{" "}
-              <span className="text-xs text-muted-foreground">
-                ({profile.username})
-              </span>
-            </span>
-            <span className="truncate">{profile.email}</span>
-          </div>
+        </div>
+      </div>
 
-          {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) => handleInputChange("fullName", e.target.value)}
-                disabled={!editing}
-                className="mt-1 h-9"
-                placeholder="Enter full name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={formData.username}
-                onChange={(e) => handleInputChange("username", e.target.value)}
-                disabled={!editing}
-                className="mt-1 h-9"
-                placeholder="Enter username"
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email Address</Label>
-              <div className="flex items-center gap-2 mt-1">
+      {/* Enhanced Form Fields */}
+      <div className="space-y-8">
+        {/* Personal Information */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
+
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
+            <h3 className="text-xl font-semibold mb-6 text-foreground">
+              Personal Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-sm font-semibold">
+                  Full Name
+                </Label>
                 <Input
-                  id="email"
-                  value={formData.email}
-                  disabled
-                  className="flex-1 h-9"
-                  placeholder="Email address"
-                />
-                {profile.emailVerified ? (
-                  <CheckCircle
-                    className="h-4 w-4 text-green-600"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <AlertCircle
-                    className="h-4 w-4 text-yellow-600"
-                    aria-hidden="true"
-                  />
-                )}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone Number</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    handleInputChange("fullName", e.target.value)
+                  }
                   disabled={!editing}
-                  className="flex-1 h-9"
-                  placeholder="Enter phone number"
+                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  placeholder="Enter full name"
                 />
-                {profile.phoneVerified ? (
-                  <CheckCircle
-                    className="h-4 w-4 text-green-600"
-                    aria-hidden="true"
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-semibold">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  value={formData.username}
+                  onChange={(e) =>
+                    handleInputChange("username", e.target.value)
+                  }
+                  disabled={!editing}
+                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  placeholder="Enter username"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-semibold">
+                  Email Address
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="email"
+                    value={formData.email}
+                    disabled
+                    className="flex-1 h-12 border-2 border-border/30 rounded-xl bg-muted/50"
+                    placeholder="Email address"
                   />
-                ) : (
-                  <AlertCircle
-                    className="h-4 w-4 text-yellow-600"
-                    aria-hidden="true"
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      profile.emailVerified
+                        ? "bg-green-100 dark:bg-green-900/20"
+                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                    }`}
+                  >
+                    {profile.emailVerified ? (
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-6 w-6 text-yellow-600" />
+                    )}
+                  </div>
+                </div>
+                <p
+                  className={`text-xs ${
+                    profile.emailVerified ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {profile.emailVerified
+                    ? "Email verified"
+                    : "Email not verified"}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-sm font-semibold">
+                  Phone Number
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    disabled={!editing}
+                    className="flex-1 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                    placeholder="Enter phone number"
                   />
-                )}
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                      profile.phoneVerified
+                        ? "bg-green-100 dark:bg-green-900/20"
+                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                    }`}
+                  >
+                    {profile.phoneVerified ? (
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    ) : (
+                      <AlertCircle className="h-6 w-6 text-yellow-600" />
+                    )}
+                  </div>
+                </div>
+                <p
+                  className={`text-xs ${
+                    profile.phoneVerified ? "text-green-600" : "text-yellow-600"
+                  }`}
+                >
+                  {profile.phoneVerified
+                    ? "Phone verified"
+                    : "Phone not verified"}
+                </p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Divider */}
-          <div className="h-px bg-border my-3" />
+        {/* Location Information */}
+        <div className="relative">
+          <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
 
-          {/* Location */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleInputChange("city", e.target.value)}
-                disabled={!editing}
-                className="mt-1 h-9"
-                placeholder="Enter city"
-              />
-            </div>
-            <div>
-              <Label htmlFor="state">State/Province</Label>
-              <Input
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
-                disabled={!editing}
-                className="mt-1 h-9"
-                placeholder="Enter state"
-              />
-            </div>
-            <div>
-              <Label htmlFor="country">Country</Label>
-              <Select
-                value={formData.country || undefined}
-                onValueChange={(value) => handleInputChange("country", value)}
-                disabled={!editing}
-              >
-                <SelectTrigger className="mt-1 h-9">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Liberia">Liberia</SelectItem>
-                  <SelectItem value="United States">United States</SelectItem>
-                  <SelectItem value="United Kingdom">United Kingdom</SelectItem>
-                  <SelectItem value="Canada">Canada</SelectItem>
-                  <SelectItem value="Australia">Australia</SelectItem>
-                  <SelectItem value="Germany">Germany</SelectItem>
-                  <SelectItem value="France">France</SelectItem>
-                  <SelectItem value="India">India</SelectItem>
-                  <SelectItem value="China">China</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
+            <h3 className="text-xl font-semibold mb-6 text-foreground">
+              Location Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-sm font-semibold">
+                  City
+                </Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange("city", e.target.value)}
+                  disabled={!editing}
+                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  placeholder="Enter city"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state" className="text-sm font-semibold">
+                  State/Province
+                </Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange("state", e.target.value)}
+                  disabled={!editing}
+                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  placeholder="Enter state"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country" className="text-sm font-semibold">
+                  Country
+                </Label>
+                <Select
+                  value={formData.country || undefined}
+                  onValueChange={(value) => handleInputChange("country", value)}
+                  disabled={!editing}
+                >
+                  <SelectTrigger className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl">
+                    <SelectValue placeholder="Select country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Liberia">Liberia</SelectItem>
+                    <SelectItem value="United States">United States</SelectItem>
+                    <SelectItem value="United Kingdom">
+                      United Kingdom
+                    </SelectItem>
+                    <SelectItem value="Canada">Canada</SelectItem>
+                    <SelectItem value="Australia">Australia</SelectItem>
+                    <SelectItem value="Germany">Germany</SelectItem>
+                    <SelectItem value="France">France</SelectItem>
+                    <SelectItem value="India">India</SelectItem>
+                    <SelectItem value="China">China</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

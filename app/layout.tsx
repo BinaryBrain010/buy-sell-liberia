@@ -16,6 +16,17 @@ export const metadata: Metadata = {
   title: "BuySell - Buy & Sell Anything Online",
   description: "The leading marketplace for buying and selling goods online",
   generator: "v0.dev",
+  icons: {
+    icon: [
+      {
+        url: "/favicon/favicon.svg",
+        type: "image/svg+xml",
+      },
+    ],
+    shortcut: "/favicon/favicon.svg",
+    apple: "/favicon/favicon.svg",
+  },
+  manifest: "/favicon/site.webmanifest",
 };
 
 function LoadingFallback() {
