@@ -44,6 +44,7 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<any>(null);
+  const [loadingSubcategories, setLoadingSubcategories] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,6 +53,11 @@ export default function CategoriesPage() {
   const subcategoriesSectionRef = useRef<HTMLDivElement>(null);
   const productsSectionRef = useRef<HTMLDivElement>(null);
   const hasFetchedCategories = useRef(false);
+  // Cache fetched category details by ID/slug to avoid re-fetching on re-click
+  const categoryCacheRef = useRef<Map<string, any>>(new Map());
+
+  const isValidObjectId = (id: unknown) =>
+    typeof id === "string" && /^[a-fA-F0-9]{24}$/.test(id);
 
   // Subcategory image map fetched from API
   type SubcatImageEntry = { slug: string; url: string; title?: string };
@@ -175,9 +181,50 @@ export default function CategoriesPage() {
   }, [selectedCategory]);
 
   // Handle category card click
-  const handleCategoryClick = (category: any) => {
+  const handleCategoryClick = async (category: any) => {
+    // If the same category is clicked again, do nothing
+    if (selectedCategory?._id === category._id) {
+      return;
+    }
+
+    setCurrentPage(1);
+
+    // Use cache first for instant UX
+    const cacheKey = String(category._id);
+    const cached = categoryCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSelectedCategory(cached);
+      return;
+    }
+
+    // Optimistically select while fetching fresh data
     setSelectedCategory(category);
-    setCurrentPage(1); // Reset to first page when selecting a new category
+
+    try {
+      setLoadingSubcategories(true);
+      const service = new CategoryService();
+      const params = isValidObjectId(category._id)
+        ? { categoryId: String(category._id) }
+        : { slug: String(category.slug) };
+      const data = await service.getCategories(params as any);
+      if (data?.category) {
+        const enriched = {
+          ...data.category,
+          _id: (data.category as any)._id ?? category._id,
+        };
+        // Cache and set
+        categoryCacheRef.current.set(cacheKey, enriched);
+        setSelectedCategory(enriched);
+      }
+    } catch (err) {
+      console.error(
+        "[CategoriesPage] Failed to refresh selected category:",
+        err
+      );
+      // Keep optimistic selection as fallback
+    } finally {
+      setLoadingSubcategories(false);
+    }
   };
 
   // Handle subcategory click - pass both category and subcategory IDs
@@ -413,9 +460,20 @@ export default function CategoriesPage() {
               </div>
             </div>
 
-            {selectedCategory.subcategories &&
-            selectedCategory.subcategories.length > 0 ? (
-              <FadeInStagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            {loadingSubcategories ? (
+              <div className="py-12">
+                <BuySellLoader
+                  label="Loading subcategories..."
+                  size={72}
+                  variant="subtle"
+                />
+              </div>
+            ) : selectedCategory.subcategories &&
+              selectedCategory.subcategories.length > 0 ? (
+              <FadeInStagger
+                key={String(selectedCategory._id)}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 transition-opacity duration-300"
+              >
                 {selectedCategory.subcategories.map((subcategory: any) => (
                   <Card
                     key={subcategory._id}
