@@ -10,7 +10,6 @@ import {
   Eye,
   Star,
   User,
-  Heart,
   ZoomIn,
   X,
   ChevronLeft,
@@ -31,7 +30,6 @@ interface ProductDetailProps {
 }
 
 export default function ProductDetail(productData: ProductDetailProps) {
-  const [liked, setLiked] = useState(false);
   const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
   const currencySymbol = currency === "LRD" ? "L$" : "$";
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -47,10 +45,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
       return `${currencySymbol} ${price.toLocaleString()}`;
     if (!price || typeof price.amount !== "number")
       return "Price not available";
-    const formatted = `${currencySymbol} ${Number(
-      price.amount
-    ).toLocaleString()}`;
-    return price.negotiable ? `${formatted} (Negotiable)` : formatted;
+    return `${currencySymbol} ${Number(price.amount).toLocaleString()}`;
   };
 
   // Fetch platform currency (fallback to USD if unauthorized/unavailable)
@@ -114,15 +109,23 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
   const getImageUrl = (img: ImageType | undefined): string | undefined => {
     if (!img) return undefined;
+    // If already a string path/URL
     if (typeof img === "string") {
       if (img.startsWith("http")) return img;
-      // Remove leading slashes and use API route
       const cleanPath = img.replace(/^\/+/, "");
-      return `/api/uploads/${cleanPath}`;
+      return cleanPath ? `/api/uploads/${cleanPath}` : undefined;
     }
-    if (img.url.startsWith("http")) return img.url;
-    const cleanPath = img.url.replace(/^\/+/, "");
-    return `/api/uploads/${cleanPath}`;
+    // If object, try to read a usable url-like field
+    const candidate =
+      (img as any)?.url ??
+      (img as any)?.src ??
+      (img as any)?.image ??
+      (img as any)?.path;
+    if (typeof candidate !== "string" || candidate.length === 0)
+      return undefined;
+    if (candidate.startsWith("http")) return candidate;
+    const cleanPath = candidate.replace(/^\/+/, "");
+    return cleanPath ? `/api/uploads/${cleanPath}` : undefined;
   };
 
   const images = Array.isArray(productData?.images) ? productData.images : [];
@@ -381,22 +384,32 @@ export default function ProductDetail(productData: ProductDetailProps) {
                         </div>
                       </div>
 
-                      {/* Quick actions */}
-                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                        <Button
-                          variant={liked ? "default" : "outline"}
-                          onClick={() => setLiked((prev) => !prev)}
-                          className="w-full sm:w-auto px-5"
-                          aria-pressed={liked}
-                        >
-                          <Heart
-                            className={cn(
-                              "h-4 w-4 mr-2 transition-colors",
-                              liked ? "fill-current" : ""
-                            )}
-                          />
-                          {liked ? "Saved to favorites" : "Save this listing"}
-                        </Button>
+                      {/* Price type (compact) */}
+                      <div className="mt-1 flex items-center justify-end">
+                        {(() => {
+                          const isNegotiable = Boolean(
+                            productData?.price?.negotiable ??
+                              productData?.negotiable ??
+                              false
+                          );
+                          return (
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border",
+                                isNegotiable
+                                  ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+                                  : "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-700"
+                              )}
+                              title={
+                                isNegotiable
+                                  ? "Negotiable price"
+                                  : "Fixed price"
+                              }
+                            >
+                              {isNegotiable ? "Negotiable" : "Fixed Price"}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -571,11 +584,11 @@ export default function ProductDetail(productData: ProductDetailProps) {
 
                       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
                             <User className="h-8 w-8 text-white" />
                           </div>
                           <div>
-                            <div className="text-xl font-bold text-foreground">
+                            <div className="text-base md:text-lg font-semibold text-foreground leading-snug">
                               {displayName}
                             </div>
                           </div>

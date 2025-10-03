@@ -11,13 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Removed sorting select imports
 
 interface FiltersSectionProps {
   searchQuery: string;
@@ -46,7 +40,6 @@ export function FiltersSection(props: FiltersSectionProps) {
     searchQuery,
     onSearchChange,
     sortBy,
-    onSortChange,
     viewMode,
     onViewModeChange,
     showFilters,
@@ -54,7 +47,6 @@ export function FiltersSection(props: FiltersSectionProps) {
   } = props;
   // Local state for filters
   const [localSearch, setLocalSearch] = useState(searchQuery);
-  const [localSort, setLocalSort] = useState(sortBy);
   const [selectedCondition, setSelectedCondition] = useState<string | null>(
     null
   );
@@ -69,20 +61,18 @@ export function FiltersSection(props: FiltersSectionProps) {
   useEffect(() => {
     setLocalSearch(searchQuery);
   }, [searchQuery]);
-  useEffect(() => {
-    setLocalSort(sortBy);
-  }, [sortBy]);
+  // Sorting UI removed; keep using incoming sortBy for payload when needed
 
   const handleApplyFilters = () => {
     onSearchChange(localSearch);
-    onSortChange(localSort);
     const conditionArray = selectedCondition ? [selectedCondition] : undefined;
     const priceMinNum = localPriceMin ? Number(localPriceMin) : undefined;
     const priceMaxNum = localPriceMax ? Number(localPriceMax) : undefined;
     if (props.onFiltersApply) {
       props.onFiltersApply({
         search: localSearch,
-        sortBy: localSort,
+        // No sort control here; pass through current prop value
+        sortBy: sortBy,
         condition: conditionArray,
         priceMin: priceMinNum,
         priceMax: priceMaxNum,
@@ -95,7 +85,6 @@ export function FiltersSection(props: FiltersSectionProps) {
 
   const handleClearFilters = () => {
     setLocalSearch("");
-    setLocalSort("newest");
     setSelectedCondition(null);
     setLocalPriceMin("");
     setLocalPriceMax("");
@@ -103,9 +92,9 @@ export function FiltersSection(props: FiltersSectionProps) {
     setState("");
     setCountry("");
     onSearchChange("");
-    onSortChange("newest");
     if (props.onFiltersApply) {
-      props.onFiltersApply({ search: "", sortBy: "newest" });
+      // Preserve current sort; just clear other filters
+      props.onFiltersApply({ search: "", sortBy });
     }
   };
 
@@ -130,18 +119,7 @@ export function FiltersSection(props: FiltersSectionProps) {
           </div>
         </div>
 
-        {/* Sort */}
-        <Select value={localSort} onValueChange={setLocalSort}>
-          <SelectTrigger className="w-full lg:w-48 input-shadow">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest First</SelectItem>
-            <SelectItem value="price-low">Price: Low to High</SelectItem>
-            <SelectItem value="price-high">Price: High to Low</SelectItem>
-            <SelectItem value="rating">Highest Rated</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Sort removed from this filter component */}
 
         {/* View Mode */}
         <div className="flex border border-border rounded-lg overflow-hidden">
