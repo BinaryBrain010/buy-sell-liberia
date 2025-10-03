@@ -15,9 +15,11 @@ import ActivityLog from './ActivityLog';
 import Employee from './Employee';
 import WithdrawalLog from './WithdrawalLog';
 import NewsletterSubscription from './NewsletterSubscription';
+import SubscriptionPlan from './SubscriptionPlan';
+import UserSubscription from './UserSubscription';
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog, NewsletterSubscription };
+export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog, NewsletterSubscription, SubscriptionPlan, UserSubscription };
 
 export const models = {
   User,
@@ -29,6 +31,8 @@ export const models = {
   ActivityLog,
   Employee,
   WithdrawalLog,
+  SubscriptionPlan,
+  UserSubscription,
 };
 
 export const utils = {
