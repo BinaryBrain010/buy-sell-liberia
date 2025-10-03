@@ -60,7 +60,7 @@ export function Footer() {
                   </Link>
                 </Button>
               </motion.div>
-              <motion.div whileHover={{ y: -2, scale: 1.03 }}>
+              {/* <motion.div whileHover={{ y: -2, scale: 1.03 }}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -69,15 +69,23 @@ export function Footer() {
                 >
                   <Twitter className="h-4 w-4" />
                 </Button>
-              </motion.div>
+              </motion.div> */}
               <motion.div whileHover={{ y: -2, scale: 1.03 }}>
                 <Button
                   variant="outline"
                   size="sm"
                   className="glass border-0 bg-transparent"
                   aria-label="Visit our Instagram"
+                  asChild
                 >
-                  <Instagram className="h-4 w-4" />
+                  <Link
+                    href="https://www.instagram.com/buysell_liberia?igsh=Nzh2dDE0c2RyNmRk&utm_source=qr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Visit our Instagram"
+                  >
+                    <Instagram className="h-4 w-4" />
+                  </Link>
                 </Button>
               </motion.div>
             </div>
