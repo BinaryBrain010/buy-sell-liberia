@@ -20,7 +20,7 @@ type AnnouncementBarProps = {
 export function AnnouncementBar({
   children,
   durationSeconds = 25,
-  direction = "ltr",
+  direction = "rtl",
 }: AnnouncementBarProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ export function AnnouncementBar({
     <span
       key={`sep-${idx}`}
       aria-hidden="true"
-      className="opacity-60 px-3 sm:px-4"
+      className="opacity-60 px-2 sm:px-3"
     >
       {"•"}
     </span>,
@@ -85,27 +85,33 @@ export function AnnouncementBar({
     <div
       role="region"
       aria-label="Site announcement"
-      className="w-full border-b border-border bg-accent text-accent-foreground py-1.5 sm:py-2 px-2 sm:px-4 overflow-hidden relative z-20"
+      className="w-full border-b border-border bg-accent text-accent-foreground py-1 px-2 sm:px-3 overflow-hidden relative z-20"
       style={
         {
           ["--marquee-duration" as any]: `${durationSeconds}s`,
         } as React.CSSProperties
       }
     >
-      <div className="relative mx-auto max-w-screen-2xl overflow-hidden">
+      {/* Use full width to avoid side empty spaces */}
+      <div className="relative overflow-hidden">
         <div
           ref={marqueeRef}
           className="marquee-track whitespace-nowrap font-medium text-xs sm:text-sm flex items-center"
           style={{
             minWidth: "100%",
             animation: `marquee ${durationSeconds}s linear infinite`,
-            animationDirection: direction === "ltr" ? "reverse" : "normal",
+            // Move from right-to-left by default (normal). Reverse if LTR explicitly requested.
+            animationDirection: direction === "rtl" ? "normal" : "reverse",
             willChange: "transform",
           }}
         >
           {/* First copy */}
           <div className="flex items-center">{itemsWithSeparators}</div>
           {/* Duplicate for seamless loop */}
+          <div className="flex items-center" aria-hidden="true">
+            {itemsWithSeparators}
+          </div>
+          {/* Third copy to minimize any visible gap on wide screens */}
           <div className="flex items-center" aria-hidden="true">
             {itemsWithSeparators}
           </div>
