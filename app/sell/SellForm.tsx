@@ -13,8 +13,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, CheckCircle } from "lucide-react";
 import { ProductFormData, Category, FormErrors } from "./types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
-export default function  SellForm() {
+export default function SellForm() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
@@ -42,6 +50,26 @@ export default function  SellForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [showReview, setShowReview] = useState(false);
   const [showCreateButton, setShowCreateButton] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [countdown, setCountdown] = useState<number>(8);
+
+  // Auto-redirect countdown when success dialog is open
+  useEffect(() => {
+    if (!successOpen) return;
+    setCountdown(8);
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          // Only redirect if the dialog is still open
+          if (successOpen) router.push("/dashboard");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [successOpen, router]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -148,9 +176,8 @@ export default function  SellForm() {
         throw new Error(errorData.error || "Failed to create listing");
       }
 
-      toast.success("Product listed successfully! Redirecting in 3 seconds...");
-      await new Promise((res) => setTimeout(res, 3000));
-      router.push("/dashboard");
+      toast.success("Product listed successfully!");
+      setSuccessOpen(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to create product");
     } finally {
@@ -296,6 +323,55 @@ export default function  SellForm() {
           )}
         </CardContent>
       </Card>
+      {/* Success Modal after creating the listing */}
+      <Dialog
+        open={successOpen}
+        onOpenChange={(open) => {
+          // If user closes without choosing, redirect to home
+          if (!open && successOpen) {
+            setSuccessOpen(false);
+            router.push("/");
+          } else {
+            setSuccessOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Listing Created
+            </DialogTitle>
+            <DialogDescription>
+              Your listing has been successfully created. Where would you like
+              to go next?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            Auto-redirecting to Dashboard in {countdown}s
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSuccessOpen(false);
+                router.push("/");
+              }}
+            >
+              Go to Homepage
+            </Button>
+            <Button
+              onClick={() => {
+                setSuccessOpen(false);
+                router.push("/dashboard");
+              }}
+              className="bg-gradient-to-r from-primary to-v0-dark-blue"
+            >
+              Go to Dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
