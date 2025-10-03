@@ -48,8 +48,16 @@ export function Footer() {
                   size="sm"
                   className="glass border-0 bg-transparent"
                   aria-label="Visit our Facebook"
+                  asChild
                 >
-                  <Facebook className="h-4 w-4" />
+                  <Link
+                    href="https://www.facebook.com/share/1ENF2C3EQM/?mibextid=wwXIfr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Visit our Facebook"
+                  >
+                    <Facebook className="h-4 w-4" />
+                  </Link>
                 </Button>
               </motion.div>
               <motion.div whileHover={{ y: -2, scale: 1.03 }}>
@@ -168,7 +176,9 @@ export function Footer() {
               </div>
               <div className="flex items-center text-muted-foreground">
                 <MapPin className="h-4 w-4 mr-2" />
-                <span className="text-sm">Key Hole, Old Road-Sinkor Monrovia-Liberia</span>
+                <span className="text-sm">
+                  Key Hole, Old Road-Sinkor Monrovia-Liberia
+                </span>
               </div>
             </div>
 
