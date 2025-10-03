@@ -55,6 +55,13 @@ export interface IViewHistory {
   ip_address?: string
 }
 
+// Bump history schema
+export interface IBumpHistory {
+  bumped_at: Date
+  bumped_by: mongoose.Types.ObjectId
+  payment_id?: mongoose.Types.ObjectId
+}
+
 const viewHistorySchema = new Schema<IViewHistory>(
   {
     user_id: {
@@ -70,10 +77,29 @@ const viewHistorySchema = new Schema<IViewHistory>(
   { _id: false },
 )
 
+const bumpHistorySchema = new Schema<IBumpHistory>(
+  {
+    bumped_at: {
+      type: Date,
+      default: Date.now,
+    },
+    bumped_by: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    payment_id: {
+      type: Schema.Types.ObjectId,
+      ref: "ManualPayment",
+    },
+  },
+  { _id: false },
+)
+
 // Price schema
 export interface IPrice {
   amount: number
-  currency: "USD"
+  currency: "USD" | "LRD" | "EUR" | "GBP"
   negotiable?: boolean
 }
 
@@ -171,6 +197,9 @@ export interface IProduct extends Document {
   updated_at?: Date
   formattedPrice?: string
   timeAgo?: string
+  // Bump-related fields
+  bumpCredits: number
+  bumpHistory: IBumpHistory[]
   isExpired(): boolean
   renew(): Promise<IProduct>
   addView(userId?: mongoose.Types.ObjectId, ipAddress?: string): Promise<IProduct>
@@ -180,6 +209,8 @@ export interface IProduct extends Document {
   markAsFeatured(): Promise<IProduct>
   unmarkAsFeatured(): Promise<IProduct>
   toggleFeatured(): Promise<IProduct>
+  bumpListing(userId: mongoose.Types.ObjectId, paymentId?: mongoose.Types.ObjectId): Promise<IProduct>
+  addBumpCredits(credits: number): Promise<IProduct>
   reportIds: mongoose.Types.ObjectId[]
 }
 
@@ -220,7 +251,7 @@ const productSchema = new Schema<IProduct>(
       currency: {
         type: String,
         default: "USD",
-        enum: ["PKR", "USD", "EUR", "GBP"],
+        enum: ["USD", "LRD", "EUR", "GBP"],
       },
       negotiable: {
         type: Boolean,
@@ -323,6 +354,16 @@ const productSchema = new Schema<IProduct>(
       type: Schema.Types.ObjectId,
       ref: "Report"
     }],
+    // Bump-related fields
+    bumpCredits: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    bumpHistory: {
+      type: [bumpHistorySchema],
+      default: [],
+    },
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
@@ -424,6 +465,38 @@ productSchema.methods.unmarkAsFeatured = function (): Promise<IProduct> {
 
 productSchema.methods.toggleFeatured = function (): Promise<IProduct> {
   this.featured = !this.featured
+  return this.save()
+}
+
+productSchema.methods.bumpListing = function (userId: mongoose.Types.ObjectId, paymentId?: mongoose.Types.ObjectId): Promise<IProduct> {
+  if (this.bumpCredits <= 0) {
+    throw new Error("No bump credits available")
+  }
+  
+  // Update the added_at timestamp to current time to move listing to top
+  this.added_at = new Date()
+  this.updated_at = new Date()
+  
+  // Deduct one bump credit
+  this.bumpCredits -= 1
+  
+  // Add to bump history
+  this.bumpHistory.unshift({
+    bumped_at: new Date(),
+    bumped_by: userId,
+    payment_id: paymentId,
+  })
+  
+  // Keep only last 50 bump records
+  if (this.bumpHistory.length > 50) {
+    this.bumpHistory = this.bumpHistory.slice(0, 50)
+  }
+  
+  return this.save()
+}
+
+productSchema.methods.addBumpCredits = function (credits: number): Promise<IProduct> {
+  this.bumpCredits += credits
   return this.save()
 }
 
@@ -584,6 +657,11 @@ productSchema.set("toJSON", {
   virtuals: true,
 })
 
-// Use the existing model if it exists, otherwise create a new one
-const Product: Model<IProduct> = mongoose.models.Product || mongoose.model<IProduct>("Product", productSchema)
+// Clear any existing model to force schema update
+if (mongoose.models.Product) {
+  delete mongoose.models.Product;
+}
+
+// Create the model with updated schema
+const Product: Model<IProduct> = mongoose.model<IProduct>("Product", productSchema)
 export default Product

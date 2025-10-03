@@ -111,7 +111,7 @@ export abstract class BaseService<T extends Document> {
       await this.ensureConnection();
 
       const { page = 1, limit = 20 } = pagination;
-      const { sortBy = "createdAt", sortOrder = "desc" } = sortOptions;
+      const { sortBy = "added_at", sortOrder = "desc" } = sortOptions;
 
       // Detect text search to enable textScore sorting
       const isTextSearch = !!(filters as any).$text && sortBy === "score";

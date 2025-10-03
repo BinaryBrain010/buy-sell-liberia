@@ -2,8 +2,8 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export type ManualPaymentStatus = "pending" | "approved" | "rejected";
 export type ManualPaymentMethod = "MTN" | "Orange" | "Bank";
-export type FeatureType = "featured_listing"; // Future: "bump", "subscription", etc.
-export type FeaturePlan = "3_days" | "7_days" | "14_days";
+export type FeatureType = "featured_listing" | "bump_listing";
+export type FeaturePlan = "3_days" | "7_days" | "14_days" | "1_bump" | "3_bumps" | "5_bumps" | "10_bumps";
 
 export interface IManualPayment extends Document {
   user: mongoose.Types.ObjectId;
@@ -23,7 +23,8 @@ export interface IManualPayment extends Document {
   // Feature-specific fields
   featureType: FeatureType;
   featurePlan: FeaturePlan;
-  featureDuration: number; // Duration in days (3, 7, or 14)
+  featureDuration: number; // Duration in days (3, 7, or 14) or number of bumps
+  bumpCredits?: number; // Number of bump credits for bump_listing type
 }
 
 const manualPaymentSchema = new Schema<IManualPayment>({
@@ -40,9 +41,10 @@ const manualPaymentSchema = new Schema<IManualPayment>({
   reviewedAt: { type: Date },
   
   // Feature-specific fields
-  featureType: { type: String, enum: ["featured_listing"], required: true, default: "featured_listing" },
-  featurePlan: { type: String, enum: ["3_days", "7_days", "14_days"], required: true },
-  featureDuration: { type: Number, required: true, min: 1, max: 365 }, // Days
+  featureType: { type: String, enum: ["featured_listing", "bump_listing"], required: true, default: "featured_listing" },
+  featurePlan: { type: String, enum: ["3_days", "7_days", "14_days", "1_bump", "3_bumps", "5_bumps", "10_bumps"], required: true },
+  featureDuration: { type: Number, required: true, min: 1, max: 365 }, // Days or number of bumps
+  bumpCredits: { type: Number, min: 0 }, // Number of bump credits for bump_listing type
 }, {
   timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" }
 });

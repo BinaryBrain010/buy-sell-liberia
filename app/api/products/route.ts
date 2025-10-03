@@ -6,6 +6,7 @@ import {
   uploadProductImagesToLocal,
   validateImageFilesForLocal,
 } from "@/lib/local-file-upload";
+import { SettingsService } from "../modules/shared/services/settings.service";
 import mongoose from "mongoose";
 
 // Force dynamic rendering for this route
@@ -54,9 +55,13 @@ export async function POST(request: NextRequest) {
       specifications = {},
     } = formData;
 
+    // Get platform currency from settings
+    const settings = await SettingsService.getAllSettings();
+    const platformCurrency = settings.platformCurrency;
+
     // Handle price field - it can be either a number or an object
     let amount: number;
-    let currency: string = "USD";
+    let currency: string = platformCurrency;
 
     if (typeof priceField === "number") {
       amount = priceField;
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
       "amount" in priceField
     ) {
       amount = priceField.amount;
-      currency = priceField.currency || "USD";
+      currency = priceField.currency || platformCurrency;
     } else {
       return NextResponse.json(
         { error: "Invalid price format" },
@@ -153,9 +158,17 @@ export async function POST(request: NextRequest) {
     // Construct full price object with negotiable inside
     const price = {
       amount,
-      currency: currency, // Use currency from form data
+      currency: currency as "USD" | "LRD" | "EUR" | "GBP", // Use dynamic currency from settings
       negotiable: negotiable ?? true, // Fallback to true if undefined
     };
+
+    // Transform imagePaths to the expected format
+    const images = imagePaths.map((url, index) => ({
+      url,
+      alt: `${title} - Image ${index + 1}`,
+      isPrimary: index === titleImageIndex,
+      order: index,
+    }));
 
     // Create product
     const product = await productService.createProduct(authResult.userId, {
@@ -165,35 +178,43 @@ export async function POST(request: NextRequest) {
       category_id,
       subcategory_id,
       condition,
-      images: imagePaths,
-      titleImageIndex,
+      images,
       location,
-      contactInfo: {
+      contact: {
         ...contactInfo,
         phone: showPhoneNumber ? contactInfo.phone : undefined,
       },
       tags,
-      specifications,
-      showPhoneNumber,
-    });
+      customFields: specifications ? Object.entries(specifications).map(([fieldName, value]) => ({
+        fieldName,
+        value
+      })) : undefined,
+    } as any); // Using 'as any' to bypass TypeScript interface limitations
 
     console.log("[PRODUCTS API] Product created successfully:", product._id);
+
+    // Populate user information for the response
+    const populatedProduct = await product.populate(
+      "user_id",
+      "fullName username email profile.avatar profile.location"
+    );
 
     return NextResponse.json(
       {
         message: "Product created successfully",
         product: {
-          id: product._id,
-          title: product.title,
-          description: product.description,
-          price: product.price,
-          category_id: product.category_id,
-          subcategory_id: product.subcategory_id,
-          condition: product.condition,
-          images: product.images,
-          status: product.status,
-          createdAt: product.createdAt,
-          featured: (product as any).featured ?? false,
+          id: populatedProduct._id,
+          title: populatedProduct.title,
+          description: populatedProduct.description,
+          price: populatedProduct.price,
+          category_id: populatedProduct.category_id,
+          subcategory_id: populatedProduct.subcategory_id,
+          condition: populatedProduct.details.condition,
+          images: populatedProduct.images,
+          status: populatedProduct.status,
+          createdAt: populatedProduct.created_at,
+          featured: (populatedProduct as any).featured ?? false,
+          user: populatedProduct.user_id, // Include populated user object
         },
       },
       { status: 201 }
@@ -312,9 +333,9 @@ export async function GET(request: NextRequest) {
         sortOptions[sortBy] = sortOrder;
       }
     } else {
-      // Default sort: featured first then newest by createdAt
+      // Default sort: featured first, then by added_at (bumped products will appear first)
       sortOptions.featured = -1;
-      sortOptions.createdAt = -1;
+      sortOptions.added_at = -1;
     }
 
     // Parse pagination
@@ -334,9 +355,23 @@ export async function GET(request: NextRequest) {
 
     console.log(`[PRODUCTS API] Returning ${result.products.length} products`);
 
+    // Populate user information for all products
+    const productsWithUsers = await Promise.all(
+      result.products.map(async (product) => {
+        const populatedProduct = await product.populate(
+          "user_id",
+          "fullName username email profile.avatar profile.location"
+        );
+        return {
+          ...populatedProduct.toObject(),
+          user: populatedProduct.user_id, // Include populated user object
+        };
+      })
+    );
+
     return NextResponse.json({
       message: "Products retrieved successfully",
-      products: result.products,
+      products: productsWithUsers,
       total: result.total,
       page: result.currentPage,
       totalPages: result.pages,

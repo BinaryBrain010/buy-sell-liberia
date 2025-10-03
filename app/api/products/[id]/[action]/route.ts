@@ -36,6 +36,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           product,
         });
       }
+      case "bump": {
+        if (!params.id || !authResult.userId) {
+          return NextResponse.json({ error: "Missing product id or user id" }, { status: 400 });
+        }
+        product = await productService.bumpProduct(params.id, authResult.userId);
+        if (!product) {
+          return NextResponse.json({ error: "Product not found, no bump credits available, or you don't have permission" }, { status: 404 });
+        }
+        return NextResponse.json({
+          message: `Product "${product.title}" bumped successfully! It will now appear at the top of search results.`,
+          product: {
+            id: product._id,
+            title: product.title,
+            bumpCredits: product.bumpCredits,
+            added_at: product.added_at,
+            bumpHistory: product.bumpHistory
+          },
+        });
+      }
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
@@ -96,6 +115,29 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         return NextResponse.json({
           message: "Product renewed successfully",
           product,
+        });
+      }
+      case "bump": {
+        if (!params.id || !authResult.userId) {
+          return NextResponse.json({ error: "Missing product id or user id" }, { status: 400 });
+        }
+        console.log("[PRODUCTS API] Bumping product:", params.id);
+        product = await productService.bumpProduct(params.id, authResult.userId);
+        if (!product) {
+          return NextResponse.json(
+            { error: "Product not found, no bump credits available, or you don't have permission" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({
+          message: `Product "${product.title}" bumped successfully! It will now appear at the top of search results.`,
+          product: {
+            id: product._id,
+            title: product.title,
+            bumpCredits: product.bumpCredits,
+            added_at: product.added_at,
+            bumpHistory: product.bumpHistory
+          },
         });
       }
 

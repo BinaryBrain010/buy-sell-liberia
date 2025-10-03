@@ -73,7 +73,7 @@ export interface ProductFilters {
 }
 
 export interface ProductSortOptions extends SortOptions {
-  sortBy?: "createdAt" | "price" | "views" | "title" | "updatedAt";
+  sortBy?: "createdAt" | "added_at" | "price" | "views" | "title" | "updatedAt";
 }
 
 export class ProductService extends BaseService<IProduct> {
@@ -507,7 +507,7 @@ export class ProductService extends BaseService<IProduct> {
       const result = await this.find(
         { status: "active" }, // TODO: Implement favorites filtering
         pagination,
-        { sortBy: "createdAt", sortOrder: "desc" },
+        { sortBy: "added_at", sortOrder: "desc" },
         "user_id"
       );
 
@@ -695,8 +695,8 @@ export class ProductService extends BaseService<IProduct> {
         pagination,
         {
           ...sortOptions,
-          // When searching, default sort to relevance (score)
-          sortBy: sortOptions.sortBy || (raw ? "score" : "createdAt"),
+          // When searching, default sort to relevance (score) or added_at for bumped products
+          sortBy: sortOptions.sortBy || (raw ? "score" : "added_at"),
         },
         "user_id"
       );
@@ -731,7 +731,7 @@ export class ProductService extends BaseService<IProduct> {
       const result = await this.find(
         { featured: true, status: "active" },
         pagination,
-        { sortBy: "createdAt", sortOrder: "desc" },
+        { sortBy: "added_at", sortOrder: "desc" },
         "user_id"
       );
 
@@ -988,7 +988,7 @@ export class ProductService extends BaseService<IProduct> {
       const result = await this.find(
         { status: "active" },
         { page: 1, limit },
-        { sortBy: "createdAt", sortOrder: "desc" },
+        { sortBy: "added_at", sortOrder: "desc" },
         "user_id"
       );
 
@@ -1040,7 +1040,7 @@ export class ProductService extends BaseService<IProduct> {
           status: "active",
         },
         { page: 1, limit },
-        { sortBy: "createdAt", sortOrder: "desc" },
+        { sortBy: "added_at", sortOrder: "desc" },
         "user_id"
       );
 
@@ -1165,6 +1165,65 @@ export class ProductService extends BaseService<IProduct> {
       return updatedProduct;
     } catch (error: any) {
       this.handleError(error, "increment views");
+    }
+  }
+
+  /**
+   * Bump product to top of listings
+   */
+  async bumpProduct(productId: string, userId: string): Promise<IProduct | null> {
+    try {
+      console.log("[PRODUCT SERVICE] Bumping product:", productId);
+      await this.ensureConnection();
+
+      // Find product and verify ownership
+      const product = await this.findOne({
+        _id: productId,
+        user_id: this.createObjectId(userId),
+      });
+
+      if (!product) {
+        throw new Error("Product not found or you don't have permission to bump it");
+      }
+
+      // Check if product has bump credits
+      if (product.bumpCredits <= 0) {
+        throw new Error("No bump credits available for this product");
+      }
+
+      // Use the bump method from the model
+      const bumpedProduct = await product.bumpListing(this.createObjectId(userId));
+      
+      return bumpedProduct;
+    } catch (error: any) {
+      this.handleError(error, "bump product");
+    }
+  }
+
+  /**
+   * Add bump credits to a product
+   */
+  async addBumpCredits(productId: string, userId: string, credits: number): Promise<IProduct | null> {
+    try {
+      console.log("[PRODUCT SERVICE] Adding bump credits:", productId, credits);
+      await this.ensureConnection();
+
+      // Find product and verify ownership
+      const product = await this.findOne({
+        _id: productId,
+        user_id: this.createObjectId(userId),
+      });
+
+      if (!product) {
+        throw new Error("Product not found or you don't have permission to add credits");
+      }
+
+      // Add credits using the model method
+      const updatedProduct = await product.addBumpCredits(credits);
+      
+      return updatedProduct;
+    } catch (error: any) {
+      this.handleError(error, "add bump credits");
     }
   }
 }

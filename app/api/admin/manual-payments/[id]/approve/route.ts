@@ -67,31 +67,45 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     payment.adminNotes = adminNotes;
     await payment.save();
 
-    // Calculate feature expiration date
+    // Handle different feature types
     const now = new Date();
-    const featureDuration = payment.featureDuration || 7; // Default to 7 days if not set
-    const featuredExpiresAt = new Date(now.getTime() + featureDuration * 24 * 60 * 60 * 1000);
-
-    // Mark product as featured with expiration (direct update, no validation)
     let productDoc = null;
     if (payment.listing && typeof payment.listing === 'object' && 'featured' in payment.listing) {
       productDoc = payment.listing;
     } else {
       productDoc = await Product.findById(payment.listing);
     }
+
     if (productDoc && typeof productDoc === 'object' && productDoc !== null) {
       const productIdToUpdate = productDoc._id || payment.listing;
-      await Product.updateOne(
-        { _id: productIdToUpdate }, 
-        { 
-          $set: { 
-            featured: true,
-            featuredExpiresAt: featuredExpiresAt,
-            featuredStartedAt: now,
-            featuredDuration: featureDuration
-          } 
-        }
-      );
+
+      if (payment.featureType === 'featured_listing') {
+        // Handle featured listing
+        const featureDuration = payment.featureDuration || 7; // Default to 7 days if not set
+        const featuredExpiresAt = new Date(now.getTime() + featureDuration * 24 * 60 * 60 * 1000);
+
+        await Product.updateOne(
+          { _id: productIdToUpdate }, 
+          { 
+            $set: { 
+              featured: true,
+              featuredExpiresAt: featuredExpiresAt,
+              featuredStartedAt: now,
+              featuredDuration: featureDuration
+            } 
+          }
+        );
+      } else if (payment.featureType === 'bump_listing') {
+        // Handle bump listing - add bump credits
+        const bumpCredits = payment.bumpCredits || payment.featureDuration || 1;
+        
+        await Product.updateOne(
+          { _id: productIdToUpdate },
+          {
+            $inc: { bumpCredits: bumpCredits }
+          }
+        );
+      }
     }
 
     // Send message to user via chat
@@ -104,8 +118,20 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       chat = await Chat.create({ product: productId, user1: senderId, user2: userId, messages: [] });
       console.log('Created new chat:', chat._id);
     }
-    const featurePlanLabel = payment.featurePlan === '3_days' ? '3 days' : payment.featurePlan === '7_days' ? '7 days' : '14 days';
-    chat.messages.push({ sender: senderId, content: `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured for ${featurePlanLabel}.`, sentAt: new Date(), readBy: [] });
+    // Create appropriate message based on feature type
+    let message = '';
+    if (payment.featureType === 'featured_listing') {
+      const featurePlanLabel = payment.featurePlan === '3_days' ? '3 days' : payment.featurePlan === '7_days' ? '7 days' : '14 days';
+      message = `Your manual payment for featuring the product "${productTitle}" has been approved. Your product is now featured for ${featurePlanLabel}.`;
+    } else if (payment.featureType === 'bump_listing') {
+      const bumpCredits = payment.bumpCredits || payment.featureDuration || 1;
+      const bumpText = bumpCredits === 1 ? '1 bump credit' : `${bumpCredits} bump credits`;
+      message = `Your manual payment for bump credits has been approved. You now have ${bumpText} for the product "${productTitle}". You can use these credits to bump your listing to the top of search results.`;
+    } else {
+      message = `Your manual payment for the product "${productTitle}" has been approved.`;
+    }
+    
+    chat.messages.push({ sender: senderId, content: message, sentAt: new Date(), readBy: [] });
     chat.lastMessageAt = new Date();
     console.log('Pushed message to chat:', chat._id, 'Sender:', senderId);
     await chat.save();
