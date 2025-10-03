@@ -6,6 +6,7 @@ import Announcement from "@/models/Announcement";
 import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
 import User, { type IUser } from "@/models/User";
 import Chat from "@/models/Chat";
+import NewsletterSubscription from "@/models/NewsletterSubscription";
 import { EmailService } from "@/app/api/modules/auth/services/email.service";
 import {
   createAdminAuditLogger,
@@ -238,29 +239,65 @@ export async function POST(request: NextRequest) {
         );
       }
     }
-    // Email delivery
+    // Email delivery - send to newsletter subscribers only
     if (type.includes("email")) {
-      const users = await User.find(
-        { isActive: true, isBlocked: false, emailVerified: true },
-        "email"
-      ).lean();
+      const subscribers = await NewsletterSubscription.find({
+        status: "active",
+        verified: true,
+      });
       const emailService = new EmailService();
-      const subject = announcement.title || "Announcement from BuySell";
-      const html = `<h2>${announcement.title}</h2><p>${announcement.content}</p>`;
-      for (const user of users) {
-        if (user.email) {
-          try {
-            await sendGenericEmail(emailService, user.email, subject, html);
-          } catch (e) {
-            const errMsg = (e as Error)?.message || e;
-            console.error(
-              "Failed to send announcement email to",
-              user.email,
-              errMsg
-            );
+      const subject = announcement.title || "Announcement from BuySell Liberia";
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">${announcement.title}</h2>
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #666; line-height: 1.6;">${announcement.content}</p>
+          </div>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #999; font-size: 12px; text-align: center;">
+            This email was sent to you because you subscribed to our newsletter.<br>
+            <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://buysellliberia.com'}/unsubscribe?email={{email}}" style="color: #999;">Unsubscribe</a>
+          </p>
+        </div>
+      `;
+      
+      let successCount = 0;
+      let failureCount = 0;
+      
+      for (const subscriber of subscribers) {
+        try {
+          // Replace {{email}} placeholder with actual email
+          const personalizedHtml = html.replace(/\{\{email\}\}/g, subscriber.email);
+          
+          await sendGenericEmail(emailService, subscriber.email, subject, personalizedHtml);
+          
+          // Update last email sent timestamp
+          subscriber.lastEmailSent = new Date();
+          await subscriber.save();
+          successCount++;
+          
+        } catch (e) {
+          const errMsg = (e as Error)?.message || e;
+          console.error(
+            "Failed to send announcement email to",
+            subscriber.email,
+            errMsg
+          );
+          
+          // Record bounce if it's a delivery failure
+          const errorMessage = String(errMsg).toLowerCase();
+          if (errorMessage.includes('bounce') || errorMessage.includes('invalid') || errorMessage.includes('not found')) {
+            subscriber.bounceCount += 1;
+            if (subscriber.bounceCount >= 3) {
+              subscriber.status = 'bounced';
+            }
+            await subscriber.save();
           }
+          failureCount++;
         }
       }
+      
+      console.log(`Email announcement sent: ${successCount} successful, ${failureCount} failed`);
     }
     // Chat delivery: use the platform system sender so messages appear from BuySellLiberia
     if (type.includes("chat")) {

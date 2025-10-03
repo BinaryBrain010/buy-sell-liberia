@@ -14,9 +14,10 @@ import Chat from './Chat';
 import ActivityLog from './ActivityLog';
 import Employee from './Employee';
 import WithdrawalLog from './WithdrawalLog';
+import NewsletterSubscription from './NewsletterSubscription';
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog };
+export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog, NewsletterSubscription };
 
 export const models = {
   User,

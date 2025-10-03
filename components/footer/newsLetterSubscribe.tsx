@@ -8,8 +8,9 @@ import { toast } from "sonner" // Make sure 'sonner' is installed and setup
 export function NewsletterSubscribe() {
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     if (!email.trim()) {
       setError("Email is required")
       return
@@ -22,9 +23,40 @@ export function NewsletterSubscribe() {
     }
 
     setError("")
-    toast.success("Subscribed successfully!")
-    console.log("Subscribed email:", email)
-    setEmail("")
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          tags: ["website"],
+          preferences: {
+            frequency: "weekly",
+            categories: ["general"]
+          }
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success(data.message || "Subscribed successfully!")
+        setEmail("")
+      } else {
+        toast.error(data.error || "Failed to subscribe")
+        setError(data.error || "Failed to subscribe")
+      }
+    } catch (error) {
+      console.error("Newsletter subscription error:", error)
+      toast.error("Failed to subscribe. Please try again.")
+      setError("Failed to subscribe. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -40,8 +72,8 @@ export function NewsletterSubscribe() {
           placeholder={error || "Your email"}
           className={`glass border-0 ${error ? "placeholder-red-500" : ""}`}
         />
-        <Button size="sm" onClick={handleSubscribe}>
-          Subscribe
+        <Button size="sm" onClick={handleSubscribe} disabled={isLoading}>
+          {isLoading ? "Subscribing..." : "Subscribe"}
         </Button>
       </div>
     </div>
