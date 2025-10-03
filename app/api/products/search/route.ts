@@ -37,6 +37,18 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("status")) filters.status = searchParams.get("status")!;
     if (searchParams.get("negotiable")) filters.negotiable = searchParams.get("negotiable") === "true";
     if (searchParams.get("featured")) filters.featured = searchParams.get("featured") === "true";
+    
+    // Parse location filters
+    if (searchParams.get("location") || searchParams.get("city") || searchParams.get("state") || searchParams.get("country")) {
+      filters.location = {};
+      if (searchParams.get("location")) {
+        // General location search - will be used for regex search across city, state, country
+        filters.locationSearch = searchParams.get("location")!;
+      }
+      if (searchParams.get("city")) filters.location.city = searchParams.get("city")!;
+      if (searchParams.get("state")) filters.location.state = searchParams.get("state")!;
+      if (searchParams.get("country")) filters.location.country = searchParams.get("country")!;
+    }
 
     // Parse pagination
     const pagination: PaginationOptions = {

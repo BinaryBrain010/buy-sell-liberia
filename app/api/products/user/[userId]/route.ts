@@ -11,6 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
     const { searchParams } = new URL(request.url);
     const filters: any = { user_id: params.userId };
     if (searchParams.get("status")) filters.status = searchParams.get("status")?.split(",");
+    
     const includeExpired = searchParams.get("includeExpired") === "true";
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 20;
@@ -19,7 +20,14 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
     if (!includeExpired && authResult.success && authResult.userId === params.userId) {
       status = "active";
     }
-    const result = await productService.getProductsByUser(params.userId, status, { page, limit });
+    
+    // Build additional filters for location
+    const additionalFilters: any = {};
+    if (searchParams.get("location")) {
+      additionalFilters["location.city"] = new RegExp(searchParams.get("location")!, "i");
+    }
+    
+    const result = await productService.getProductsByUser(params.userId, status, { page, limit }, additionalFilters);
     return NextResponse.json({
       message: "User products retrieved successfully",
       products: result.products,

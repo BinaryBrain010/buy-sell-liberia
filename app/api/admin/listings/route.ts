@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       productFilter.category_id = searchParams.get("category");
     }
     if (searchParams.get("location")) {
-      productFilter["location.city"] = searchParams.get("location");
+      productFilter["location.city"] = new RegExp(searchParams.get("location")!, "i");
     }
     if (searchParams.get("priceMin") || searchParams.get("priceMax")) {
       productFilter["price.amount"] = {};

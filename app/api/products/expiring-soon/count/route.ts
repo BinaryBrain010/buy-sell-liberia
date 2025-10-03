@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Product } from "@/app/api/modules/products/models/product.model";
+import Product from "@/models/Product";
 import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     // Only count products that are active and not already expired
     const count = await Product.countDocuments({
       status: "active",
-      expiresAt: { $gt: now, $lte: tenDaysFromNow },
+      expires_at: { $gt: now, $lte: tenDaysFromNow },
     });
 
     return NextResponse.json({ count });

@@ -1,4 +1,4 @@
-import { Product, type IProduct } from "../models/product.model";
+import Product, { type IProduct } from "@/models/Product";
 import User from "@/models/User";
 import {
   BaseService,
@@ -8,61 +8,47 @@ import {
 import mongoose from "mongoose";
 import slugify from "slugify";
 
-export interface Price {
-  amount: number;
-  currency: string;
-  negotiable: boolean;
-}
+// Use the Price interface from the main Product model
+import { IPrice } from "@/models/Product";
 
 export interface CreateProductData {
   title: string;
   description: string;
-  price: Price;
+  price: IPrice;
   category_id: string;
   subcategory_id: string;
-  condition: "new" | "like-new" | "good" | "fair" | "poor";
-  images: string[];
-  titleImageIndex: number;
+  condition: "new" | "used" | "refurbished";
+  images: Array<{
+    url: string;
+    alt?: string;
+    isPrimary?: boolean;
+    order?: number;
+  }>;
   location: {
     city: string;
-    state: string;
-    country: string;
+    state?: string;
+    country?: string;
     coordinates?: {
       latitude: number;
       longitude: number;
     };
   };
-  contactInfo: {
-    phone: string;
+  contact: {
+    phone?: string;
     email?: string;
     whatsapp?: string;
+    preferredMethod?: "phone" | "whatsapp" | "email";
   };
   tags?: string[];
-  specifications?: {
-    brand?: string;
-    model?: string;
-    year?: number;
-    color?: string;
-    size?: string;
-    weight?: string;
-    dimensions?: {
-      length: number;
-      width: number;
-      height: number;
-    };
-  };
-  negotiable?: boolean;
-  showPhoneNumber?: boolean;
-  delivery?: {
-    available: boolean;
-    cost?: number;
-    methods: ("pickup" | "delivery" | "shipping")[];
-  };
+  customFields?: Array<{
+    fieldName: string;
+    value: any;
+  }>;
   featured?: boolean;
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
-  status?: "active" | "sold" | "inactive" | "pending";
+  status?: "active" | "sold" | "expired" | "removed" | "pending";
   featured?: boolean;
 }
 
@@ -78,6 +64,7 @@ export interface ProductFilters {
     state?: string;
     country?: string;
   };
+  locationSearch?: string; // For regex search across location fields
   search?: string;
   seller?: string;
   status?: string;
@@ -130,10 +117,9 @@ export class ProductService extends BaseService<IProduct> {
           ? new mongoose.Types.ObjectId(productData.subcategory_id)
           : undefined,
         slug,
-        seller: this.createObjectId(sellerId),
+        user_id: this.createObjectId(sellerId),
         status: "active",
         views: 0,
-        favorites: [],
         featured: productData.featured ?? false,
       });
 
@@ -171,14 +157,14 @@ export class ProductService extends BaseService<IProduct> {
           : productId;
       const idStr =
         typeof objectId === "string" ? objectId : objectId.toString();
-      const product = await this.findById(idStr, "seller");
+      const product = await this.findById(idStr, "user_id");
       if (!product) {
         return null;
       }
       // Increment views if requested
       if (incrementViews) {
         await this.updateById(idStr, { $inc: { views: 1 } });
-        await User.findByIdAndUpdate(product.seller._id, {
+        await User.findByIdAndUpdate(product.user_id, {
           $inc: { "statistics.totalViews": 1 },
         });
       }
@@ -198,7 +184,7 @@ export class ProductService extends BaseService<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Getting product by slug:", slug);
 
-      const product = await this.findOne({ slug }, "seller");
+      const product = await this.findOne({ slug }, "user_id");
 
       if (!product) {
         return null;
@@ -206,8 +192,8 @@ export class ProductService extends BaseService<IProduct> {
 
       // Increment views if requested
       if (incrementViews) {
-        await this.updateById(product._id.toString(), { $inc: { views: 1 } });
-        await User.findByIdAndUpdate(product.seller._id, {
+        await this.updateById((product._id as mongoose.Types.ObjectId).toString(), { $inc: { views: 1 } });
+        await User.findByIdAndUpdate(product.user_id, {
           $inc: { "statistics.totalViews": 1 },
         });
       }
@@ -273,8 +259,31 @@ export class ProductService extends BaseService<IProduct> {
           queryFilters["location.country"] = filters.location.country;
       }
 
+      // Handle location search with regex across all location fields
+      if (filters.locationSearch) {
+        const locationRegex = new RegExp(filters.locationSearch, "i");
+        // If there's already an $or clause, we need to combine them
+        if (queryFilters.$or) {
+          queryFilters.$and = [
+            { $or: queryFilters.$or },
+            { $or: [
+              { "location.city": locationRegex },
+              { "location.state": locationRegex },
+              { "location.country": locationRegex }
+            ]}
+          ];
+          delete queryFilters.$or;
+        } else {
+          queryFilters.$or = [
+            { "location.city": locationRegex },
+            { "location.state": locationRegex },
+            { "location.country": locationRegex }
+          ];
+        }
+      }
+
       if (filters.seller) {
-        queryFilters.seller = this.createObjectId(filters.seller);
+        queryFilters.user_id = this.createObjectId(filters.seller);
       }
 
       if (filters.status) {
@@ -303,7 +312,7 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters,
         pagination,
         sortOptions,
-        "seller"
+        "user_id"
       );
 
       return {
@@ -325,7 +334,8 @@ export class ProductService extends BaseService<IProduct> {
   async getProductsByUser(
     userId: string,
     status?: string,
-    pagination: PaginationOptions = {}
+    pagination: PaginationOptions = {},
+    additionalFilters: any = {}
   ): Promise<{
     products: IProduct[];
     total: number;
@@ -334,7 +344,7 @@ export class ProductService extends BaseService<IProduct> {
     hasNext: boolean;
     hasPrev: boolean;
   }> {
-    return this.getSellerProducts(userId, status, pagination);
+    return this.getSellerProducts(userId, status, pagination, additionalFilters);
   }
 
   /**
@@ -351,7 +361,7 @@ export class ProductService extends BaseService<IProduct> {
       // Find product and verify ownership
       const product = await this.findOne({
         _id: productId,
-        seller: this.createObjectId(sellerId),
+        user_id: this.createObjectId(sellerId),
       });
       if (!product) {
         throw new Error(
@@ -389,7 +399,7 @@ export class ProductService extends BaseService<IProduct> {
       // Populate seller information
       if (updatedProduct) {
         await updatedProduct.populate(
-          "seller",
+          "user_id",
           "fullName username email profile.avatar profile.location"
         );
       }
@@ -411,7 +421,7 @@ export class ProductService extends BaseService<IProduct> {
       // Find product and verify ownership
       const product = await this.findOne({
         _id: productId,
-        seller: this.createObjectId(sellerId),
+        user_id: this.createObjectId(sellerId),
       });
       if (!product) {
         throw new Error(
@@ -460,19 +470,10 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       const userObjectId = this.createObjectId(userId);
-      const isFavorite = product.favorites.includes(userObjectId);
+      const isFavorite = false; // favorites field doesn't exist in main model
 
-      if (isFavorite) {
-        // Remove from favorites
-        await this.updateById(productId, {
-          $pull: { favorites: userObjectId },
-        });
-      } else {
-        // Add to favorites
-        await this.updateById(productId, {
-          $addToSet: { favorites: userObjectId },
-        });
-      }
+      // TODO: Implement favorites functionality with main model
+      // The main model doesn't have a favorites field, so this needs to be implemented differently
 
       console.log(
         `[PRODUCT SERVICE] Product ${
@@ -504,10 +505,10 @@ export class ProductService extends BaseService<IProduct> {
 
       const userObjectId = this.createObjectId(userId);
       const result = await this.find(
-        { favorites: userObjectId, status: "active" },
+        { status: "active" }, // TODO: Implement favorites filtering
         pagination,
         { sortBy: "createdAt", sortOrder: "desc" },
-        "seller"
+        "user_id"
       );
 
       return {
@@ -529,7 +530,8 @@ export class ProductService extends BaseService<IProduct> {
   async getSellerProducts(
     sellerId: string,
     status?: string,
-    pagination: PaginationOptions = {}
+    pagination: PaginationOptions = {},
+    additionalFilters: any = {}
   ): Promise<{
     products: IProduct[];
     total: number;
@@ -541,10 +543,13 @@ export class ProductService extends BaseService<IProduct> {
     try {
       console.log("[PRODUCT SERVICE] Getting seller products:", sellerId);
 
-      const queryFilters: any = { seller: this.createObjectId(sellerId) };
+      const queryFilters: any = { user_id: this.createObjectId(sellerId) };
       if (status) {
         queryFilters.status = status;
       }
+
+      // Apply additional filters (like location)
+      Object.assign(queryFilters, additionalFilters);
 
       const result = await this.find(queryFilters, pagination, {
         sortBy: "createdAt",
@@ -629,8 +634,29 @@ export class ProductService extends BaseService<IProduct> {
       if (filters.condition && filters.condition.length) {
         queryFilters["details.condition"] = { $in: filters.condition };
       }
+      
+      // Handle location filters
+      if (filters.location) {
+        if (filters.location.city)
+          queryFilters["location.city"] = new RegExp(filters.location.city, "i");
+        if (filters.location.state)
+          queryFilters["location.state"] = new RegExp(filters.location.state, "i");
+        if (filters.location.country)
+          queryFilters["location.country"] = filters.location.country;
+      }
+
+      // Handle location search with regex across all location fields
+      if (filters.locationSearch) {
+        const locationRegex = new RegExp(filters.locationSearch, "i");
+        queryFilters.$or = [
+          { "location.city": locationRegex },
+          { "location.state": locationRegex },
+          { "location.country": locationRegex }
+        ];
+      }
+      
       if (filters.seller) {
-        queryFilters.seller = this.createObjectId(filters.seller);
+        queryFilters.user_id = this.createObjectId(filters.seller);
       }
       if (filters.status) queryFilters.status = filters.status;
       if (typeof filters.negotiable === "boolean")
@@ -672,7 +698,7 @@ export class ProductService extends BaseService<IProduct> {
           // When searching, default sort to relevance (score)
           sortBy: sortOptions.sortBy || (raw ? "score" : "createdAt"),
         },
-        "seller"
+        "user_id"
       );
 
       return {
@@ -706,7 +732,7 @@ export class ProductService extends BaseService<IProduct> {
         { featured: true, status: "active" },
         pagination,
         { sortBy: "createdAt", sortOrder: "desc" },
-        "seller"
+        "user_id"
       );
 
       return {
@@ -754,7 +780,7 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters,
         pagination,
         sortOptions,
-        "seller"
+        "user_id"
       );
 
       return {
@@ -804,7 +830,7 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters,
         pagination,
         sortOptions,
-        "seller"
+        "user_id"
       );
 
       return {
@@ -832,7 +858,7 @@ export class ProductService extends BaseService<IProduct> {
 
       const product = await this.findOne({
         _id: productId,
-        seller: this.createObjectId(sellerId),
+        user_id: this.createObjectId(sellerId),
       });
       if (!product) {
         throw new Error(
@@ -870,7 +896,7 @@ export class ProductService extends BaseService<IProduct> {
 
       const product = await this.findOne({
         _id: productId,
-        seller: this.createObjectId(sellerId),
+        user_id: this.createObjectId(sellerId),
       });
       if (!product) {
         throw new Error(
@@ -963,7 +989,7 @@ export class ProductService extends BaseService<IProduct> {
         { status: "active" },
         { page: 1, limit },
         { sortBy: "createdAt", sortOrder: "desc" },
-        "seller"
+        "user_id"
       );
 
       return result.data;
@@ -983,7 +1009,7 @@ export class ProductService extends BaseService<IProduct> {
         { status: "active" },
         { page: 1, limit },
         { sortBy: "views", sortOrder: "desc" },
-        "seller"
+        "user_id"
       );
 
       return result.data;
@@ -1015,7 +1041,7 @@ export class ProductService extends BaseService<IProduct> {
         },
         { page: 1, limit },
         { sortBy: "createdAt", sortOrder: "desc" },
-        "seller"
+        "user_id"
       );
 
       return result.data;
@@ -1070,7 +1096,7 @@ export class ProductService extends BaseService<IProduct> {
         },
         pagination,
         sortOptions,
-        "seller"
+        "user_id"
       );
 
       return {
@@ -1111,7 +1137,7 @@ export class ProductService extends BaseService<IProduct> {
         { condition, status: "active" },
         pagination,
         sortOptions,
-        "seller"
+        "user_id"
       );
 
       return {
