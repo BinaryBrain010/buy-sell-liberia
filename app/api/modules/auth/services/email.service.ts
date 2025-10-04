@@ -1,7 +1,7 @@
-import nodemailer from "nodemailer"
+import nodemailer from "nodemailer";
 
 export class EmailService {
-  private transporter: nodemailer.Transporter
+  private transporter: nodemailer.Transporter;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -10,17 +10,17 @@ export class EmailService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-    })
+    });
   }
 
   async sendVerificationEmail(email: string, otp: string): Promise<void> {
     try {
-      console.log("[EMAIL SERVICE] Sending verification email to:", email)
+      console.log("[EMAIL SERVICE] Sending verification email to:", email);
 
       const mailOptions = {
-        from: `"BuySell Platform" <${process.env.SMTP_USER}>`,
+        from: `"BuySell Liberia" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: "Verify Your Email - BuySell",
+        subject: "Verify Your Email - BuySell Liberia",
         html: `
           <!DOCTYPE html>
           <html>
@@ -41,7 +41,7 @@ export class EmailService {
           <body>
             <div class="container">
               <div class="header">
-                <h1>Welcome to BuySell!</h1>
+                <h1>Welcome to BuySell Liberia!</h1>
               </div>
               <div class="content">
                 <h2>Verify Your Email Address</h2>
@@ -52,34 +52,40 @@ export class EmailService {
                   <p><strong>This code expires in 10 minutes</strong></p>
                 </div>
                 
-                <p>If you didn't create an account with BuySell, please ignore this email.</p>
+                <p>If you didn't create an account with BuySell Liberia, please ignore this email.</p>
                 
                 <div class="footer">
-                  <p>© 2024 BuySell Platform. All rights reserved.</p>
+                  <p>© ${new Date().getFullYear()} BuySell Liberia. All rights reserved.</p>
                 </div>
               </div>
             </div>
           </body>
           </html>
         `,
-      }
+      };
 
-      await this.transporter.sendMail(mailOptions)
-      console.log("[EMAIL SERVICE] Verification email sent successfully to:", email)
+      await this.transporter.sendMail(mailOptions);
+      console.log(
+        "[EMAIL SERVICE] Verification email sent successfully to:",
+        email
+      );
     } catch (error: any) {
-      console.error("[EMAIL SERVICE] Failed to send verification email:", error.message)
-      throw new Error("Failed to send verification email")
+      console.error(
+        "[EMAIL SERVICE] Failed to send verification email:",
+        error.message
+      );
+      throw new Error("Failed to send verification email");
     }
   }
 
   async sendPasswordResetEmail(email: string, otp: string): Promise<void> {
     try {
-      console.log("[EMAIL SERVICE] Sending password reset email to:", email)
+      console.log("[EMAIL SERVICE] Sending password reset email to:", email);
 
       const mailOptions = {
-        from: `"BuySell Platform" <${process.env.SMTP_USER}>`,
+        from: `"BuySell Liberia" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: "Password Reset - BuySell",
+        subject: "Password Reset - BuySell Liberia",
         html: `
           <!DOCTYPE html>
           <html>
@@ -114,20 +120,26 @@ export class EmailService {
                 <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
                 
                 <div class="footer">
-                  <p>© 2024 BuySell Platform. All rights reserved.</p>
+                    <p>© ${new Date().getFullYear()} BuySell Liberia. All rights reserved.</p>
                 </div>
               </div>
             </div>
           </body>
           </html>
         `,
-      }
+      };
 
-      await this.transporter.sendMail(mailOptions)
-      console.log("[EMAIL SERVICE] Password reset email sent successfully to:", email)
+      await this.transporter.sendMail(mailOptions);
+      console.log(
+        "[EMAIL SERVICE] Password reset email sent successfully to:",
+        email
+      );
     } catch (error: any) {
-      console.error("[EMAIL SERVICE] Failed to send password reset email:", error.message)
-      throw new Error("Failed to send password reset email")
+      console.error(
+        "[EMAIL SERVICE] Failed to send password reset email:",
+        error.message
+      );
+      throw new Error("Failed to send password reset email");
     }
   }
 }
