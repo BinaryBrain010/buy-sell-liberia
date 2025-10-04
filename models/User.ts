@@ -157,6 +157,7 @@ type Activity = {
   totalListings: number;
   activeListings: number;
   soldItems: number;
+  totalViews?: number;
   joinedDate: Date;
   lastActive: Date;
 };
@@ -172,6 +173,10 @@ const activitySchema = new Schema<Activity>(
       default: 0,
     },
     soldItems: {
+      type: Number,
+      default: 0,
+    },
+    totalViews: {
       type: Number,
       default: 0,
     },

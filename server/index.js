@@ -5,8 +5,15 @@ const { Server } = require("socket.io");
 const hostname = "localhost";
 const port = 3001;
 
-const httpServer = createServer();
+// Express app will be used as the request handler for the HTTP server
+const express = require("express");
+const app = express();
+app.use(express.json()); // For JSON body parsing
 
+// Create HTTP server with the express app as handler
+const httpServer = createServer(app);
+
+// Attach Socket.IO to the HTTP server
 const io = new Server(httpServer, {
   cors: {
     origin: ["*"],
@@ -52,17 +59,10 @@ io.on("connection", (socket) => {
     io.emit("message", message);
   });
 
-  // --- Announcement Broadcasting ---
-  function emitAnnouncement(announcement) {
-    io.emit('announcement:new', announcement);
-  }
-
-  module.exports.emitAnnouncement = emitAnnouncement;
-
   // Optionally, allow clients to broadcast (for demo/testing only, not for production)
-  socket.on('announcement:broadcast', (announcement) => {
+  socket.on("announcement:broadcast", (announcement) => {
     // In production, authenticate/authorize here!
-    io.emit('announcement:new', announcement);
+    io.emit("announcement:new", announcement);
   });
 
   socket.on("disconnect", () => {
@@ -84,12 +84,8 @@ io.on("connection", (socket) => {
 });
 
 // Swagger UI setup
-const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-
-const app = express();
-app.use(express.json()); // For JSON body parsing
 
 const swaggerOptions = {
   definition: {
@@ -118,7 +114,11 @@ app.post("/broadcast-announcement", (req, res) => {
   res.json({ success: true });
 });
 
-httpServer.on("request", app);
+// Export a helper to emit announcements from other modules
+function emitAnnouncement(announcement) {
+  io.emit("announcement:new", announcement);
+}
+module.exports.emitAnnouncement = emitAnnouncement;
 
 httpServer
   .once("error", (err) => {

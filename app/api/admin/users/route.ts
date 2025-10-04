@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     );
     // Some earlier tokens may still carry 'admin' or other roles; allow if service recognizes
     const role = (payload as any).role;
-    if (!AService.isAllowedRole(role) && role !== 'manager') {
+    if (!AService.isAllowedRole(role) && role !== "manager") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -63,8 +63,34 @@ export async function GET(request: NextRequest) {
     // For each user, fetch their products and liked products
     const results = await Promise.all(
       users.map(async (user: any) => {
-        // Fetch all products listed by this user (using 'seller')
-        const listedProducts = await Product.find({ seller: user._id }).lean();
+        // Fetch all products listed by this user.
+        // Older/other code may have stored product references in user.listedProducts
+        // while the main Product model uses `user_id` as the owner field. To be
+        // robust we fetch by the stored product ids and also include products
+        // where product.user_id === user._id, then merge uniquely.
+        const listedProductIds = (user.listedProducts || [])
+          .map((l: any) => l.product_id)
+          .filter(Boolean);
+
+        let listedProducts: any[] = [];
+
+        if (listedProductIds.length > 0) {
+          const ids = listedProductIds.map((id: any) =>
+            typeof id === "string" && mongoose.isValidObjectId(id)
+              ? new mongoose.Types.ObjectId(id)
+              : id
+          );
+          listedProducts = await Product.find({ _id: { $in: ids } }).lean();
+        }
+
+        // Also include any products that have user_id pointing to this user
+        const productsByUser = await Product.find({ user_id: user._id }).lean();
+
+        // Merge unique products by _id (prefer data from found product documents)
+        const productMap = new Map<string, any>();
+        listedProducts.forEach((p: any) => productMap.set(p._id.toString(), p));
+        productsByUser.forEach((p: any) => productMap.set(p._id.toString(), p));
+        listedProducts = Array.from(productMap.values());
         // Fetch all liked products by product_id
         const likedProductIds = (user.likedProducts || []).map(
           (like: any) => like.product_id

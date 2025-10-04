@@ -123,13 +123,42 @@ export class ProductService extends BaseService<IProduct> {
         featured: productData.featured ?? false,
       });
 
-      // Update seller statistics
-      await User.findByIdAndUpdate(sellerId, {
-        $inc: {
-          "statistics.totalListings": 1,
-          "statistics.activeListings": 1,
-        },
-      });
+      // Update seller: push listing entry and update statistics in one atomic op
+      try {
+        await User.findByIdAndUpdate(sellerId, {
+          $push: {
+            listedProducts: {
+              product_id: product._id,
+              listed_at: new Date(),
+              status: "active",
+            },
+          },
+          $inc: {
+            "activity.totalListings": 1,
+            "activity.activeListings": 1,
+          },
+        });
+      } catch (uErr) {
+        // Log and continue - product is created but user's list update failed
+        console.error(
+          "[PRODUCT SERVICE] Failed to update seller listedProducts:",
+          uErr
+        );
+      }
+
+      // Populate seller information on the product for convenient responses
+      try {
+        await product.populate(
+          "user_id",
+          "fullName username email profile.avatar profile.location"
+        );
+      } catch (pErr) {
+        // Non-fatal: log and continue
+        console.error(
+          "[PRODUCT SERVICE] Failed to populate product.user_id:",
+          pErr
+        );
+      }
 
       console.log(
         "[PRODUCT SERVICE] Product created successfully:",
@@ -165,7 +194,7 @@ export class ProductService extends BaseService<IProduct> {
       if (incrementViews) {
         await this.updateById(idStr, { $inc: { views: 1 } });
         await User.findByIdAndUpdate(product.user_id, {
-          $inc: { "statistics.totalViews": 1 },
+          $inc: { "activity.totalViews": 1 },
         });
       }
       return product;
@@ -192,9 +221,12 @@ export class ProductService extends BaseService<IProduct> {
 
       // Increment views if requested
       if (incrementViews) {
-        await this.updateById((product._id as mongoose.Types.ObjectId).toString(), { $inc: { views: 1 } });
+        await this.updateById(
+          (product._id as mongoose.Types.ObjectId).toString(),
+          { $inc: { views: 1 } }
+        );
         await User.findByIdAndUpdate(product.user_id, {
-          $inc: { "statistics.totalViews": 1 },
+          $inc: { "activity.totalViews": 1 },
         });
       }
 
@@ -266,18 +298,20 @@ export class ProductService extends BaseService<IProduct> {
         if (queryFilters.$or) {
           queryFilters.$and = [
             { $or: queryFilters.$or },
-            { $or: [
-              { "location.city": locationRegex },
-              { "location.state": locationRegex },
-              { "location.country": locationRegex }
-            ]}
+            {
+              $or: [
+                { "location.city": locationRegex },
+                { "location.state": locationRegex },
+                { "location.country": locationRegex },
+              ],
+            },
           ];
           delete queryFilters.$or;
         } else {
           queryFilters.$or = [
             { "location.city": locationRegex },
             { "location.state": locationRegex },
-            { "location.country": locationRegex }
+            { "location.country": locationRegex },
           ];
         }
       }
@@ -344,7 +378,12 @@ export class ProductService extends BaseService<IProduct> {
     hasNext: boolean;
     hasPrev: boolean;
   }> {
-    return this.getSellerProducts(userId, status, pagination, additionalFilters);
+    return this.getSellerProducts(
+      userId,
+      status,
+      pagination,
+      additionalFilters
+    );
   }
 
   /**
@@ -387,7 +426,25 @@ export class ProductService extends BaseService<IProduct> {
         }
 
         if (Object.keys(statusChanges).length > 0) {
-          await User.findByIdAndUpdate(sellerId, { $inc: statusChanges });
+          // translate statistics.* keys to activity.*
+          const incUpdate: any = {};
+          Object.entries(statusChanges).forEach(([k, v]) => {
+            const newKey = k.replace(/^statistics\./, "activity.");
+            incUpdate[newKey] = v;
+          });
+          await User.findByIdAndUpdate(sellerId, { $inc: incUpdate });
+        }
+        // Also update the listedProducts entry for the user so admin / profile sees correct status
+        try {
+          await User.updateOne(
+            { _id: sellerId, "listedProducts.product_id": product._id },
+            { $set: { "listedProducts.$.status": updateData.status } }
+          );
+        } catch (lpErr) {
+          console.error(
+            "[PRODUCT SERVICE] Failed to sync listedProducts status:",
+            lpErr
+          );
         }
       }
 
@@ -433,15 +490,28 @@ export class ProductService extends BaseService<IProduct> {
       await this.deleteById(productId);
 
       // Update seller statistics
-      const statisticsUpdate: any = { "statistics.totalListings": -1 };
+      const statisticsUpdate: any = { "activity.totalListings": -1 };
       if (product.status === "active") {
-        statisticsUpdate["statistics.activeListings"] = -1;
+        statisticsUpdate["activity.activeListings"] = -1;
       }
       if (product.status === "sold") {
-        statisticsUpdate["statistics.soldItems"] = -1;
+        statisticsUpdate["activity.soldItems"] = -1;
       }
 
       await User.findByIdAndUpdate(sellerId, { $inc: statisticsUpdate });
+
+      // Remove the product entry from the user's listedProducts array
+      try {
+        await User.updateOne(
+          { _id: sellerId },
+          { $pull: { listedProducts: { product_id: product._id } } }
+        );
+      } catch (pullErr) {
+        console.error(
+          "[PRODUCT SERVICE] Failed to remove listedProducts entry:",
+          pullErr
+        );
+      }
 
       console.log("[PRODUCT SERVICE] Product deleted successfully");
     } catch (error: any) {
@@ -634,13 +704,19 @@ export class ProductService extends BaseService<IProduct> {
       if (filters.condition && filters.condition.length) {
         queryFilters["details.condition"] = { $in: filters.condition };
       }
-      
+
       // Handle location filters
       if (filters.location) {
         if (filters.location.city)
-          queryFilters["location.city"] = new RegExp(filters.location.city, "i");
+          queryFilters["location.city"] = new RegExp(
+            filters.location.city,
+            "i"
+          );
         if (filters.location.state)
-          queryFilters["location.state"] = new RegExp(filters.location.state, "i");
+          queryFilters["location.state"] = new RegExp(
+            filters.location.state,
+            "i"
+          );
         if (filters.location.country)
           queryFilters["location.country"] = filters.location.country;
       }
@@ -651,10 +727,10 @@ export class ProductService extends BaseService<IProduct> {
         queryFilters.$or = [
           { "location.city": locationRegex },
           { "location.state": locationRegex },
-          { "location.country": locationRegex }
+          { "location.country": locationRegex },
         ];
       }
-      
+
       if (filters.seller) {
         queryFilters.user_id = this.createObjectId(filters.seller);
       }
@@ -870,11 +946,11 @@ export class ProductService extends BaseService<IProduct> {
         status: "sold",
       });
 
-      // Update seller statistics
+      // Update seller activity counts
       await User.findByIdAndUpdate(sellerId, {
         $inc: {
-          "statistics.activeListings": -1,
-          "statistics.soldItems": 1,
+          "activity.activeListings": -1,
+          "activity.soldItems": 1,
         },
       });
 
@@ -1171,7 +1247,10 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Bump product to top of listings
    */
-  async bumpProduct(productId: string, userId: string): Promise<IProduct | null> {
+  async bumpProduct(
+    productId: string,
+    userId: string
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Bumping product:", productId);
       await this.ensureConnection();
@@ -1183,7 +1262,9 @@ export class ProductService extends BaseService<IProduct> {
       });
 
       if (!product) {
-        throw new Error("Product not found or you don't have permission to bump it");
+        throw new Error(
+          "Product not found or you don't have permission to bump it"
+        );
       }
 
       // Check if product has bump credits
@@ -1192,8 +1273,10 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       // Use the bump method from the model
-      const bumpedProduct = await product.bumpListing(this.createObjectId(userId));
-      
+      const bumpedProduct = await product.bumpListing(
+        this.createObjectId(userId)
+      );
+
       return bumpedProduct;
     } catch (error: any) {
       this.handleError(error, "bump product");
@@ -1203,7 +1286,11 @@ export class ProductService extends BaseService<IProduct> {
   /**
    * Add bump credits to a product
    */
-  async addBumpCredits(productId: string, userId: string, credits: number): Promise<IProduct | null> {
+  async addBumpCredits(
+    productId: string,
+    userId: string,
+    credits: number
+  ): Promise<IProduct | null> {
     try {
       console.log("[PRODUCT SERVICE] Adding bump credits:", productId, credits);
       await this.ensureConnection();
@@ -1215,12 +1302,14 @@ export class ProductService extends BaseService<IProduct> {
       });
 
       if (!product) {
-        throw new Error("Product not found or you don't have permission to add credits");
+        throw new Error(
+          "Product not found or you don't have permission to add credits"
+        );
       }
 
       // Add credits using the model method
       const updatedProduct = await product.addBumpCredits(credits);
-      
+
       return updatedProduct;
     } catch (error: any) {
       this.handleError(error, "add bump credits");
