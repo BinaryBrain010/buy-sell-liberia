@@ -8,17 +8,30 @@ const port = 3001;
 // Express app will be used as the request handler for the HTTP server
 const express = require("express");
 const app = express();
+
+// Add CORS headers for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 app.use(express.json()); // For JSON body parsing
 
 // Create HTTP server with the express app as handler
 const httpServer = createServer(app);
 
-// Attach Socket.IO to the HTTP server
+// Attach Socket.IO to the HTTP server (no CORS restrictions)
 const io = new Server(httpServer, {
-  cors: {
-    origin: ["*"],
-    methods: ["GET", "POST"],
-  },
+  allowEIO3: true
 });
 
 // In-memory presence tracking

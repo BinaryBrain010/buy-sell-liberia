@@ -9,14 +9,19 @@ const isValidObjectId = (id?: string | null) =>
 
 // GET: Fetch chats for a user
 export async function GET(req: NextRequest) {
-  await dbConnect();
+  try {
+    console.log('🔍 Chats API - Starting request');
+    await dbConnect();
+    console.log('🔍 Chats API - Database connected');
 
-  const { searchParams } = new URL(req.url);
-  const userId = searchParams.get("userId");
-  const productId = searchParams.get("productId");
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+    const productId = searchParams.get("productId");
 
-  if (!userId)
-    return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    console.log('🔍 Chats API - Request params:', { userId, productId });
+
+    if (!userId)
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
 
   const query: any = {
     $or: [
@@ -33,15 +38,21 @@ export async function GET(req: NextRequest) {
     query.product = new mongoose.Types.ObjectId(productId);
   }
 
+  console.log('🔍 Chats API - Executing query:', JSON.stringify(query));
+  
   const chats = await Chat.find(query)
     .populate("user1", "firstName lastName profile.avatar")
     .populate("user2", "firstName lastName profile.avatar")
     .populate("product", "title images")
-    .sort({ lastMessageAt: -1 });
+    .sort({ lastMessageAt: -1 })
+    .lean(); // Use lean() for better performance
+
+  console.log('🔍 Chats API - Found chats:', chats.length);
 
   const normalizedChats = chats.map((chat) => {
     try {
-      const plain = chat.toObject({ virtuals: true });
+      // Since we're using lean(), we don't need toObject()
+      const plain = chat;
 
       if (!plain.product) {
         plain.product = {
@@ -53,9 +64,9 @@ export async function GET(req: NextRequest) {
 
       return plain;
     } catch (error) {
-      console.error("Error serializing chat:", error, "Chat ID:", chat._id);
-      // Fallback: return basic chat data without virtuals
-      const plain = chat.toObject({ virtuals: false });
+      console.error("Error processing chat:", error, "Chat ID:", chat._id);
+      // Fallback: return basic chat data
+      const plain = chat;
       
       if (!plain.product) {
         plain.product = {
@@ -69,7 +80,16 @@ export async function GET(req: NextRequest) {
     }
   });
 
+  console.log('🔍 Chats API - Returning normalized chats:', normalizedChats.length);
   return NextResponse.json(normalizedChats);
+  
+  } catch (error) {
+    console.error('🔍 Chats API - Error:', error);
+    return NextResponse.json(
+      { error: "Failed to fetch chats", details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
 }
 
 // POST: Create a new chat or add a message

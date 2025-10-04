@@ -329,7 +329,11 @@ export const MessagesComponent = ({
   useEffect(() => {
     const uid = currentUserId || getCurrentUserId();
     if (uid) {
-      getChats({ userId: uid });
+      console.log('🔍 Loading chats for user:', uid);
+      getChats({ userId: uid }).catch((error) => {
+        console.error('🔍 Failed to load chats:', error);
+        // Don't set error state here as useChats already handles it
+      });
     }
   }, [getChats, currentUserId]);
 
