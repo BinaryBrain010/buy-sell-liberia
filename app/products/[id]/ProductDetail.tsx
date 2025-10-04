@@ -94,17 +94,29 @@ export default function ProductDetail(productData: ProductDetailProps) {
     };
   }, [showGallery]);
 
-  const getTimeAgo = (dateString: string): string => {
-    if (!dateString) return "Unknown date";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "Invalid date";
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) return "1 day ago";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return `${Math.ceil(diffDays / 30)} months ago`;
+  const getTimeLabel = (p: any, thresholdDays = 30): string => {
+    const fields = [p?.created_at, p?.createdAt, p?.added_at, p?.updated_at, p?.updatedAt];
+    for (const f of fields) {
+      if (!f) continue;
+      const d = new Date(f);
+      if (isNaN(d.getTime())) continue;
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays >= thresholdDays) {
+        try {
+          return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        } catch {
+          return d.toISOString().slice(0, 10);
+        }
+      }
+      // Relative labels for recent
+      if (diffDays === 0) return "Today";
+      if (diffDays === 1) return "1 day ago";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    }
+    if (typeof p?.timeAgo === "string" && p.timeAgo.trim()) return p.timeAgo;
+    return "Unknown date";
   };
 
   const getImageUrl = (img: ImageType | undefined): string | undefined => {
@@ -443,9 +455,7 @@ export default function ProductDetail(productData: ProductDetailProps) {
                         Listed
                       </p>
                       <p className="text-sm font-semibold text-green-900 dark:text-green-100">
-                        {getTimeAgo(
-                          productData.created_at || productData.createdAt || ""
-                        )}
+                        {getTimeLabel(productData)}
                       </p>
                     </div>
                   </div>

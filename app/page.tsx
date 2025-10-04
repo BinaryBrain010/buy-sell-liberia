@@ -10,10 +10,17 @@ import { TrustBadgesSection } from "@/components/trust-badges-section";
 import { FadeIn } from "@/components/static-pages/Animated";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import PageLoaderOverlay from "@/components/loader/PageLoader";
 
 export default function Home() {
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-background to-muted/20">
+      {/* Full-page loader until page assets complete */}
+      <PageLoaderOverlay
+        label="Loading marketplace"
+        minDuration={600}
+        waitForWindowLoad
+      />
       {/* Enhanced decorative background accents */}
       <div
         aria-hidden

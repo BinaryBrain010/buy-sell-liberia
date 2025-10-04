@@ -35,8 +35,13 @@ export interface Product {
   views: number;
   featured: boolean;
   // expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Some APIs return snake_case timestamps and/or a computed "timeAgo" virtual
+  created_at?: string;
+  updated_at?: string;
+  added_at?: string;
+  timeAgo?: string;
 }
 
 interface ProductCardProps {
@@ -127,9 +132,10 @@ export function ProductCard({
   };
 
   // Show how many days ago the product was listed, or 'Today' if listed today
-  const formatDaysAgo = (dateString: string) => {
+  const formatDaysAgo = (input?: string | number | Date) => {
     try {
-      const date = new Date(dateString);
+      if (!input) return "Unknown date";
+      const date = new Date(input);
       if (isNaN(date.getTime())) {
         return "Unknown date";
       }
@@ -154,6 +160,37 @@ export function ProductCard({
     } catch {
       return "Unknown date";
     }
+  };
+
+  // Prefer formatted absolute date for items older than threshold; else relative
+  const formatListedLabel = (dateInput?: string | number | Date, thresholdDays = 30) => {
+    if (!dateInput) return "Unknown date";
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return "Unknown date";
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays >= thresholdDays) {
+      try {
+        return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      } catch {
+        return d.toISOString().slice(0, 10);
+      }
+    }
+    return formatDaysAgo(d);
+  };
+
+  // Choose the best available timestamp; fallback to server timeAgo if needed
+  const getListedAtLabel = (p: any): string => {
+    const candidates = [p?.createdAt, p?.created_at, p?.added_at, p?.updatedAt, p?.updated_at];
+    for (const c of candidates) {
+      const label = formatListedLabel(c);
+      if (label !== "Unknown date") return label;
+    }
+    if (typeof p?.timeAgo === "string" && p.timeAgo.trim().length > 0) {
+      return p.timeAgo;
+    }
+    return "Unknown date";
   };
 
   return (
@@ -296,9 +333,7 @@ export function ProductCard({
             >
               <span className="inline-flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
-                {product.createdAt
-                  ? formatDaysAgo(product.createdAt)
-                  : "Unknown date"}
+                {getListedAtLabel(product)}
               </span>
               <span className="inline-flex items-center">
                 <Eye className="h-4 w-4 mr-1" />
@@ -405,9 +440,7 @@ export function ProductCard({
               }`}
             >
               <Clock className="h-4 w-4 mr-1" />
-              {product.createdAt
-                ? formatDaysAgo(product.createdAt)
-                : "Unknown date"}
+              {getListedAtLabel(product)}
               <span className="flex items-center ml-2">
                 <Eye className="h-4 w-4 mr-1" />
                 {typeof product.views === "number" ? product.views : 0} views
