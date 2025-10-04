@@ -163,7 +163,10 @@ export function ProductCard({
   };
 
   // Prefer formatted absolute date for items older than threshold; else relative
-  const formatListedLabel = (dateInput?: string | number | Date, thresholdDays = 30) => {
+  const formatListedLabel = (
+    dateInput?: string | number | Date,
+    thresholdDays = 30
+  ) => {
     if (!dateInput) return "Unknown date";
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return "Unknown date";
@@ -172,7 +175,11 @@ export function ProductCard({
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     if (diffDays >= thresholdDays) {
       try {
-        return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        return d.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
       } catch {
         return d.toISOString().slice(0, 10);
       }
@@ -182,7 +189,13 @@ export function ProductCard({
 
   // Choose the best available timestamp; fallback to server timeAgo if needed
   const getListedAtLabel = (p: any): string => {
-    const candidates = [p?.createdAt, p?.created_at, p?.added_at, p?.updatedAt, p?.updated_at];
+    const candidates = [
+      p?.createdAt,
+      p?.created_at,
+      p?.added_at,
+      p?.updatedAt,
+      p?.updated_at,
+    ];
     for (const c of candidates) {
       const label = formatListedLabel(c);
       if (label !== "Unknown date") return label;

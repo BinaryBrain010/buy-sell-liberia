@@ -95,16 +95,28 @@ export default function ProductDetail(productData: ProductDetailProps) {
   }, [showGallery]);
 
   const getTimeLabel = (p: any, thresholdDays = 30): string => {
-    const fields = [p?.created_at, p?.createdAt, p?.added_at, p?.updated_at, p?.updatedAt];
+    const fields = [
+      p?.created_at,
+      p?.createdAt,
+      p?.added_at,
+      p?.updated_at,
+      p?.updatedAt,
+    ];
     for (const f of fields) {
       if (!f) continue;
       const d = new Date(f);
       if (isNaN(d.getTime())) continue;
       const now = new Date();
-      const diffDays = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor(
+        (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
+      );
       if (diffDays >= thresholdDays) {
         try {
-          return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+          return d.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
         } catch {
           return d.toISOString().slice(0, 10);
         }
