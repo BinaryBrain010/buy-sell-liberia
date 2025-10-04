@@ -36,9 +36,9 @@ const stats = [
 
 export function StatsSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/20 overflow-x-clip relative">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+    <section className="py-20 bg-gradient-to-b from-background to-muted/20 overflow-visible relative z-0">
+      {/* Background Elements (non-interactive) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
         <div className="absolute bottom-1/4 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
       </div>
@@ -49,7 +49,8 @@ export function StatsSection() {
             Join Liberia's Trusted Marketplace
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Be part of the first wave of users building Liberia's most trusted online marketplace
+            Be part of the first wave of users building Liberia's most trusted
+            online marketplace
           </p>
         </div>
 
@@ -62,13 +63,15 @@ export function StatsSection() {
               <Card className="relative bg-background/80 backdrop-blur-sm border border-border/50 text-center hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-300 h-full overflow-hidden">
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
+
                 <CardContent className="p-8 relative z-10">
-                  <div className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg ring-4 ring-white/20 relative overflow-hidden group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                  <div
+                    className={`w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center shadow-lg ring-4 ring-white/20 relative overflow-hidden group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
                     <stat.icon className="h-10 w-10 text-white relative z-10" />
                   </div>
-                  
+
                   <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">
                     {stat.label}
                   </h3>

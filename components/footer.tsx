@@ -18,7 +18,7 @@ import { motion } from "framer-motion";
 
 export function Footer() {
   return (
-    <footer className="relative bg-background border-t overflow-hidden overflow-x-clip">
+    <footer className="relative bg-background border-t overflow-hidden overflow-visible">
       {/* Decorative background accents */}
       <div
         aria-hidden

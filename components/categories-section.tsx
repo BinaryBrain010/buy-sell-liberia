@@ -6,14 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import React from "react";
 import { CategoryService } from "@/app/services/Category.Service";
-import { 
-  Grid3X3, 
-  Plus, 
-  Search, 
-  RefreshCw, 
+import {
+  Grid3X3,
+  Plus,
+  Search,
+  RefreshCw,
   Sparkles,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
 } from "lucide-react";
 
 // Color mappings for categories
@@ -106,9 +106,9 @@ export function CategoriesSection() {
   const displayedCategories = showAll ? categories : categories.slice(0, 10);
 
   return (
-    <section className="py-16 bg-gradient-to-b from-background to-muted/20 overflow-x-clip relative">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+    <section className="py-16 bg-gradient-to-b from-background to-muted/20 overflow-visible relative z-0">
+      {/* Background Elements (non-interactive) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-2xl" />
         <div className="absolute bottom-1/4 -left-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/10 to-transparent blur-2xl" />
       </div>
@@ -119,16 +119,14 @@ export function CategoriesSection() {
             Shop by Category
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover our curated categories and find exactly what you're looking for
+            Discover our curated categories and find exactly what you're looking
+            for
           </p>
         </div>
 
         <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-6 lg:gap-8 mb-12 justify-items-center">
           {displayedCategories.map((category: any, index: number) => (
-            <div
-              key={category._id}
-              className="w-full"
-            >
+            <div key={category._id} className="w-full">
               <Link
                 href={`/categories/${category.slug}`}
                 className="block group"
@@ -137,27 +135,39 @@ export function CategoriesSection() {
                 <Card className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/50 w-full max-w-[280px] mx-auto cursor-pointer transition-all duration-300 hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-2 overflow-hidden">
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
+
                   <CardContent className="flex flex-col items-center justify-center p-0 text-center min-h-[200px] relative z-10">
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${
+                    <div
+                      className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${
                         categoryColors[category.slug] ||
                         "from-gray-500 to-gray-600"
-                      } flex items-center justify-center text-4xl text-white mb-4 shadow-lg ring-4 ring-white/20 relative overflow-hidden group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+                      } flex items-center justify-center text-4xl text-white mb-4 shadow-lg ring-4 ring-white/20 relative overflow-hidden group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}
+                    >
                       <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
                       {category.icon}
                     </div>
-                    
+
                     <h3 className="text-lg font-bold mb-2 line-clamp-1 text-foreground group-hover:text-primary transition-colors">
                       {category.name}
                     </h3>
                     <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
                       {category.description}
                     </p>
-                    
+
                     {/* Hover Arrow */}
                     <div className="absolute bottom-4 right-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
                   </CardContent>
@@ -177,8 +187,18 @@ export function CategoriesSection() {
                   className="bg-gradient-to-r from-primary/5 to-v0-green/5 border-2 border-primary/20 text-foreground hover:from-primary/10 hover:to-v0-green/10 hover:border-primary/40 transition-all duration-300 rounded-xl px-8 py-3 font-semibold backdrop-blur-sm"
                 >
                   View All Categories
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  <svg
+                    className="w-4 h-4 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </Button>
               </div>
@@ -196,7 +216,7 @@ function CategoriesEmptyState() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     // Simulate refresh delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsRefreshing(false);
     // In a real app, you would trigger a re-fetch here
     window.location.reload();
@@ -211,7 +231,7 @@ function CategoriesEmptyState() {
     },
     {
       icon: "🚗",
-      name: "Vehicles", 
+      name: "Vehicles",
       description: "Cars, motorcycles, bikes",
       color: "from-green-500 to-emerald-500",
     },
@@ -230,9 +250,9 @@ function CategoriesEmptyState() {
   ];
 
   return (
-    <section className="py-16 bg-gradient-to-b from-background to-muted/20 overflow-x-clip relative">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+    <section className="py-16 bg-gradient-to-b from-background to-muted/20 overflow-visible relative z-0">
+      {/* Background Elements (non-interactive) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-2xl" />
         <div className="absolute bottom-1/4 -left-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/10 to-transparent blur-2xl" />
       </div>
@@ -243,7 +263,8 @@ function CategoriesEmptyState() {
             Shop by Category
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Discover our curated categories and find exactly what you're looking for
+            Discover our curated categories and find exactly what you're looking
+            for
           </p>
         </div>
 
@@ -258,13 +279,14 @@ function CategoriesEmptyState() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
             </div>
-            
+
             <h3 className="text-2xl md:text-3xl font-bold mb-4 text-foreground">
               Categories Coming Soon!
             </h3>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              We're setting up our category system to help you find exactly what you're looking for. 
-              In the meantime, you can browse all products or suggest categories you'd like to see.
+              We're setting up our category system to help you find exactly what
+              you're looking for. In the meantime, you can browse all products
+              or suggest categories you'd like to see.
             </p>
 
             {/* Suggested Categories Preview */}
@@ -280,11 +302,17 @@ function CategoriesEmptyState() {
                   >
                     <Card className="relative bg-background/80 backdrop-blur-sm border border-border/50 hover:border-primary/50 hover:shadow-lg transition-all duration-300">
                       <CardContent className="p-4 text-center">
-                        <div className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-2xl shadow-lg`}>
+                        <div
+                          className={`w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-2xl shadow-lg`}
+                        >
                           {category.icon}
                         </div>
-                        <h5 className="font-semibold text-sm mb-1">{category.name}</h5>
-                        <p className="text-xs text-muted-foreground">{category.description}</p>
+                        <h5 className="font-semibold text-sm mb-1">
+                          {category.name}
+                        </h5>
+                        <p className="text-xs text-muted-foreground">
+                          {category.description}
+                        </p>
                       </CardContent>
                     </Card>
                   </div>
@@ -306,7 +334,7 @@ function CategoriesEmptyState() {
                   </Button>
                 </div>
               </Link>
-              
+
               <Button
                 size="lg"
                 variant="outline"

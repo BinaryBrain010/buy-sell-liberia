@@ -14,14 +14,14 @@ import {
 } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Package, 
-  Plus, 
-  Search, 
-  TrendingUp, 
+import {
+  Package,
+  Plus,
+  Search,
+  TrendingUp,
   Sparkles,
   ArrowRight,
-  Star
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -120,9 +120,9 @@ export function FeaturedListings() {
   }, []);
 
   return (
-    <section className="py-16 md:py-20 bg-gradient-to-b from-muted/10 to-background relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
+    <section className="py-16 md:py-20 bg-gradient-to-b from-muted/10 to-background relative overflow-visible z-0">
+      {/* Background Elements (non-interactive) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/3 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
         <div className="absolute bottom-1/3 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-orange/10 to-transparent blur-3xl" />
       </div>
@@ -133,7 +133,8 @@ export function FeaturedListings() {
             Featured Listings
           </h2>
           <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-            Handpicked deals from trusted sellers - discover quality products at unbeatable prices
+            Handpicked deals from trusted sellers - discover quality products at
+            unbeatable prices
           </p>
         </div>
 
@@ -147,7 +148,7 @@ export function FeaturedListings() {
         ) : (
           <div>
             <Carousel
-              className="w-full overflow-x-clip"
+              className="w-full overflow-visible"
               opts={{ align: "start", loop: true, slidesToScroll }}
             >
               <CarouselContent className="-ml-2 md:-ml-4">
@@ -194,8 +195,18 @@ export function FeaturedListings() {
               aria-label="View all product listings"
             >
               View All Listings
-              <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-4 h-4 ml-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </Button>
           </div>
@@ -244,12 +255,13 @@ function FeaturedListingsEmptyState() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
         </div>
-        
+
         <h3 className="text-2xl md:text-3xl font-bold mb-4 text-foreground">
           No Featured Listings Yet
         </h3>
         <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-          We're just getting started! Be among the first to showcase your products as featured listings on Liberia's newest marketplace.
+          We're just getting started! Be among the first to showcase your
+          products as featured listings on Liberia's newest marketplace.
         </p>
 
         {/* Quick Actions */}
@@ -262,7 +274,9 @@ function FeaturedListingsEmptyState() {
             >
               <Card className="relative bg-background/80 backdrop-blur-sm border border-border/50 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 h-full">
                 <CardContent className="p-6 text-center">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}>
+                  <div
+                    className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}
+                  >
                     <action.icon className="w-8 h-8 text-white" />
                   </div>
                   <h4 className="font-bold mb-2 group-hover:text-primary transition-colors">
@@ -291,7 +305,7 @@ function FeaturedListingsEmptyState() {
               </Button>
             </div>
           </Link>
-          
+
           <Link href="/products" passHref>
             <div className="hover:scale-105 transition-transform">
               <Button
@@ -329,7 +343,7 @@ function FeaturedCarouselSkeleton({
 }) {
   return (
     <Carousel
-      className="w-full overflow-x-clip"
+      className="w-full overflow-visible"
       opts={{ align: "start", loop: true, slidesToScroll }}
     >
       <CarouselContent>
