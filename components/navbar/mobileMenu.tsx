@@ -3,9 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 export default function MobileMenu({
@@ -64,13 +62,7 @@ export default function MobileMenu({
       exit={{ opacity: 0, y: -10 }}
       className="lg:hidden fixed top-16 left-0 right-0 z-40 px-4 pt-4 pb-6 space-y-4 glass border-t shadow-lg"
     >
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Search..."
-          className="w-full pl-10 glass input-shadow"
-        />
-      </div>
+      {/* search removed from mobile menu per request */}
 
       <div className="flex flex-col space-y-3 text-base font-medium">
         {["categories", "products", "about", "contact"].map((link) => (

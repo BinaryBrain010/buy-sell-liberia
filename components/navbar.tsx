@@ -115,7 +115,12 @@ export function Navbar() {
             {/* Right Side - Desktop */}
             <div className="hidden md:flex items-center gap-2 lg:gap-4">
               {user && <SellButton />}
-              {!user && <ThemeToggle />}
+              {!user && (
+                // show theme toggle only on large screens (hide on tablet)
+                <div className="hidden lg:block">
+                  <ThemeToggle />
+                </div>
+              )}
               {user ? (
                 <>
                   <UserActions />
@@ -128,34 +133,11 @@ export function Navbar() {
 
             {/* Mobile/Tablet controls */}
             <div className="flex items-center gap-2 lg:hidden">
-              {/* md: show search icon to open overlay */}
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Open search"
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2 btn-shadow"
-                type="button"
-              >
-                {/* simple magnifier icon via lucide already included in SearchBar; reuse with text to keep bundle small */}
-                <span className="sr-only">Search</span>
-                {/* small inline svgs can be replaced with lucide Search, but we avoid duplicate imports here */}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-5 w-5"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </Button>
+              {/* search icon removed on tablet/mobile; search is available inline on desktop (lg+) */}
               {/* Keep mobile header uncluttered: show theme toggle (optional) and hamburger only */}
-              <ThemeToggle />
+              <div className="block md:hidden">
+                <ThemeToggle />
+              </div>
               {/* Hamburger on far right */}
               <Button
                 variant="ghost"

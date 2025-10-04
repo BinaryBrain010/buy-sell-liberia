@@ -3,7 +3,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X, ArrowLeft } from "lucide-react";
+import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProductService } from "@/app/services/Product.Service";
@@ -236,17 +236,29 @@ export default function SearchBar({
 
   if (variant === "overlay") {
     return (
-      <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto w-full max-w-3xl bg-background shadow-lg h-full md:h-auto md:mt-10 md:rounded-lg flex flex-col">
-          <div className="flex items-center gap-2 p-3 border-b">
+      <div
+        className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm"
+        onClick={() => onClose?.()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          className="mx-auto w-full max-w-3xl bg-background shadow-lg h-full md:h-auto md:mt-10 md:rounded-lg flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* explicit close button in top-right to ensure overlay can be dismissed */}
+          <div className="absolute top-3 right-3 z-30">
             <Button
               variant="ghost"
               size="icon"
               aria-label="Close search"
-              onClick={onClose}
+              type="button"
+              onClick={() => onClose?.()}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <X className="h-5 w-5" />
             </Button>
+          </div>
+          <div className="flex items-center gap-2 p-3 border-b">
             <div className="relative flex-1" ref={containerRef}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -259,14 +271,7 @@ export default function SearchBar({
                 onKeyDown={handleKeyDown}
               />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Clear"
-              onClick={() => setQuery("")}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+            {/* clear button intentionally removed for overlay */}
           </div>
           <div className="flex-1 overflow-y-auto p-2 md:p-3">
             {loading ? (
