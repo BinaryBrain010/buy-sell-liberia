@@ -46,7 +46,7 @@ const likedProductSchema = new Schema<LikedProduct>(
       type: Date,
       default: Date.now,
     },
-  }, 
+  },
   { _id: false }
 );
 
@@ -215,8 +215,14 @@ export interface IUser extends Document {
   loginCount: number;
   stats?: any;
   comparePassword(candidatePassword: string): Promise<boolean>;
-  addProductListing(productId: mongoose.Types.ObjectId, status?: ProductListing["status"]): Promise<IUser>;
-  updateProductListingStatus(productId: mongoose.Types.ObjectId, status: ProductListing["status"]): Promise<IUser>;
+  addProductListing(
+    productId: mongoose.Types.ObjectId,
+    status?: ProductListing["status"]
+  ): Promise<IUser>;
+  updateProductListingStatus(
+    productId: mongoose.Types.ObjectId,
+    status: ProductListing["status"]
+  ): Promise<IUser>;
   likeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   unlikeProduct(productId: mongoose.Types.ObjectId): Promise<IUser>;
   hasLikedProduct(productId: mongoose.Types.ObjectId): boolean;
@@ -244,7 +250,10 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
       minlength: 3,
       maxlength: 30,
-      match: [/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"],
+      match: [
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores",
+      ],
       unique: true,
     },
     email: {
@@ -345,7 +354,11 @@ userSchema.index({ "activity.lastActive": -1 });
 
 // Pre-save middleware to hash password
 userSchema.pre<IUser>("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  // Only hash if the password was modified AND it is not already a bcrypt hash
+  // Bcrypt hashes typically start with "$2" and are ~60 chars.
+  const looksHashed =
+    typeof this.password === "string" && this.password.startsWith("$2");
+  if (!this.isModified("password") || looksHashed) return next();
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -391,7 +404,8 @@ userSchema.methods.addProductListing = function (
   status: ProductListing["status"] = "active"
 ): Promise<IUser> {
   const alreadyListed = this.listedProducts.some(
-    (listing: ProductListing) => listing.product_id.toString() === productId.toString()
+    (listing: ProductListing) =>
+      listing.product_id.toString() === productId.toString()
   );
   if (!alreadyListed) {
     this.listedProducts.push({
@@ -408,7 +422,8 @@ userSchema.methods.updateProductListingStatus = function (
   status: ProductListing["status"]
 ): Promise<IUser> {
   const listing = this.listedProducts.find(
-    (listing: ProductListing) => listing.product_id.toString() === productId.toString()
+    (listing: ProductListing) =>
+      listing.product_id.toString() === productId.toString()
   );
   if (listing) {
     listing.status = status;
@@ -545,5 +560,6 @@ userSchema.set("toJSON", {
 });
 
 // Use the existing model if it exists, otherwise create a new one
-const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", userSchema);
+const User: Model<IUser> =
+  mongoose.models.User || mongoose.model<IUser>("User", userSchema);
 export default User;

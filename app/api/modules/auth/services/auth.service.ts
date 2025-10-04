@@ -1,56 +1,59 @@
-import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
-import User from "@/models/User"
-import { PendingUser } from "../models/pending-user.model"
-import { OTP } from "../models/otp.model"
-import { EmailService } from "./email.service"
-import { connectDB } from "@/lib/mongoose"
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "@/models/User";
+import { PendingUser } from "../models/pending-user.model";
+import { OTP } from "../models/otp.model";
+import { EmailService } from "./email.service";
+import { connectDB } from "@/lib/mongoose";
 
 export class AuthService {
   resendOtp(email: any, type: any) {
-    throw new Error('Method not implemented.')
+    throw new Error("Method not implemented.");
   }
-  private emailService = new EmailService()
+  private emailService = new EmailService();
 
   async signup(userData: {
-    fullName: string
-    username: string
-    email: string
-    phone?: string
-    password: string
-    country: string
+    fullName: string;
+    username: string;
+    email: string;
+    phone?: string;
+    password: string;
+    country: string;
   }) {
     try {
-      console.log("[AUTH SERVICE] Starting signup process for:", userData.email)
-      await connectDB()
+      console.log(
+        "[AUTH SERVICE] Starting signup process for:",
+        userData.email
+      );
+      await connectDB();
 
       // Check if user already exists
       const existingUser = await User.findOne({
         $or: [{ email: userData.email }, { username: userData.username }],
-      })
+      });
 
       if (existingUser) {
         if (existingUser.email === userData.email) {
-          throw new Error("Email already registered")
+          throw new Error("Email already registered");
         }
         if (existingUser.username === userData.username) {
-          throw new Error("Username already taken")
+          throw new Error("Username already taken");
         }
       }
 
       // Check if there's already a pending user
       const existingPendingUser = await PendingUser.findOne({
         $or: [{ email: userData.email }, { username: userData.username }],
-      })
+      });
 
       if (existingPendingUser) {
         // Delete existing pending user to allow re-registration
-        await PendingUser.deleteOne({ _id: existingPendingUser._id })
-        console.log("[AUTH SERVICE] Removed existing pending user")
+        await PendingUser.deleteOne({ _id: existingPendingUser._id });
+        console.log("[AUTH SERVICE] Removed existing pending user");
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(userData.password, 12)
+      const hashedPassword = await bcrypt.hash(userData.password, 12);
 
       // Create pending user
       const pendingUser = new PendingUser({
@@ -62,57 +65,75 @@ export class AuthService {
         country: userData.country,
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      })
+      });
 
-      await pendingUser.save()
-      console.log("[AUTH SERVICE] Pending user created:", userData.email)
+      await pendingUser.save();
+      console.log("[AUTH SERVICE] Pending user created:", userData.email);
 
       // Generate and send OTP
-      await this.generateAndSendOTP(userData.email, "EMAIL_VERIFICATION")
+      await this.generateAndSendOTP(userData.email, "EMAIL_VERIFICATION");
 
       return {
-        message: "Registration successful. Please check your email for verification code.",
+        message:
+          "Registration successful. Please check your email for verification code.",
         email: userData.email,
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Signup error:", error.message)
-      throw new Error(error.message || "Registration failed")
+      console.error("[AUTH SERVICE] Signup error:", error.message);
+      throw new Error(error.message || "Registration failed");
     }
   }
 
   async login(email: string, password: string) {
     try {
-      console.log("[AUTH SERVICE] Starting login process for:", email)
-      await connectDB()
+      const normalizedEmail = (email || "").trim().toLowerCase();
+      console.log(
+        "[AUTH SERVICE] Starting login process for:",
+        normalizedEmail
+      );
+      await connectDB();
 
-      const user = await User.findOne({ email })
+      const user = await User.findOne({ email: normalizedEmail });
       if (!user) {
-        throw new Error("Invalid email or password")
+        // If a pending user exists for this email, guide the client to verify email
+        const pending = await PendingUser.findOne({ email: normalizedEmail });
+        if (pending) {
+          throw new Error(
+            "Email not verified. Please check your inbox for the verification code or resend it."
+          );
+        }
+        throw new Error("Invalid email or password");
       }
 
       if (!user.emailVerified) {
-        throw new Error("Please verify your email before logging in")
+        throw new Error("Please verify your email before logging in");
       }
 
       // Check if user is banned
       if (user.isBanned) {
-        throw new Error("Your account has been banned. Please contact support for assistance.")
+        throw new Error(
+          "Your account has been banned. Please contact support for assistance."
+        );
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.password)
+      const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        throw new Error("Invalid email or password")
+        throw new Error("Invalid email or password");
       }
 
       // Generate tokens
-      const accessToken = this.generateAccessToken((user._id as any).toString())
-      const refreshToken = this.generateRefreshToken((user._id as any).toString())
+      const accessToken = this.generateAccessToken(
+        (user._id as any).toString()
+      );
+      const refreshToken = this.generateRefreshToken(
+        (user._id as any).toString()
+      );
 
       // Update user with refresh token
-      user.refreshToken = refreshToken
-      await user.save()
+      user.refreshToken = refreshToken;
+      await user.save();
 
-      console.log("[AUTH SERVICE] Login successful for:", email)
+      console.log("[AUTH SERVICE] Login successful for:", email);
 
       return {
         user: {
@@ -124,17 +145,17 @@ export class AuthService {
         },
         accessToken,
         refreshToken,
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Login error:", error.message)
-      throw new Error(error.message || "Login failed")
+      console.error("[AUTH SERVICE] Login error:", error.message);
+      throw new Error(error.message || "Login failed");
     }
   }
 
   async verifyEmail(email: string, otp: string) {
     try {
-      console.log("[AUTH SERVICE] Starting email verification for:", email)
-      await connectDB()
+      console.log("[AUTH SERVICE] Starting email verification for:", email);
+      await connectDB();
 
       // Find and verify OTP
       const otpRecord = await OTP.findOne({
@@ -142,24 +163,24 @@ export class AuthService {
         otp,
         type: "EMAIL_VERIFICATION",
         expiresAt: { $gt: new Date() },
-      })
+      });
 
       if (!otpRecord) {
-        throw new Error("Invalid or expired OTP")
+        throw new Error("Invalid or expired OTP");
       }
 
       // Find pending user
-      const pendingUser = await PendingUser.findOne({ email })
+      const pendingUser = await PendingUser.findOne({ email });
       if (!pendingUser) {
-        throw new Error("Pending user not found")
+        throw new Error("Pending user not found");
       }
 
       // Create verified user with all required fields from main User schema
-      const user = new User({
+      // Do not set phone when empty to respect the sparse unique index
+      const baseUserData: any = {
         fullName: pendingUser.fullName,
         username: pendingUser.username,
         email: pendingUser.email,
-        phone: pendingUser.phone || "",
         password: pendingUser.password,
         emailVerified: true,
         phoneVerified: false,
@@ -172,8 +193,8 @@ export class AuthService {
         profile: {
           rating: {
             average: 0,
-            count: 0
-          }
+            count: 0,
+          },
         },
         preferences: {},
         activity: {
@@ -181,19 +202,25 @@ export class AuthService {
           activeListings: 0,
           soldItems: 0,
           joinedDate: new Date(),
-          lastActive: new Date()
+          lastActive: new Date(),
         },
         listedProducts: [],
-        likedProducts: []
-      })
+        likedProducts: [],
+      };
 
-      await user.save()
+      if (pendingUser.phone && pendingUser.phone.trim() !== "") {
+        baseUserData.phone = pendingUser.phone.trim();
+      }
+
+      const user = new User(baseUserData);
+
+      await user.save();
 
       // Clean up
-      await PendingUser.deleteOne({ email })
-      await OTP.deleteOne({ _id: otpRecord._id })
+      await PendingUser.deleteOne({ email });
+      await OTP.deleteOne({ _id: otpRecord._id });
 
-      console.log("[AUTH SERVICE] Email verification successful for:", email)
+      console.log("[AUTH SERVICE] Email verification successful for:", email);
 
       return {
         message: "Email verified successfully. You can now log in.",
@@ -204,23 +231,26 @@ export class AuthService {
           username: user.username,
           emailVerified: user.emailVerified,
         },
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Email verification error:", error.message)
-      throw new Error(error.message || "Email verification failed")
+      console.error("[AUTH SERVICE] Email verification error:", error.message);
+      throw new Error(error.message || "Email verification failed");
     }
   }
 
-  async generateAndSendOTP(email: string, type: "EMAIL_VERIFICATION" | "PASSWORD_RESET") {
+  async generateAndSendOTP(
+    email: string,
+    type: "EMAIL_VERIFICATION" | "PASSWORD_RESET"
+  ) {
     try {
-      console.log(`[AUTH SERVICE] Generating ${type} OTP for:`, email)
-      await connectDB()
+      console.log(`[AUTH SERVICE] Generating ${type} OTP for:`, email);
+      await connectDB();
 
       // Delete existing OTPs for this email and type
-      await OTP.deleteMany({ email, type })
+      await OTP.deleteMany({ email, type });
 
       // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
       // Save OTP to database
       const otpRecord = new OTP({
@@ -229,54 +259,59 @@ export class AuthService {
         type,
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-      })
+      });
 
-      await otpRecord.save()
-      console.log(`[AUTH SERVICE] OTP saved to database for ${email}:`, otp)
+      await otpRecord.save();
+      console.log(`[AUTH SERVICE] OTP saved to database for ${email}:`, otp);
 
       // Send email
       if (type === "EMAIL_VERIFICATION") {
-        await this.emailService.sendVerificationEmail(email, otp)
+        await this.emailService.sendVerificationEmail(email, otp);
       } else {
-        await this.emailService.sendPasswordResetEmail(email, otp)
+        await this.emailService.sendPasswordResetEmail(email, otp);
       }
 
-      console.log(`[AUTH SERVICE] ${type} OTP sent successfully to:`, email)
+      console.log(`[AUTH SERVICE] ${type} OTP sent successfully to:`, email);
 
       return {
-        message: `${type === "EMAIL_VERIFICATION" ? "Verification" : "Password reset"} code sent to your email`,
-      }
+        message: `${
+          type === "EMAIL_VERIFICATION" ? "Verification" : "Password reset"
+        } code sent to your email`,
+      };
     } catch (error: any) {
-      console.error(`[AUTH SERVICE] Generate and send OTP error:`, error.message)
-      throw new Error(error.message || "Failed to send OTP")
+      console.error(
+        `[AUTH SERVICE] Generate and send OTP error:`,
+        error.message
+      );
+      throw new Error(error.message || "Failed to send OTP");
     }
   }
 
   async forgotPassword(email: string) {
     try {
-      console.log("[AUTH SERVICE] Starting forgot password for:", email)
-      await connectDB()
+      console.log("[AUTH SERVICE] Starting forgot password for:", email);
+      await connectDB();
 
-      const user = await User.findOne({ email })
+      const user = await User.findOne({ email });
       if (!user) {
-        throw new Error("User not found")
+        throw new Error("User not found");
       }
 
-      await this.generateAndSendOTP(email, "PASSWORD_RESET")
+      await this.generateAndSendOTP(email, "PASSWORD_RESET");
 
       return {
         message: "Password reset code sent to your email",
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Forgot password error:", error.message)
-      throw new Error(error.message || "Failed to send password reset code")
+      console.error("[AUTH SERVICE] Forgot password error:", error.message);
+      throw new Error(error.message || "Failed to send password reset code");
     }
   }
 
   async resetPassword(email: string, otp: string, newPassword: string) {
     try {
-      console.log("[AUTH SERVICE] Starting password reset for:", email)
-      await connectDB()
+      console.log("[AUTH SERVICE] Starting password reset for:", email);
+      await connectDB();
 
       // Verify OTP
       const otpRecord = await OTP.findOne({
@@ -284,88 +319,97 @@ export class AuthService {
         otp,
         type: "PASSWORD_RESET",
         expiresAt: { $gt: new Date() },
-      })
+      });
 
       if (!otpRecord) {
-        throw new Error("Invalid or expired OTP")
+        throw new Error("Invalid or expired OTP");
       }
 
       // Find user and update password
-      const user = await User.findOne({ email })
+      const user = await User.findOne({ email });
       if (!user) {
-        throw new Error("User not found")
+        throw new Error("User not found");
       }
 
-      const hashedPassword = await bcrypt.hash(newPassword, 12)
-      user.password = hashedPassword
-      await user.save()
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      user.password = hashedPassword;
+      await user.save();
 
       // Clean up OTP
-      await OTP.deleteOne({ _id: otpRecord._id })
+      await OTP.deleteOne({ _id: otpRecord._id });
 
-      console.log("[AUTH SERVICE] Password reset successful for:", email)
+      console.log("[AUTH SERVICE] Password reset successful for:", email);
 
       return {
         message: "Password reset successful",
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Password reset error:", error.message)
-      throw new Error(error.message || "Password reset failed")
+      console.error("[AUTH SERVICE] Password reset error:", error.message);
+      throw new Error(error.message || "Password reset failed");
     }
   }
 
   async refreshToken(refreshToken: string) {
     try {
-      console.log("[AUTH SERVICE] Refreshing token")
-      await connectDB()
+      console.log("[AUTH SERVICE] Refreshing token");
+      await connectDB();
 
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as { userId: string }
+      const decoded = jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_SECRET!
+      ) as { userId: string };
 
-      const user = await User.findById(decoded.userId)
+      const user = await User.findById(decoded.userId);
       if (!user || user.refreshToken !== refreshToken) {
-        throw new Error("Invalid refresh token")
+        throw new Error("Invalid refresh token");
       }
 
-      const newAccessToken = this.generateAccessToken((user._id as any).toString())
-      const newRefreshToken = this.generateRefreshToken((user._id as any).toString())
+      const newAccessToken = this.generateAccessToken(
+        (user._id as any).toString()
+      );
+      const newRefreshToken = this.generateRefreshToken(
+        (user._id as any).toString()
+      );
 
-      user.refreshToken = newRefreshToken
-      await user.save()
+      user.refreshToken = newRefreshToken;
+      await user.save();
 
       return {
         accessToken: newAccessToken,
         refreshToken: newRefreshToken,
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Refresh token error:", error.message)
-      throw new Error("Invalid refresh token")
+      console.error("[AUTH SERVICE] Refresh token error:", error.message);
+      throw new Error("Invalid refresh token");
     }
   }
 
   async logout(userId: string) {
     try {
-      console.log("[AUTH SERVICE] Logging out user:", userId)
-      await connectDB()
+      console.log("[AUTH SERVICE] Logging out user:", userId);
+      await connectDB();
 
-      await User.findByIdAndUpdate(userId, { refreshToken: null })
+      await User.findByIdAndUpdate(userId, { refreshToken: null });
 
       return {
         message: "Logged out successfully",
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Logout error:", error.message)
-      throw new Error("Logout failed")
+      console.error("[AUTH SERVICE] Logout error:", error.message);
+      throw new Error("Logout failed");
     }
   }
 
   async getProfile(userId: string) {
     try {
-      console.log("[AUTH SERVICE] Getting profile for user:", userId)
-      await connectDB()
+      console.log("[AUTH SERVICE] Getting profile for user:", userId);
+      await connectDB();
 
-      const user = await User.findById(userId).select("-password -refreshToken")
+      const user = await User.findById(userId).select(
+        "-password -refreshToken"
+      );
       if (!user) {
-        throw new Error("User not found")
+        throw new Error("User not found");
       }
 
       return {
@@ -376,54 +420,60 @@ export class AuthService {
           username: user.username,
           emailVerified: user.emailVerified,
         },
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Get profile error:", error.message)
-      throw new Error("Failed to get profile")
+      console.error("[AUTH SERVICE] Get profile error:", error.message);
+      throw new Error("Failed to get profile");
     }
   }
 
   async checkUserExists(email: string) {
     try {
-      console.log("[AUTH SERVICE] Checking if user exists:", email)
-      await connectDB()
+      console.log("[AUTH SERVICE] Checking if user exists:", email);
+      await connectDB();
 
-      const user = await User.findOne({ email })
-      return !!user
+      const user = await User.findOne({ email });
+      return !!user;
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Check user exists error:", error.message)
-      return false
+      console.error("[AUTH SERVICE] Check user exists error:", error.message);
+      return false;
     }
   }
 
   async loginWithGoogle(email: string) {
     try {
-      console.log("[AUTH SERVICE] Google login for:", email)
-      await connectDB()
+      console.log("[AUTH SERVICE] Google login for:", email);
+      await connectDB();
 
-      const user = await User.findOne({ email })
+      const user = await User.findOne({ email });
       if (!user) {
-        throw new Error("User not found")
+        throw new Error("User not found");
       }
 
       if (!user.emailVerified) {
-        throw new Error("Please verify your email before logging in")
+        throw new Error("Please verify your email before logging in");
       }
 
       // Check if user is banned
       if (user.isBanned) {
-        throw new Error("Your account has been banned. Please contact support for assistance.")
+        throw new Error(
+          "Your account has been banned. Please contact support for assistance."
+        );
       }
 
       // Generate tokens
-      const accessToken = this.generateAccessToken((user._id as any).toString())
-      const refreshToken = this.generateRefreshToken((user._id as any).toString())
+      const accessToken = this.generateAccessToken(
+        (user._id as any).toString()
+      );
+      const refreshToken = this.generateRefreshToken(
+        (user._id as any).toString()
+      );
 
       // Update user with refresh token
-      user.refreshToken = refreshToken
-      await user.save()
+      user.refreshToken = refreshToken;
+      await user.save();
 
-      console.log("[AUTH SERVICE] Google login successful for:", email)
+      console.log("[AUTH SERVICE] Google login successful for:", email);
 
       return {
         user: {
@@ -435,18 +485,20 @@ export class AuthService {
         },
         accessToken,
         refreshToken,
-      }
+      };
     } catch (error: any) {
-      console.error("[AUTH SERVICE] Google login error:", error.message)
-      throw new Error(error.message || "Google login failed")
+      console.error("[AUTH SERVICE] Google login error:", error.message);
+      throw new Error(error.message || "Google login failed");
     }
   }
 
   private generateAccessToken(userId: string): string {
-    return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" })
+    return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" });
   }
 
   private generateRefreshToken(userId: string): string {
-    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET!, { expiresIn: "7d" })
+    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET!, {
+      expiresIn: "7d",
+    });
   }
 }
