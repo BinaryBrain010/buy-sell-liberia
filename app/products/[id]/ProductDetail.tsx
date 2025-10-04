@@ -48,6 +48,18 @@ export default function ProductDetail(productData: ProductDetailProps) {
     return `${currencySymbol} ${Number(price.amount).toLocaleString()}`;
   };
 
+  const formatCondition = (cond?: string) => {
+    if (!cond) return undefined;
+    const c = String(cond).toLowerCase();
+    if (c === "like-new" || c === "like new") return "Like New";
+    if (c === "new") return "New";
+    if (c === "good") return "Good";
+    if (c === "fair") return "Fair";
+    if (c === "poor") return "Poor";
+    // fallback to original
+    return cond;
+  };
+
   // Fetch platform currency (fallback to USD if unauthorized/unavailable)
   useEffect(() => {
     let cancelled = false;
@@ -503,9 +515,13 @@ export default function ProductDetail(productData: ProductDetailProps) {
                         {productData.subCategory}
                       </Badge>
                     )}
-                    {productData.condition && (
+                    {(productData.condition ||
+                      productData.details?.condition) && (
                       <Badge className="px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-green-500/10 to-green-600/10 border border-green-500/20 text-green-600 hover:bg-gradient-to-r hover:from-green-500/20 hover:to-green-600/20 transition-colors">
-                        {productData.condition}
+                        {formatCondition(
+                          productData.condition ||
+                            productData.details?.condition
+                        )}
                       </Badge>
                     )}
                     {Array.isArray(productData.tags) &&

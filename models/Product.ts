@@ -1,9 +1,9 @@
-import mongoose, { type Document, type Model, Schema } from "mongoose"
+import mongoose, { type Document, type Model, Schema } from "mongoose";
 
 // Custom field value schema
 export interface ICustomFieldValue {
-  fieldName: string
-  value: any
+  fieldName: string;
+  value: any;
 }
 
 const customFieldValueSchema = new Schema<ICustomFieldValue>(
@@ -17,16 +17,16 @@ const customFieldValueSchema = new Schema<ICustomFieldValue>(
       required: true,
     },
   },
-  { _id: false },
-)
+  { _id: false }
+);
 
 // Image schema
 export interface IImage {
-  url: string
-  alt?: string
-  isPrimary?: boolean
-  order?: number
-  _id?: mongoose.Types.ObjectId
+  url: string;
+  alt?: string;
+  isPrimary?: boolean;
+  order?: number;
+  _id?: mongoose.Types.ObjectId;
 }
 
 const imageSchema = new Schema<IImage>(
@@ -45,21 +45,21 @@ const imageSchema = new Schema<IImage>(
       default: 0,
     },
   },
-  { _id: true },
-)
+  { _id: true }
+);
 
 // View history schema
 export interface IViewHistory {
-  user_id?: mongoose.Types.ObjectId
-  viewed_at?: Date
-  ip_address?: string
+  user_id?: mongoose.Types.ObjectId;
+  viewed_at?: Date;
+  ip_address?: string;
 }
 
 // Bump history schema
 export interface IBumpHistory {
-  bumped_at: Date
-  bumped_by: mongoose.Types.ObjectId
-  payment_id?: mongoose.Types.ObjectId
+  bumped_at: Date;
+  bumped_by: mongoose.Types.ObjectId;
+  payment_id?: mongoose.Types.ObjectId;
 }
 
 const viewHistorySchema = new Schema<IViewHistory>(
@@ -74,8 +74,8 @@ const viewHistorySchema = new Schema<IViewHistory>(
     },
     ip_address: String,
   },
-  { _id: false },
-)
+  { _id: false }
+);
 
 const bumpHistorySchema = new Schema<IBumpHistory>(
   {
@@ -93,60 +93,60 @@ const bumpHistorySchema = new Schema<IBumpHistory>(
       ref: "ManualPayment",
     },
   },
-  { _id: false },
-)
+  { _id: false }
+);
 
 // Price schema
 export interface IPrice {
-  amount: number
-  currency: "USD" | "LRD" | "EUR" | "GBP"
-  negotiable?: boolean
+  amount: number;
+  currency: "USD" | "LRD" | "EUR" | "GBP";
+  negotiable?: boolean;
 }
 
 // Location schema
 export interface ILocation {
-  city: string
-  state?: string
-  country?: string
+  city: string;
+  state?: string;
+  country?: string;
   coordinates?: {
-    latitude?: number
-    longitude?: number
-  }
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
 // Contact schema
 export interface IContact {
-  phone?: string
-  whatsapp?: string
-  email?: string
-  preferredMethod?: "phone" | "whatsapp" | "email"
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  preferredMethod?: "phone" | "whatsapp" | "email";
 }
 
 // Product details schema
 export interface IProductDetails {
-  condition?: "new" | "used" | "refurbished"
-  brand?: string
-  model?: string
-  year?: number
-  warranty?: boolean
-  warrantyPeriod?: string
+  condition?: "new" | "like-new" | "good" | "fair" | "poor";
+  brand?: string;
+  model?: string;
+  year?: number;
+  warranty?: boolean;
+  warrantyPeriod?: string;
   dimensions?: {
-    length?: number
-    width?: number
-    height?: number
-    unit?: string
-  }
+    length?: number;
+    width?: number;
+    height?: number;
+    unit?: string;
+  };
   weight?: {
-    value?: number
-    unit?: string
-  }
+    value?: number;
+    unit?: string;
+  };
 }
 
 const productDetailsSchema = new Schema<IProductDetails>(
   {
     condition: {
       type: String,
-      enum: ["new", "used", "refurbished"],
+      enum: ["new", "like-new", "good", "fair", "poor"],
     },
     brand: String,
     model: String,
@@ -164,54 +164,60 @@ const productDetailsSchema = new Schema<IProductDetails>(
       unit: String,
     },
   },
-  { _id: false },
-)
+  { _id: false }
+);
 
 export interface IProduct extends Document {
-  user_id: mongoose.Types.ObjectId
-  title: string
-  description: string
-  category_id: mongoose.Types.ObjectId
-  subcategory_id: mongoose.Types.ObjectId
-  price: IPrice
-  location: ILocation
-  contact: IContact
-  details: IProductDetails
-  images: IImage[]
-  customFields: ICustomFieldValue[]
-  status: "active" | "sold" | "expired" | "removed" | "pending"
-  listingType: "sale" | "rent" | "service" | "job"
-  featured: boolean
-  featuredExpiresAt?: Date
-  featuredStartedAt?: Date
-  featuredDuration?: number
-  views: number
-  added_at: Date
-  expires_at: Date
-  renewed_at?: Date
-  tags: string[]
-  slug?: string
-  viewHistory: IViewHistory[]
-  searchText?: string
-  created_at?: Date
-  updated_at?: Date
-  formattedPrice?: string
-  timeAgo?: string
+  user_id: mongoose.Types.ObjectId;
+  title: string;
+  description: string;
+  category_id: mongoose.Types.ObjectId;
+  subcategory_id: mongoose.Types.ObjectId;
+  price: IPrice;
+  location: ILocation;
+  contact: IContact;
+  details: IProductDetails;
+  images: IImage[];
+  customFields: ICustomFieldValue[];
+  status: "active" | "sold" | "expired" | "removed" | "pending";
+  listingType: "sale" | "rent" | "service" | "job";
+  featured: boolean;
+  featuredExpiresAt?: Date;
+  featuredStartedAt?: Date;
+  featuredDuration?: number;
+  views: number;
+  added_at: Date;
+  expires_at: Date;
+  renewed_at?: Date;
+  tags: string[];
+  slug?: string;
+  viewHistory: IViewHistory[];
+  searchText?: string;
+  created_at?: Date;
+  updated_at?: Date;
+  formattedPrice?: string;
+  timeAgo?: string;
   // Bump-related fields
-  bumpCredits: number
-  bumpHistory: IBumpHistory[]
-  isExpired(): boolean
-  renew(): Promise<IProduct>
-  addView(userId?: mongoose.Types.ObjectId, ipAddress?: string): Promise<IProduct>
-  markAsSold(): Promise<IProduct>
-  getCustomField(fieldName: string): any
-  setCustomField(fieldName: string, value: any): void
-  markAsFeatured(): Promise<IProduct>
-  unmarkAsFeatured(): Promise<IProduct>
-  toggleFeatured(): Promise<IProduct>
-  bumpListing(userId: mongoose.Types.ObjectId, paymentId?: mongoose.Types.ObjectId): Promise<IProduct>
-  addBumpCredits(credits: number): Promise<IProduct>
-  reportIds: mongoose.Types.ObjectId[]
+  bumpCredits: number;
+  bumpHistory: IBumpHistory[];
+  isExpired(): boolean;
+  renew(): Promise<IProduct>;
+  addView(
+    userId?: mongoose.Types.ObjectId,
+    ipAddress?: string
+  ): Promise<IProduct>;
+  markAsSold(): Promise<IProduct>;
+  getCustomField(fieldName: string): any;
+  setCustomField(fieldName: string, value: any): void;
+  markAsFeatured(): Promise<IProduct>;
+  unmarkAsFeatured(): Promise<IProduct>;
+  toggleFeatured(): Promise<IProduct>;
+  bumpListing(
+    userId: mongoose.Types.ObjectId,
+    paymentId?: mongoose.Types.ObjectId
+  ): Promise<IProduct>;
+  addBumpCredits(credits: number): Promise<IProduct>;
+  reportIds: mongoose.Types.ObjectId[];
 }
 
 const productSchema = new Schema<IProduct>(
@@ -290,7 +296,8 @@ const productSchema = new Schema<IProduct>(
     images: {
       type: [imageSchema],
       validate: {
-        validator: (images: IImage[]) => images.length <= 10 && images.length > 0,
+        validator: (images: IImage[]) =>
+          images.length <= 10 && images.length > 0,
         message: "Product must have 1-10 images",
       },
     },
@@ -350,10 +357,12 @@ const productSchema = new Schema<IProduct>(
       default: [],
     },
     searchText: String,
-    reportIds: [{
-      type: Schema.Types.ObjectId,
-      ref: "Report"
-    }],
+    reportIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Report",
+      },
+    ],
     // Bump-related fields
     bumpCredits: {
       type: Number,
@@ -367,18 +376,18 @@ const productSchema = new Schema<IProduct>(
   },
   {
     timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
-  },
-)
+  }
+);
 
 // Create indexes for efficient queries
-productSchema.index({ user_id: 1 })
-productSchema.index({ category_id: 1, subcategory_id: 1 })
-productSchema.index({ "location.city": 1, "location.state": 1 })
-productSchema.index({ "price.amount": 1 })
-productSchema.index({ status: 1, expires_at: 1 })
-productSchema.index({ added_at: -1 })
-productSchema.index({ searchText: "text", title: "text", description: "text" })
-productSchema.index({ featured: -1, added_at: -1 })
+productSchema.index({ user_id: 1 });
+productSchema.index({ category_id: 1, subcategory_id: 1 });
+productSchema.index({ "location.city": 1, "location.state": 1 });
+productSchema.index({ "price.amount": 1 });
+productSchema.index({ status: 1, expires_at: 1 });
+productSchema.index({ added_at: -1 });
+productSchema.index({ searchText: "text", title: "text", description: "text" });
+productSchema.index({ featured: -1, added_at: -1 });
 
 // Pre-save middleware to generate slug and search text
 productSchema.pre<IProduct>("save", function (next) {
@@ -391,9 +400,11 @@ productSchema.pre<IProduct>("save", function (next) {
         .replace(/-+/g, "-")
         .replace(/^-+|-+$/g, "") +
       "-" +
-      Date.now()
+      Date.now();
   }
-  const customFieldsText = this.customFields.map((field) => field.value).join(" ")
+  const customFieldsText = this.customFields
+    .map((field) => field.value)
+    .join(" ");
   this.searchText = [
     this.title,
     this.description,
@@ -405,167 +416,193 @@ productSchema.pre<IProduct>("save", function (next) {
     this.details.model || "",
   ]
     .join(" ")
-    .toLowerCase()
-  next()
-})
+    .toLowerCase();
+  next();
+});
 
 // Instance methods
 productSchema.methods.isExpired = function (): boolean {
-  return this.expires_at < new Date()
-}
+  return this.expires_at < new Date();
+};
 
 productSchema.methods.renew = function (): Promise<IProduct> {
-  this.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  this.renewed_at = new Date()
-  this.status = "active"
-  return this.save()
-}
+  this.expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  this.renewed_at = new Date();
+  this.status = "active";
+  return this.save();
+};
 
-productSchema.methods.addView = function (userId?: mongoose.Types.ObjectId, ipAddress?: string): Promise<IProduct> {
-  this.views += 1
+productSchema.methods.addView = function (
+  userId?: mongoose.Types.ObjectId,
+  ipAddress?: string
+): Promise<IProduct> {
+  this.views += 1;
   this.viewHistory.unshift({
     user_id: userId,
     viewed_at: new Date(),
     ip_address: ipAddress,
-  })
+  });
   if (this.viewHistory.length > 100) {
-    this.viewHistory = this.viewHistory.slice(0, 100)
+    this.viewHistory = this.viewHistory.slice(0, 100);
   }
-  return this.save()
-}
+  return this.save();
+};
 
 productSchema.methods.markAsSold = function (): Promise<IProduct> {
-  this.status = "sold"
-  return this.save()
-}
+  this.status = "sold";
+  return this.save();
+};
 
 productSchema.methods.getCustomField = function (fieldName: string): any {
-  const field = this.customFields.find((f: ICustomFieldValue) => f.fieldName === fieldName)
-  return field ? field.value : null
-}
+  const field = this.customFields.find(
+    (f: ICustomFieldValue) => f.fieldName === fieldName
+  );
+  return field ? field.value : null;
+};
 
-productSchema.methods.setCustomField = function (fieldName: string, value: any): void {
-  const existingField = this.customFields.find((f: ICustomFieldValue) => f.fieldName === fieldName)
+productSchema.methods.setCustomField = function (
+  fieldName: string,
+  value: any
+): void {
+  const existingField = this.customFields.find(
+    (f: ICustomFieldValue) => f.fieldName === fieldName
+  );
   if (existingField) {
-    existingField.value = value
+    existingField.value = value;
   } else {
-    this.customFields.push({ fieldName, value })
+    this.customFields.push({ fieldName, value });
   }
-}
+};
 
 productSchema.methods.markAsFeatured = function (): Promise<IProduct> {
-  this.featured = true
-  return this.save()
-}
+  this.featured = true;
+  return this.save();
+};
 
 productSchema.methods.unmarkAsFeatured = function (): Promise<IProduct> {
-  this.featured = false
-  return this.save()
-}
+  this.featured = false;
+  return this.save();
+};
 
 productSchema.methods.toggleFeatured = function (): Promise<IProduct> {
-  this.featured = !this.featured
-  return this.save()
-}
+  this.featured = !this.featured;
+  return this.save();
+};
 
-productSchema.methods.bumpListing = function (userId: mongoose.Types.ObjectId, paymentId?: mongoose.Types.ObjectId): Promise<IProduct> {
+productSchema.methods.bumpListing = function (
+  userId: mongoose.Types.ObjectId,
+  paymentId?: mongoose.Types.ObjectId
+): Promise<IProduct> {
   if (this.bumpCredits <= 0) {
-    throw new Error("No bump credits available")
+    throw new Error("No bump credits available");
   }
-  
+
   // Update the added_at timestamp to current time to move listing to top
-  this.added_at = new Date()
-  this.updated_at = new Date()
-  
+  this.added_at = new Date();
+  this.updated_at = new Date();
+
   // Deduct one bump credit
-  this.bumpCredits -= 1
-  
+  this.bumpCredits -= 1;
+
   // Add to bump history
   this.bumpHistory.unshift({
     bumped_at: new Date(),
     bumped_by: userId,
     payment_id: paymentId,
-  })
-  
+  });
+
   // Keep only last 50 bump records
   if (this.bumpHistory.length > 50) {
-    this.bumpHistory = this.bumpHistory.slice(0, 50)
+    this.bumpHistory = this.bumpHistory.slice(0, 50);
   }
-  
-  return this.save()
-}
 
-productSchema.methods.addBumpCredits = function (credits: number): Promise<IProduct> {
-  this.bumpCredits += credits
-  return this.save()
-}
+  return this.save();
+};
+
+productSchema.methods.addBumpCredits = function (
+  credits: number
+): Promise<IProduct> {
+  this.bumpCredits += credits;
+  return this.save();
+};
 
 // Static methods
-productSchema.statics.findActiveProducts = function (filters: Record<string, any> = {}) {
+productSchema.statics.findActiveProducts = function (
+  filters: Record<string, any> = {}
+) {
   return this.find({
     ...filters,
     status: "active",
     expires_at: { $gt: new Date() },
-  }).sort({ featured: -1, added_at: -1 })
-}
+  }).sort({ featured: -1, added_at: -1 });
+};
 
 productSchema.statics.findByCategory = function (
   categoryId: mongoose.Types.ObjectId,
-  subcategoryId: mongoose.Types.ObjectId | null = null,
+  subcategoryId: mongoose.Types.ObjectId | null = null
 ) {
   const query: Record<string, any> = {
     category_id: categoryId,
     status: "active",
     expires_at: { $gt: new Date() },
-  }
+  };
   if (subcategoryId) {
-    query.subcategory_id = subcategoryId
+    query.subcategory_id = subcategoryId;
   }
-  return this.find(query).sort({ featured: -1, added_at: -1 })
-}
+  return this.find(query).sort({ featured: -1, added_at: -1 });
+};
 
-productSchema.statics.findByUser = function (userId: mongoose.Types.ObjectId, includeExpired = false) {
-  const query: Record<string, any> = { user_id: userId }
+productSchema.statics.findByUser = function (
+  userId: mongoose.Types.ObjectId,
+  includeExpired = false
+) {
+  const query: Record<string, any> = { user_id: userId };
   if (!includeExpired) {
-    query.status = { $ne: "removed" }
+    query.status = { $ne: "removed" };
   }
-  return this.find(query).sort({ added_at: -1 })
-}
+  return this.find(query).sort({ added_at: -1 });
+};
 
-productSchema.statics.searchProducts = function (searchTerm: string, filters: Record<string, any> = {}) {
+productSchema.statics.searchProducts = function (
+  searchTerm: string,
+  filters: Record<string, any> = {}
+) {
   const query: Record<string, any> = {
     $text: { $search: searchTerm },
     status: "active",
     expires_at: { $gt: new Date() },
     ...filters,
-  }
+  };
   return this.find(query, { score: { $meta: "textScore" } }).sort({
     score: { $meta: "textScore" },
     featured: -1,
     added_at: -1,
-  })
-}
+  });
+};
 
 productSchema.statics.findExpiredProducts = function () {
   return this.find({
     status: "active",
     expires_at: { $lt: new Date() },
-  })
-}
+  });
+};
 
 productSchema.statics.autoExpireProducts = async function () {
   const expiredProducts = await (this as Model<IProduct>).find({
     status: "active",
     expires_at: { $lt: new Date() },
-  })
+  });
   for (const product of expiredProducts) {
-    product.status = "expired"
-    await product.save()
+    product.status = "expired";
+    await product.save();
   }
-  return expiredProducts.length
-}
+  return expiredProducts.length;
+};
 
-productSchema.statics.findFeaturedProducts = function (limit = 10, filters: Record<string, any> = {}) {
+productSchema.statics.findFeaturedProducts = function (
+  limit = 10,
+  filters: Record<string, any> = {}
+) {
   return this.find({
     ...filters,
     featured: true,
@@ -573,30 +610,30 @@ productSchema.statics.findFeaturedProducts = function (limit = 10, filters: Reco
     expires_at: { $gt: new Date() },
   })
     .sort({ added_at: -1 })
-    .limit(limit)
-}
+    .limit(limit);
+};
 
 productSchema.statics.findFeaturedByCategory = function (
   categoryId: mongoose.Types.ObjectId,
   limit = 5,
-  subcategoryId: mongoose.Types.ObjectId | null = null,
+  subcategoryId: mongoose.Types.ObjectId | null = null
 ) {
   const query: Record<string, any> = {
     category_id: categoryId,
     featured: true,
     status: "active",
     expires_at: { $gt: new Date() },
-  }
+  };
   if (subcategoryId) {
-    query.subcategory_id = subcategoryId
+    query.subcategory_id = subcategoryId;
   }
-  return this.find(query).sort({ added_at: -1 }).limit(limit)
-}
+  return this.find(query).sort({ added_at: -1 }).limit(limit);
+};
 
 productSchema.statics.findRelatedProducts = function (
   productId: mongoose.Types.ObjectId,
   categoryId: mongoose.Types.ObjectId,
-  limit = 6,
+  limit = 6
 ) {
   return this.find({
     _id: { $ne: productId },
@@ -605,57 +642,59 @@ productSchema.statics.findRelatedProducts = function (
     expires_at: { $gt: new Date() },
   })
     .sort({ featured: -1, added_at: -1 })
-    .limit(limit)
-}
+    .limit(limit);
+};
 
 productSchema.statics.getFeaturedCount = function () {
   return this.countDocuments({
     featured: true,
     status: "active",
     expires_at: { $gt: new Date() },
-  })
-}
+  });
+};
 
 // Virtual for formatted price
 productSchema.virtual("formattedPrice").get(function (this: IProduct) {
-  const currency = this.price.currency === "USD" ? "Rs." : this.price.currency
-  return `${currency} ${this.price.amount.toLocaleString()}${this.price.negotiable ? " (Negotiable)" : ""}`
-})
+  const currency = this.price.currency === "USD" ? "Rs." : this.price.currency;
+  return `${currency} ${this.price.amount.toLocaleString()}${this.price.negotiable ? " (Negotiable)" : ""}`;
+});
 
 // Virtual for time ago
 productSchema.virtual("timeAgo").get(function (this: IProduct) {
-  const now = new Date()
-  const diffTime = Math.abs(now.getTime() - (this.added_at?.getTime() ?? now.getTime()))
-  const diffSeconds = Math.floor(diffTime / 1000)
-  const diffMinutes = Math.floor(diffSeconds / 60)
-  const diffHours = Math.floor(diffMinutes / 60)
-  const diffDays = Math.floor(diffHours / 24)
+  const now = new Date();
+  const diffTime = Math.abs(
+    now.getTime() - (this.added_at?.getTime() ?? now.getTime())
+  );
+  const diffSeconds = Math.floor(diffTime / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
 
   if (diffSeconds < 60) {
-    return `${diffSeconds} second${diffSeconds === 1 ? "" : "s"} ago`
+    return `${diffSeconds} second${diffSeconds === 1 ? "" : "s"} ago`;
   }
   if (diffMinutes < 60) {
-    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`
+    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
   }
   if (diffHours < 24) {
-    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
   }
   if (diffDays === 1) {
-    return "1 day ago"
+    return "1 day ago";
   }
   if (diffDays < 7) {
-    return `${diffDays} days ago`
+    return `${diffDays} days ago`;
   }
   if (diffDays < 30) {
-    return `${Math.floor(diffDays / 7)} weeks ago`
+    return `${Math.floor(diffDays / 7)} weeks ago`;
   }
-  return `${Math.floor(diffDays / 30)} months ago`
-})
+  return `${Math.floor(diffDays / 30)} months ago`;
+});
 
 // Ensure virtual fields are serialized
 productSchema.set("toJSON", {
   virtuals: true,
-})
+});
 
 // Clear any existing model to force schema update
 if (mongoose.models.Product) {
@@ -663,5 +702,8 @@ if (mongoose.models.Product) {
 }
 
 // Create the model with updated schema
-const Product: Model<IProduct> = mongoose.model<IProduct>("Product", productSchema)
-export default Product
+const Product: Model<IProduct> = mongoose.model<IProduct>(
+  "Product",
+  productSchema
+);
+export default Product;

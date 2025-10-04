@@ -185,10 +185,12 @@ export async function POST(request: NextRequest) {
         phone: showPhoneNumber ? contactInfo.phone : undefined,
       },
       tags,
-      customFields: specifications ? Object.entries(specifications).map(([fieldName, value]) => ({
-        fieldName,
-        value
-      })) : undefined,
+      customFields: specifications
+        ? Object.entries(specifications).map(([fieldName, value]) => ({
+            fieldName,
+            value,
+          }))
+        : undefined,
     } as any); // Using 'as any' to bypass TypeScript interface limitations
 
     console.log("[PRODUCTS API] Product created successfully:", product._id);
@@ -362,8 +364,11 @@ export async function GET(request: NextRequest) {
           "user_id",
           "fullName username email profile.avatar profile.location"
         );
+        const obj = populatedProduct.toObject();
         return {
-          ...populatedProduct.toObject(),
+          ...obj,
+          // Expose condition at top-level for frontend convenience (backwards compatible)
+          condition: obj.details?.condition || undefined,
           user: populatedProduct.user_id, // Include populated user object
         };
       })

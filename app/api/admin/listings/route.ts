@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
       productFilter.category_id = searchParams.get("category");
     }
     if (searchParams.get("location")) {
-      productFilter["location.city"] = new RegExp(searchParams.get("location")!, "i");
+      productFilter["location.city"] = new RegExp(
+        searchParams.get("location")!,
+        "i"
+      );
     }
     if (searchParams.get("priceMin") || searchParams.get("priceMax")) {
       productFilter["price.amount"] = {};
@@ -111,11 +114,17 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const total = await Product.countDocuments(productFilter);
 
+    // Ensure flat product list includes a top-level 'condition' for frontend compatibility
+    const productsWithCondition = products.map((p: any) => ({
+      ...p,
+      condition: p.details?.condition || undefined,
+    }));
+
     // Return both grouped and flat product list for admin convenience
     return NextResponse.json({
       success: true,
       users: usersWithListings,
-      products, // flat list of all products matching the filter
+      products: productsWithCondition, // flat list of all products matching the filter
       pagination: {
         page,
         limit,

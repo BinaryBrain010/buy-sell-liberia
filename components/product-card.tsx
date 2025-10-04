@@ -120,6 +120,19 @@ export function ProductCard({
     return `/api/uploads/${cleanPath}`;
   }
 
+  // Render a user-friendly label from canonical condition value
+  function formatCondition(cond: string | undefined | null) {
+    if (!cond) return "";
+    const map: Record<string, string> = {
+      new: "New",
+      "like-new": "Like New",
+      good: "Good",
+      fair: "Fair",
+      poor: "Poor",
+    };
+    return map[cond] || String(cond);
+  }
+
   const getLocationString = () => {
     if (!product.location || typeof product.location !== "object") {
       return "Unknown location";
@@ -323,6 +336,22 @@ export function ProductCard({
                     {product.subCategory}
                   </span>
                 )}
+              {/* Condition pill - prefer top-level then nested details */}
+              {((product as any).condition ||
+                (product as any).details?.condition) && (
+                <span
+                  className={`text-xs px-2 py-1 rounded ${
+                    isDark
+                      ? "bg-zinc-700 text-gray-300"
+                      : "bg-gray-200 text-gray-700"
+                  }`}
+                >
+                  {formatCondition(
+                    (product as any).condition ||
+                      (product as any).details?.condition
+                  )}
+                </span>
+              )}
             </div>
 
             {/* Description */}

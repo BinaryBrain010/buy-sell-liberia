@@ -17,7 +17,7 @@ export interface CreateProductData {
   price: IPrice;
   category_id: string;
   subcategory_id: string;
-  condition: "new" | "used" | "refurbished";
+  condition: "new" | "like-new" | "good" | "fair" | "poor";
   images: Array<{
     url: string;
     alt?: string;
@@ -110,7 +110,15 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       // Convert category_id and subcategory_id to ObjectId
-      const product = await this.create({
+      // Ensure condition is stored under details.condition (schema expects details)
+      const detailsPayload = {
+        ...(productData as any).details,
+        // Only set condition if present
+        ...(productData.condition ? { condition: productData.condition } : {}),
+      };
+
+      const payloadToCreate: any = {
+        // copy all fields except condition (we've moved it into details)
         ...productData,
         category_id: new mongoose.Types.ObjectId(productData.category_id),
         subcategory_id: productData.subcategory_id
@@ -121,7 +129,13 @@ export class ProductService extends BaseService<IProduct> {
         status: "active",
         views: 0,
         featured: productData.featured ?? false,
-      });
+        details: detailsPayload,
+      };
+
+      // Remove top-level condition from payload to avoid stray field
+      if (payloadToCreate.condition) delete payloadToCreate.condition;
+
+      const product = await this.create(payloadToCreate);
 
       // Update seller: push listing entry and update statistics in one atomic op
       try {
@@ -273,7 +287,8 @@ export class ProductService extends BaseService<IProduct> {
       }
 
       if (filters.condition && filters.condition.length > 0) {
-        queryFilters.condition = { $in: filters.condition };
+        // condition is stored under details.condition in the Product schema
+        queryFilters["details.condition"] = { $in: filters.condition };
       }
 
       if (filters.location) {
@@ -448,9 +463,20 @@ export class ProductService extends BaseService<IProduct> {
         }
       }
 
+      // If condition provided in updateData, move it into details.condition
+      const updatePayload: any = { ...updateData };
+      if ((updatePayload as any).condition) {
+        updatePayload.details = {
+          ...(product.details as any),
+          ...(updatePayload.details || {}),
+          condition: updatePayload.condition,
+        };
+        delete updatePayload.condition;
+      }
+
       // Update product using base service
       const updatedProduct = await this.updateById(productId, {
-        $set: updateData,
+        $set: updatePayload,
       });
 
       // Populate seller information
@@ -1210,7 +1236,7 @@ export class ProductService extends BaseService<IProduct> {
       );
 
       const result = await this.find(
-        { condition, status: "active" },
+        { "details.condition": condition, status: "active" },
         pagination,
         sortOptions,
         "user_id"
