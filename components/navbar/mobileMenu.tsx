@@ -101,7 +101,8 @@ export default function MobileMenu({
         </Button>
 
         {!user && (
-          <div className="flex gap-2">
+          // Show auth actions only on mobile; hide on tablets and up
+          <div className="flex gap-2 md:hidden">
             <Button
               variant="outline"
               className="w-full"
