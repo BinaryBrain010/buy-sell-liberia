@@ -655,6 +655,9 @@ productSchema.statics.getFeaturedCount = function () {
 
 // Virtual for formatted price
 productSchema.virtual("formattedPrice").get(function (this: IProduct) {
+  if (!this.price || this.price.amount === undefined || this.price.amount === null) {
+    return "Price not set";
+  }
   const currency = this.price.currency === "USD" ? "Rs." : this.price.currency;
   return `${currency} ${this.price.amount.toLocaleString()}${this.price.negotiable ? " (Negotiable)" : ""}`;
 });

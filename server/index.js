@@ -114,6 +114,28 @@ app.post("/broadcast-announcement", (req, res) => {
   res.json({ success: true });
 });
 
+// Server status endpoint
+app.get("/request", (req, res) => {
+  const status = {
+    server: "online",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    port: port,
+    hostname: hostname,
+    socketConnections: io.engine.clientsCount,
+    onlineUsers: userSockets.size,
+    memoryUsage: process.memoryUsage(),
+    nodeVersion: process.version,
+    platform: process.platform,
+    pid: process.pid
+  };
+  
+  res.json({
+    success: true,
+    status: status
+  });
+});
+
 // Export a helper to emit announcements from other modules
 function emitAnnouncement(announcement) {
   io.emit("announcement:new", announcement);

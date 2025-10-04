@@ -150,20 +150,30 @@ export const MessagesComponent = ({
     return "Unknown Product";
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return "Unknown time";
+    
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return "Invalid date";
+      
+      return dateObj.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error, "Date:", date);
+      return "Invalid date";
+    }
   };
 
   const getLastMessage = (chat: any) => {
     if (chat.messages && chat.messages.length > 0) {
       const lastMsg = chat.messages[chat.messages.length - 1];
       return {
-        content: lastMsg.content,
+        content: lastMsg.content || "",
         time: formatDate(lastMsg.sentAt),
         isOwn: lastMsg.sender === getCurrentUserId(),
       };

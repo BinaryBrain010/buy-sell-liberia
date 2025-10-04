@@ -40,17 +40,33 @@ export async function GET(req: NextRequest) {
     .sort({ lastMessageAt: -1 });
 
   const normalizedChats = chats.map((chat) => {
-    const plain = chat.toObject({ virtuals: true });
+    try {
+      const plain = chat.toObject({ virtuals: true });
 
-    if (!plain.product) {
-      plain.product = {
-        _id: "announcement",
-        title: "Announcement",
-        images: [],
-      };
+      if (!plain.product) {
+        plain.product = {
+          _id: "announcement",
+          title: "Announcement",
+          images: [],
+        };
+      }
+
+      return plain;
+    } catch (error) {
+      console.error("Error serializing chat:", error, "Chat ID:", chat._id);
+      // Fallback: return basic chat data without virtuals
+      const plain = chat.toObject({ virtuals: false });
+      
+      if (!plain.product) {
+        plain.product = {
+          _id: "announcement",
+          title: "Announcement",
+          images: [],
+        };
+      }
+
+      return plain;
     }
-
-    return plain;
   });
 
   return NextResponse.json(normalizedChats);
