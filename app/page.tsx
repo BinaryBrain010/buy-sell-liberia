@@ -14,12 +14,12 @@ import PageLoaderOverlay from "@/components/loader/PageLoader";
 
 export default function Home() {
   return (
-    <div className="relative overflow-visible bg-gradient-to-b from-background to-muted/20">
+    <div className="relative overflow-x-hidden overflow-y-visible bg-gradient-to-b from-background to-muted/20">
       {/* Full-page loader until page assets complete */}
       <PageLoaderOverlay
         label="Loading marketplace"
-        minDuration={600}
-        waitForWindowLoad
+        minDuration={6000}
+        waitForWindowLoad={false}
       />
       {/* Enhanced decorative background accents */}
       <div
