@@ -647,7 +647,11 @@ export default function ProductDetail(productData: ProductDetailProps) {
                               productData.showPhoneNumber ?? true
                             }
                             sellerName={displayName}
-                            contactInfo={productData.contactInfo}
+                            // Prefer product-level contact (product.contact) if provided,
+                            // otherwise fall back to older contactInfo field.
+                            contactInfo={
+                              productData.contact ?? productData.contactInfo
+                            }
                             variant="both"
                             size="lg"
                             className="w-full sm:w-auto justify-center"

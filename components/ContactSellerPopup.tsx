@@ -89,9 +89,19 @@ export function ContactSellerButton({
 
   const handleContactAction = async (action: "phone" | "chat") => {
     if (action === "phone") {
+      // Always open the dialog for phone actions. If the user is not
+      // authenticated, show the login prompt immediately. If authenticated,
+      // fetch seller phone only when needed.
       setIsDialogOpen(true);
-      if (isAuthenticated) {
+      if (!isAuthenticated) {
+        // Let the dialog show the login prompt; do not fetch profile.
+        return;
+      }
+      // If authenticated, fetch contact details unless already present.
+      try {
         await fetchSellerPhone();
+      } catch (err) {
+        // fetchSellerPhone will handle errors and toasts; swallow here.
       }
       return;
     }
