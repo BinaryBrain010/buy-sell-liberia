@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { CategoryService } from "../../services/Category.Service";
 import { motion } from "framer-motion";
@@ -342,6 +342,16 @@ export default function CategoryPage() {
     window.history.pushState({}, "", newUrl);
   };
 
+  // Ref for small-screen dropdown (<details>) so we can close it after selection
+  const dropdownRef = useRef<HTMLDetailsElement | null>(null);
+
+  const selectAndClose = (subcategory: any) => {
+    handleSubcategorySelect(subcategory);
+    try {
+      if (dropdownRef.current) dropdownRef.current.open = false;
+    } catch (e) {}
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -407,75 +417,127 @@ export default function CategoryPage() {
 
         {/* Enhanced Category Header */}
         <FadeIn>
-          <div className="relative overflow-hidden bg-gradient-to-br from-background via-primary/5 to-background rounded-3xl p-8 md:p-12 mb-12 border-2 border-border/30 shadow-2xl">
+          <div className="relative overflow-visible bg-gradient-to-br from-background via-primary/5 to-background rounded-3xl p-4 md:p-8 mb-8 border-2 border-border/30 shadow-2xl">
             {/* Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute -right-20 -top-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
-              <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+              <div className="absolute -right-8 sm:-right-12 md:-right-20 -top-8 sm:-top-12 md:-top-20 h-28 sm:h-40 md:h-60 w-28 sm:w-40 md:w-60 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+              <div className="absolute -left-8 sm:-left-12 md:-left-20 -bottom-6 sm:-bottom-12 md:-bottom-20 h-20 sm:h-40 md:h-40 w-20 sm:w-40 md:w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
             </div>
 
-            <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-6 md:gap-8">
+            <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-4 md:gap-8">
                 <div
-                  className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br ${
                     categoryColors[currentCategory?.slug] ||
                     "from-gray-500 to-gray-600"
-                  } flex items-center justify-center text-5xl shadow-2xl text-white ring-8 ring-white/20`}
+                  } flex items-center justify-center text-3xl sm:text-4xl shadow-lg sm:shadow-2xl text-white ring-4 sm:ring-8 ring-white/20`}
                 >
                   {selectedSubcategory?.icon || currentCategory?.icon}
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 leading-tight break-words bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 md:mb-3 leading-tight break-words bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent">
                     {selectedSubcategory
                       ? selectedSubcategory.name
                       : currentCategory?.name}
                   </h1>
-                  <div className="flex items-center gap-4">
-                    <p className="text-muted-foreground text-lg md:text-xl">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <p className="text-muted-foreground text-sm md:text-lg">
                       {totalProducts} products available
                     </p>
-                    <div className="px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
-                      <span className="text-sm font-semibold text-green-700 dark:text-green-300">
-                        Active Category
-                      </span>
-                    </div>
                   </div>
 
                   {/* Subcategory Selection */}
                   {currentCategory?.subcategories?.length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-sm font-medium mb-3">
+                    <div className="mt-3 sm:mt-4">
+                      <p className="text-sm font-medium mb-2">
                         Filter by subcategory:
                       </p>
-                      <div className="-mx-4 px-4 overflow-x-auto overflow-y-hidden whitespace-nowrap flex gap-2">
-                        <Button
-                          variant={
-                            !selectedSubcategory && !subcategoryIdFromUrl
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={() => handleSubcategorySelect(null)}
-                          className="text-xs h-8 shrink-0"
-                        >
-                          All {currentCategory.name}
-                        </Button>
-                        {currentCategory.subcategories.map((sub: any) => (
+
+                      {/* Small screens: compact dropdown */}
+                      <div className="block md:hidden">
+                        <div className="relative inline-block text-left">
+                          <details ref={dropdownRef} className="relative">
+                            <summary className="list-none">
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                className="inline-flex items-center rounded-md px-3 py-1.5 text-sm h-8 bg-transparent border border-border/20 cursor-pointer"
+                              >
+                                <span className="truncate">
+                                  {selectedSubcategory
+                                    ? selectedSubcategory.name
+                                    : `All ${currentCategory.name}`}
+                                </span>
+                                <ChevronDown className="w-4 h-4 ml-2" />
+                              </div>
+                            </summary>
+                            <div className="absolute mt-2 w-56 bg-background border border-border/30 rounded-lg shadow-lg z-30">
+                              <div className="p-2">
+                                <button
+                                  className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                                    !selectedSubcategory &&
+                                    !subcategoryIdFromUrl
+                                      ? "bg-muted/10"
+                                      : "hover:bg-muted/10"
+                                  }`}
+                                  onClick={() => selectAndClose(null)}
+                                >
+                                  All {currentCategory.name}
+                                </button>
+                                {currentCategory.subcategories.map(
+                                  (sub: any) => (
+                                    <button
+                                      key={sub._id}
+                                      className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                                        selectedSubcategory?._id === sub._id ||
+                                        subcategoryIdFromUrl === sub._id
+                                          ? "bg-muted/10"
+                                          : "hover:bg-muted/10"
+                                      }`}
+                                      onClick={() => selectAndClose(sub)}
+                                    >
+                                      {sub.name}
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          </details>
+                        </div>
+                      </div>
+
+                      {/* md+ screens: pill row */}
+                      <div className="hidden md:block">
+                        <div className="-mx-4 px-4 sm:-mx-0 sm:px-0 overflow-x-auto overflow-y-hidden whitespace-nowrap flex gap-2">
                           <Button
-                            key={sub._id}
                             variant={
-                              selectedSubcategory?._id === sub._id ||
-                              subcategoryIdFromUrl === sub._id
+                              !selectedSubcategory && !subcategoryIdFromUrl
                                 ? "default"
                                 : "outline"
                             }
                             size="sm"
-                            onClick={() => handleSubcategorySelect(sub)}
-                            className="text-xs h-8 pl-1 pr-3 flex items-center gap-2 shrink-0"
+                            onClick={() => handleSubcategorySelect(null)}
+                            className="text-xs h-8 shrink-0"
                           >
-                            {sub.name}
+                            All {currentCategory.name}
                           </Button>
-                        ))}
+                          {currentCategory.subcategories.map((sub: any) => (
+                            <Button
+                              key={sub._id}
+                              variant={
+                                selectedSubcategory?._id === sub._id ||
+                                subcategoryIdFromUrl === sub._id
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => handleSubcategorySelect(sub)}
+                              className="text-xs h-8 pl-1 pr-3 flex items-center gap-2 shrink-0"
+                            >
+                              {sub.name}
+                            </Button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
