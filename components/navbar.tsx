@@ -112,15 +112,11 @@ export function Navbar() {
               <NavigationLinks />
             </div>
 
-            {/* Right Side - Desktop */}
-            <div className="hidden md:flex items-center gap-2 lg:gap-4">
+            {/* Right Side - Desktop (show only on lg+) */}
+            <div className="hidden lg:flex items-center gap-2 lg:gap-4">
+              {/* Theme toggle visible on large screens */}
+              <ThemeToggle />
               {user && <SellButton />}
-              {!user && (
-                // show theme toggle only on large screens (hide on tablet)
-                <div className="hidden lg:block">
-                  <ThemeToggle />
-                </div>
-              )}
               {user ? (
                 <>
                   <UserActions />
@@ -133,11 +129,27 @@ export function Navbar() {
 
             {/* Mobile/Tablet controls */}
             <div className="flex items-center gap-2 lg:hidden">
-              {/* search icon removed on tablet/mobile; search is available inline on desktop (lg+) */}
-              {/* Keep mobile header uncluttered: show theme toggle (optional) and hamburger only */}
+              {/* On very small screens keep header minimal (theme toggle + hamburger) */}
               <div className="block md:hidden">
-                <ThemeToggle />
+                {user ? <DropDownMenu includeThemeToggle /> : <ThemeToggle />}
               </div>
+
+              {/* Tablet (md) - compact controls: sell, user actions or auth buttons */}
+              <div className="hidden md:flex items-center gap-2">
+                {user && <SellButton />}
+                {user ? (
+                  <>
+                    <UserActions />
+                    <DropDownMenu includeThemeToggle />
+                  </>
+                ) : (
+                  <>
+                    <ThemeToggle />
+                    <AuthButtons onAuthClick={handleAuthClick} />
+                  </>
+                )}
+              </div>
+
               {/* Hamburger on far right */}
               <Button
                 variant="ghost"
