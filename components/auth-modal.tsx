@@ -131,8 +131,23 @@ export function AuthModal({
               handleStepChange("signup");
             }}
             onClose={() => {
-              onLoginSuccess();
+              // Notify parent that login succeeded so they can update auth state
+              try {
+                onLoginSuccess();
+              } catch (err) {
+                // ignore handler errors
+              }
+              // Close modal UI
               handleClose();
+              // Refresh the current route so the page the user was on updates
+              try {
+                router.refresh();
+              } catch (err) {
+                // Fallback to full reload if router.refresh isn't available
+                try {
+                  window.location.reload();
+                } catch {}
+              }
             }}
             onBanned={(msg?: string) => handleBanned(msg)}
           />
