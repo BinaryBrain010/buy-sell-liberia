@@ -102,14 +102,14 @@ const trustBadges = [
 
 export function TrustBadgesSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-muted/10 to-background relative overflow-visible z-0">
+    <section className="py-20 bg-gradient-to-b from-muted/10 to-background relative overflow-visible z-20">
       {/* Background Elements (non-interactive) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-1/4 -right-20 h-40 w-40 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
         <div className="absolute bottom-1/4 -left-20 h-32 w-32 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-20">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
             <Shield className="w-6 h-6 text-primary" />

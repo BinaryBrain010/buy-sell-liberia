@@ -109,14 +109,14 @@ export function HowItWorksSection() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/20 relative overflow-visible z-0">
+    <section className="py-8 md:py-12 lg:py-20 bg-gradient-to-b from-background to-muted/20 relative overflow-visible z-0">
       {/* Background Elements (non-interactive) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 -left-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 h-32 w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+        <div className="absolute top-1/4 -left-12 md:-left-20 h-28 w-28 md:h-40 md:w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+        <div className="absolute bottom-1/4 -right-12 md:-right-20 h-24 w-24 md:h-32 md:w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
             How It Works
@@ -145,49 +145,48 @@ export function HowItWorksSection() {
           </div>
 
           {/* Enhanced Step Layout */}
-          <div className="relative max-w-6xl mx-auto mb-16">
-            {/* Progress Line */}
-            <div className="absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-primary via-v0-green to-v0-orange rounded-full hidden lg:block"></div>
+          <div className="relative max-w-5xl md:max-w-6xl mx-auto mb-12">
+            {/* Progress Line (visible from md) */}
+            <div className="absolute md:top-20 lg:top-24 left-4 right-4 md:left-0 md:right-0 h-1 bg-gradient-to-r from-primary via-v0-green to-v0-orange rounded-full hidden md:block" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-4">
               {sellingSteps.map((step, index) => (
                 <div
                   key={step.step}
                   className="relative group hover:scale-105 transition-all duration-500"
                 >
-                  {/* Step Number Badge */}
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-primary to-v0-dark-blue text-white flex items-center justify-center font-bold text-xl shadow-2xl z-20 border-4 border-background">
+                  {/* Step Number Badge (static on small screens, absolute on lg+) */}
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-v0-dark-blue text-white flex items-center justify-center font-bold text-sm sm:text-lg shadow-md sm:shadow-2xl z-20 border-2 sm:border-4 border-background mx-auto mb-3 lg:mx-0 lg:mb-0 lg:absolute lg:-top-6 lg:left-1/2 lg:transform lg:-translate-x-1/2">
                     {step.step}
                   </div>
 
-                  <Card className="relative bg-gradient-to-br from-background/90 via-primary/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-primary/60 hover:shadow-2xl hover:shadow-primary/25 transition-all duration-500 h-full overflow-hidden mt-8">
+                  <Card className="relative bg-gradient-to-br from-background/90 via-primary/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/20 transition-all duration-500 h-full overflow-hidden mt-2 md:mt-6">
                     {/* Decorative Top Accent */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary to-v0-green opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                    <CardContent className="p-8 pt-12 text-center">
+                    <CardContent className="p-4 sm:p-6 pt-10 sm:pt-12 text-center">
                       <div
-                        className={`w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-2xl ring-8 ring-white/20 relative overflow-hidden group-hover:scale-125 group-hover:rotate-12 transition-all duration-500`}
+                        className={`w-16 h-16 sm:w-20 md:w-24 mx-auto mb-4 sm:mb-6 rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg md:shadow-2xl ring-4 md:ring-8 ring-white/10 relative overflow-hidden group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
-                        <step.icon className="h-12 w-12 text-white relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                        <step.icon className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10" />
                       </div>
 
-                      <h4 className="text-2xl font-bold mb-4 group-hover:text-primary transition-colors">
+                      <h4 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 group-hover:text-primary transition-colors">
                         {step.title}
                       </h4>
-                      <p className="text-muted-foreground leading-relaxed text-base">
+                      <p className="text-muted-foreground leading-relaxed text-sm">
                         {step.description}
                       </p>
 
                       {/* Decorative Bottom Accent */}
-                      <div className="mt-6 w-20 h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 mx-auto"></div>
+                      <div className="mt-4 w-16 h-1 bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 mx-auto"></div>
                     </CardContent>
                   </Card>
 
-                  {/* Connection Arrow */}
+                  {/* Connection Arrow (visible on lg) */}
                   {index < sellingSteps.length - 1 && (
                     <div className="hidden lg:block absolute top-1/2 -right-6 transform -translate-y-1/2 text-primary/40 group-hover:text-primary/80 transition-colors z-10">
-                      <ArrowRight className="w-12 h-12" />
+                      <ArrowRight className="w-10 h-10" />
                     </div>
                   )}
                 </div>
@@ -195,21 +194,8 @@ export function HowItWorksSection() {
             </div>
           </div>
 
-          <div className="text-center">
+          <div className="text-center mt-2">
             <div className="hover:scale-105 transition-transform">
-              <Button
-                size="lg"
-                className="px-12 py-6 text-lg font-semibold bg-gradient-to-r from-primary to-v0-dark-blue text-primary-foreground hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 rounded-2xl shadow-xl hover:shadow-2xl"
-                onClick={() =>
-                  handleStartSelling((path: string) =>
-                    window.location.assign(path)
-                  )
-                }
-              >
-                <span className="text-2xl mr-3">🚀</span>
-                {loadingAuth ? "Checking status..." : "Start Selling Today"}
-                <ArrowRight className="w-5 h-5 ml-3" />
-              </Button>
             </div>
           </div>
         </div>
@@ -232,49 +218,48 @@ export function HowItWorksSection() {
           </div>
 
           {/* Enhanced Step Layout */}
-          <div className="relative max-w-6xl mx-auto mb-16">
-            {/* Progress Line */}
-            <div className="absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-v0-green via-v0-orange to-primary rounded-full hidden lg:block"></div>
+          <div className="relative max-w-5xl md:max-w-6xl mx-auto mb-12">
+            {/* Progress Line (visible from md) */}
+            <div className="absolute md:top-20 lg:top-24 left-4 right-4 md:left-0 md:right-0 h-1 bg-gradient-to-r from-v0-green via-v0-orange to-primary rounded-full hidden md:block" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8 lg:gap-4">
               {buyingSteps.map((step, index) => (
                 <div
                   key={step.step}
                   className="relative group hover:scale-105 transition-all duration-500"
                 >
-                  {/* Step Number Badge */}
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-v0-green to-v0-orange text-white flex items-center justify-center font-bold text-xl shadow-2xl z-20 border-4 border-background">
+                  {/* Step Number Badge (static on small screens, absolute on lg+) */}
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-v0-green to-v0-orange text-white flex items-center justify-center font-bold text-sm sm:text-lg shadow-md sm:shadow-2xl z-20 border-2 sm:border-4 border-background mx-auto mb-3 lg:mx-0 lg:mb-0 lg:absolute lg:-top-6 lg:left-1/2 lg:transform lg:-translate-x-1/2">
                     {step.step}
                   </div>
 
-                  <Card className="relative bg-gradient-to-br from-background/90 via-v0-green/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-v0-green/60 hover:shadow-2xl hover:shadow-v0-green/25 transition-all duration-500 h-full overflow-hidden mt-8">
+                  <Card className="relative bg-gradient-to-br from-background/90 via-v0-green/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-v0-green/60 hover:shadow-lg hover:shadow-v0-green/20 transition-all duration-500 h-full overflow-hidden mt-2 md:mt-6">
                     {/* Decorative Top Accent */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-v0-green to-v0-orange opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                    <CardContent className="p-8 pt-12 text-center">
+                    <CardContent className="p-4 sm:p-6 pt-10 sm:pt-12 text-center">
                       <div
-                        className={`w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-2xl ring-8 ring-white/20 relative overflow-hidden group-hover:scale-125 group-hover:rotate-12 transition-all duration-500`}
+                        className={`w-16 h-16 sm:w-20 md:w-24 mx-auto mb-4 sm:mb-6 rounded-3xl bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg md:shadow-2xl ring-4 md:ring-8 ring-white/10 relative overflow-hidden group-hover:scale-105 group-hover:rotate-4 transition-all duration-500`}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent" />
-                        <step.icon className="h-12 w-12 text-white relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                        <step.icon className="h-10 w-10 sm:h-12 sm:w-12 text-white relative z-10" />
                       </div>
 
-                      <h4 className="text-2xl font-bold mb-4 group-hover:text-v0-green transition-colors">
+                      <h4 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 group-hover:text-v0-green transition-colors">
                         {step.title}
                       </h4>
-                      <p className="text-muted-foreground leading-relaxed text-base">
+                      <p className="text-muted-foreground leading-relaxed text-sm">
                         {step.description}
                       </p>
 
                       {/* Decorative Bottom Accent */}
-                      <div className="mt-6 w-20 h-1 bg-gradient-to-r from-transparent via-v0-green/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 mx-auto"></div>
+                      <div className="mt-4 w-16 h-1 bg-gradient-to-r from-transparent via-v0-green/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 mx-auto"></div>
                     </CardContent>
                   </Card>
 
-                  {/* Connection Arrow */}
+                  {/* Connection Arrow (visible on lg) */}
                   {index < buyingSteps.length - 1 && (
                     <div className="hidden lg:block absolute top-1/2 -right-6 transform -translate-y-1/2 text-v0-green/40 group-hover:text-v0-green/80 transition-colors z-10">
-                      <ArrowRight className="w-12 h-12" />
+                      <ArrowRight className="w-10 h-10" />
                     </div>
                   )}
                 </div>
