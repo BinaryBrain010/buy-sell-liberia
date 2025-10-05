@@ -54,7 +54,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-[calc(100vh-64px)] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 py-10 md:py-10 lg:py-18 overflow-hidden">
+    <section className="relative box-border min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 py-8 md:py-10 lg:py-18 overflow-hidden">
       {/* Enhanced Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
@@ -65,7 +65,6 @@ export function HeroSection() {
       <div className="container mx-auto px-4 md:px-8 lg:px-16 max-w-6xl flex flex-col items-center justify-center min-h-[70vh] w-full relative z-10">
         {/* Content Column */}
         <div className="flex flex-col items-center text-center w-full gap-8">
-
           {/* Main Heading */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-balance">
             Your Ultimate Buy & Sell{" "}
@@ -94,7 +93,7 @@ export function HeroSection() {
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
-            
+
             <div className="hover:scale-105 transition-transform">
               <Button
                 variant="outline"

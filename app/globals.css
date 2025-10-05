@@ -12,6 +12,22 @@ body {
   overflow-x: hidden;
 }
 
+/* Reset default margin/padding and ensure full height to avoid accidental scrollbars */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Use border-box universally so padding/border are included in element size calculations */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

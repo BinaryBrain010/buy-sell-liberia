@@ -52,9 +52,10 @@ export default function DropDownMenu({ includeThemeToggle = false }: Props) {
           <Button
             ref={triggerRef}
             variant="ghost"
-            className="relative h-8 w-8 rounded-full btn-shadow"
+            className="relative h-8 w-8 rounded-full btn-shadow z-50"
             aria-haspopup="menu"
             aria-expanded={open}
+            aria-label="Open account menu"
           >
             <Avatar className="h-8 w-8 card-shadow">
               <AvatarImage src="" alt={user?.name || ""} />
