@@ -2,6 +2,9 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { AuthModal } from "@/components/auth-modal";
+import { clearStoredTokens, getLocalAuthStatus } from "@/lib/jwt";
 import {
   UserPlus,
   Camera,
@@ -86,6 +89,25 @@ const buyingSteps = [
 ];
 
 export function HowItWorksSection() {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  useEffect(() => {
+    const { isLoggedIn } = getLocalAuthStatus();
+    setIsLoggedIn(isLoggedIn);
+    if (!isLoggedIn) clearStoredTokens();
+    setLoadingAuth(false);
+  }, []);
+
+  const handleStartSelling = (routerPush: (path: string) => void) => {
+    if (isLoggedIn) {
+      routerPush("/sell");
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
   return (
     <section className="py-20 bg-gradient-to-b from-background to-muted/20 relative overflow-visible z-0">
       {/* Background Elements (non-interactive) */}
@@ -174,18 +196,21 @@ export function HowItWorksSection() {
           </div>
 
           <div className="text-center">
-            <Link href="/sell" passHref>
-              <div className="hover:scale-105 transition-transform">
-                <Button
-                  size="lg"
-                  className="px-12 py-6 text-lg font-semibold bg-gradient-to-r from-primary to-v0-dark-blue text-primary-foreground hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 rounded-2xl shadow-xl hover:shadow-2xl"
-                >
-                  <span className="text-2xl mr-3">🚀</span>
-                  Start Selling Today
-                  <ArrowRight className="w-5 h-5 ml-3" />
-                </Button>
-              </div>
-            </Link>
+            <div className="hover:scale-105 transition-transform">
+              <Button
+                size="lg"
+                className="px-12 py-6 text-lg font-semibold bg-gradient-to-r from-primary to-v0-dark-blue text-primary-foreground hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 rounded-2xl shadow-xl hover:shadow-2xl"
+                onClick={() =>
+                  handleStartSelling((path: string) =>
+                    window.location.assign(path)
+                  )
+                }
+              >
+                <span className="text-2xl mr-3">🚀</span>
+                {loadingAuth ? "Checking status..." : "Start Selling Today"}
+                <ArrowRight className="w-5 h-5 ml-3" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -255,6 +280,17 @@ export function HowItWorksSection() {
                 </div>
               ))}
             </div>
+            {showAuthModal && (
+              <AuthModal
+                isOpen={showAuthModal}
+                onOpenChange={setShowAuthModal}
+                onLoginSuccess={() => {
+                  setIsLoggedIn(true);
+                  setShowAuthModal(false);
+                  window.location.assign("/sell");
+                }}
+              />
+            )}
           </div>
 
           <div className="text-center">
