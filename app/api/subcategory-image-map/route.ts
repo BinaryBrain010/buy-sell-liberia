@@ -144,10 +144,33 @@ export async function POST(request: NextRequest) {
       saved.push({ slug: cleanSlug, url, title: titles[slug] });
     }
 
-    // Upsert single mapping doc
+    // Merge with existing mapping instead of replacing
+    const existingDoc = await SubcategoryImageMap.findOne({
+      key: "global",
+    }).lean();
+    const existingImages: { slug: string; url: string; title?: string }[] = (
+      existingDoc && Array.isArray(existingDoc.images) ? existingDoc.images : []
+    ) as any[];
+
+    // Merge by slug: replace entries for incoming slugs, keep others
+    const mergedMap = [...existingImages];
+    for (const s of saved) {
+      const idx = mergedMap.findIndex((x) => x.slug === s.slug);
+      // prefer title provided explicitly; allow titles mapping to use raw or cleaned slug
+      const titleFromMap =
+        titles[s.slug] ?? titles[s.slug.replace(/[^a-z0-9-_]+/g, "-")];
+      const newEntry = {
+        slug: s.slug,
+        url: s.url,
+        title: titleFromMap ?? s.title,
+      };
+      if (idx >= 0) mergedMap[idx] = newEntry;
+      else mergedMap.push(newEntry);
+    }
+
     const doc = await SubcategoryImageMap.findOneAndUpdate(
       { key: "global" },
-      { $set: { images: saved } },
+      { $set: { images: mergedMap } },
       { new: true, upsert: true }
     ).lean();
 
