@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Phone, MessageCircle, Copy, LogIn } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { AuthModal } from "@/components/auth-modal";
 import { toast } from "sonner";
 
@@ -142,6 +143,14 @@ export function ContactSellerButton({
       navigator.clipboard.writeText(sellerWhatsapp);
       toast.success("WhatsApp number copied to clipboard");
     }
+  };
+
+  const openWhatsApp = () => {
+    if (!sellerWhatsapp) return;
+    const number = sellerWhatsapp.replace(/[^\d]/g, "");
+    const text = `Hi ${sellerName}, I'm interested in ${productTitle}.`;
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const makePhoneCall = () => {
@@ -293,31 +302,18 @@ export function ContactSellerButton({
   }
 
   if (variant === "whatsapp") {
+    if (!sellerWhatsapp) return null;
     return (
-      <>
-        <Button
-          size="sm"
-          variant="outline"
-          className={`${getButtonSize()} ${className}`}
-          onClick={() => handleContactAction("chat")}
-          disabled={isCheckingAuth}
-        >
-          <MessageCircle className="h-3 w-3" />
-          {size === "lg" && <span className="ml-2">Chat</span>}
-        </Button>
-
-        {/* Login Required Dialog */}
-        {/* Login prompt now shown inside the contact dialog when unauthenticated */}
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onOpenChange={setIsAuthModalOpen}
-          onLoginSuccess={() => {
-            setIsAuthenticated(true);
-            setIsAuthModalOpen(false);
-          }}
-          initialMode="login"
-        />
-      </>
+      <Button
+        size="sm"
+        variant="outline"
+        className={`${getButtonSize()} ${className}`}
+        onClick={openWhatsApp}
+        aria-label="Contact on WhatsApp"
+      >
+        <FaWhatsapp className="h-3 w-3 text-[#25D366]" />
+        {size === "lg" && <span className="ml-2">WhatsApp</span>}
+      </Button>
     );
   }
 
@@ -345,6 +341,18 @@ export function ContactSellerButton({
       >
         <MessageCircle className="h-3 w-3" />
       </Button>
+
+      {sellerWhatsapp && (
+        <Button
+          size="sm"
+          variant="outline"
+          className={`${getButtonSize()} ${className}`}
+          onClick={openWhatsApp}
+          aria-label="Contact on WhatsApp"
+        >
+          <FaWhatsapp className="h-3 w-3 text-[#25D366]" />
+        </Button>
+      )}
 
       {/* Contact Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
