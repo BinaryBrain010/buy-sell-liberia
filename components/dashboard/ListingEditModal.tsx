@@ -301,7 +301,7 @@ export function ListingEditModal({
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            {/* <div>
               <label className="text-xs font-medium text-muted-foreground">
                 Featured
               </label>
@@ -318,7 +318,7 @@ export function ListingEditModal({
                   Mark as Featured
                 </span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Location */}
@@ -444,7 +444,7 @@ export function ListingEditModal({
           </div>
 
           {/* Contact */}
-          <div className="flex items-center gap-2 mt-2">
+          {/* <div className="flex items-center gap-2 mt-2">
             <input
               type="checkbox"
               checked={form.showPhoneNumber ?? listing.showPhoneNumber}
@@ -456,7 +456,7 @@ export function ListingEditModal({
             <span className="text-xs text-muted-foreground">
               Display phone number
             </span>
-          </div>
+          </div> */}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
