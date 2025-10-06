@@ -105,7 +105,7 @@ export function ListingEditModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto w-[95vw] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit Listing</DialogTitle>
         </DialogHeader>
@@ -385,7 +385,7 @@ export function ListingEditModal({
                 </span>
               )}
             </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
               {listing.images.length ? (
                 listing.images.map((img, i) => {
                   const isCover = i === 0;

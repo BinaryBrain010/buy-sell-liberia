@@ -399,7 +399,7 @@ export default function DashboardPage() {
             <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
           </div>
 
-          <div className="container mx-auto px-4 py-8 relative z-10">
+          <div className="container max-w-screen-xl mx-auto px-4 py-6 md:py-8 relative z-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               {/* Enhanced Welcome Section */}
               <div className="space-y-4">
@@ -435,12 +435,12 @@ export default function DashboardPage() {
               </div>
 
               {/* Enhanced Navigation Tabs */}
-              <div className="flex-shrink-0">
-                <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:flex lg:gap-1 bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg">
+              <div className="flex-shrink-0 w-full lg:w-auto">
+                <TabsList className="flex w-full lg:w-auto gap-1 overflow-x-auto whitespace-nowrap bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg rounded-xl p-1">
                   <TabsTrigger
                     value="profile"
                     aria-label="Profile"
-                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[110px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <User className="h-4 w-4" />
                     <span className="hidden sm:inline font-medium">
@@ -450,7 +450,7 @@ export default function DashboardPage() {
                   <TabsTrigger
                     value="listings"
                     aria-label="Listings"
-                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[110px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Package className="h-4 w-4" />
                     <span className="hidden sm:inline font-medium">
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                   <TabsTrigger
                     value="favourites"
                     aria-label="Favourites"
-                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[120px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Heart className="h-4 w-4" />
                     <span className="hidden sm:inline font-medium">
@@ -470,7 +470,7 @@ export default function DashboardPage() {
                   <TabsTrigger
                     value="messages"
                     aria-label="Messages"
-                    className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[120px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <MessageCircle className="h-4 w-4" />
                     <span className="hidden sm:inline font-medium">
@@ -484,7 +484,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Enhanced Main Content */}
-        <div className="container mx-auto px-4 py-8">
+  <div className="container max-w-screen-xl mx-auto px-4 py-6 md:py-8">
           <TabsContent value="profile" className="space-y-6">
             {user?.id || user?._id ? (
               <div className="relative">

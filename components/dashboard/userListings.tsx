@@ -359,7 +359,7 @@ export default function UserListings({ userId }: UserListingsProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full sm:w-auto flex-wrap">
               <Button
                 variant="outline"
                 onClick={fetchUserListings}
@@ -378,7 +378,7 @@ export default function UserListings({ userId }: UserListingsProps) {
 
           {/* Enhanced Statistics */}
           {listings.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                 <div className="text-2xl font-bold text-primary">
                   {listings.length}
@@ -418,7 +418,7 @@ export default function UserListings({ userId }: UserListingsProps) {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search and Filter */}
             <div className="flex flex-col sm:flex-row gap-4 flex-1">
-              <div className="relative flex-1">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input
                   placeholder="Search your listings..."
@@ -494,7 +494,7 @@ export default function UserListings({ userId }: UserListingsProps) {
 
             {/* Conditional Rendering based on View Mode */}
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredListings.map((l) => (
                   <ListingCard
                     key={l._id}

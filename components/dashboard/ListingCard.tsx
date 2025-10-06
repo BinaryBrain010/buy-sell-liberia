@@ -55,7 +55,7 @@ export function ListingCard({
         <img
           src={resolveImageUrl(listing.images?.[0]?.url)}
           alt={listing.images?.[0]?.alt || listing.title || "Listing image"}
-          className="w-full h-40 sm:h-36 object-cover"
+          className="w-full h-44 sm:h-36 object-cover"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
           }}
@@ -64,13 +64,17 @@ export function ListingCard({
       {listing.images && listing.images.length > 1 && (
         <div className="flex gap-1 px-2 pt-2 overflow-x-auto">
           {listing.images.slice(1, 6).map((img: any, idx: number) => (
-            <div key={idx} className="w-10 h-10 rounded overflow-hidden border flex-shrink-0 bg-muted/30">
+            <div
+              key={idx}
+              className="w-10 h-10 rounded overflow-hidden border flex-shrink-0 bg-muted/30"
+            >
               <img
                 src={resolveImageUrl(img.url)}
                 alt={img.alt || `${listing.title} ${idx + 2}`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = "/placeholder.jpg";
+                  (e.currentTarget as HTMLImageElement).src =
+                    "/placeholder.jpg";
                 }}
               />
             </div>
@@ -124,7 +128,7 @@ export function ListingCard({
             {new Date(listing.createdAt).toLocaleDateString()}
           </span>
         </div>
-        <div className="grid grid-cols-1 sm:flex sm:flex-row gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
           <Button
             variant="outline"
             size="sm"
