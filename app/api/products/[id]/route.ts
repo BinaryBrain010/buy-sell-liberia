@@ -60,95 +60,80 @@ export async function PUT(
     console.log("🔄 [PRODUCT API] Update request for product:", params.id);
     console.log("📤 [PRODUCT API] Update data:", updateData);
     console.log("👤 [PRODUCT API] User ID:", authResult.userId);
+    // Whitelist allowed fields only. Images and other fields are ignored.
+    const sanitized: Record<string, any> = {};
+    // Simple fields
+    if (typeof updateData.title === "string")
+      sanitized.title = updateData.title;
+    if (typeof updateData.description === "string")
+      sanitized.description = updateData.description;
+    if (typeof updateData.status === "string")
+      sanitized.status = updateData.status;
+    if (
+      updateData.tags &&
+      (Array.isArray(updateData.tags) || typeof updateData.tags === "string")
+    ) {
+      const tagsArr = Array.isArray(updateData.tags)
+        ? updateData.tags
+        : String(updateData.tags)
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+      sanitized.tags = tagsArr.slice(0, 50);
+    }
+    // Price (object)
+    if (
+      updateData.price &&
+      typeof updateData.price === "object" &&
+      typeof updateData.price.amount !== "undefined"
+    ) {
+      sanitized.price = {
+        amount: Number(updateData.price.amount),
+        currency: updateData.price.currency || undefined,
+        negotiable:
+          typeof updateData.price.negotiable === "boolean"
+            ? updateData.price.negotiable
+            : undefined,
+      };
+    }
+    // Condition (handled in service to move into details.condition)
+    if (typeof updateData.condition === "string")
+      sanitized.condition = updateData.condition;
+    // Category / Subcategory mapping
+    if (typeof updateData.category === "string")
+      sanitized.category_id = updateData.category;
+    if (typeof updateData.category_id === "string")
+      sanitized.category_id = updateData.category_id;
+    if (typeof updateData.subcategory === "string")
+      sanitized.subcategory_id = updateData.subcategory;
+    if (typeof updateData.subcategory_id === "string")
+      sanitized.subcategory_id = updateData.subcategory_id;
+    // Location fields (dot notation so we don't clobber full object)
+    if (typeof updateData.city === "string")
+      sanitized["location.city"] = updateData.city;
+    if (typeof updateData.state === "string")
+      sanitized["location.state"] = updateData.state;
+    if (typeof updateData.country === "string")
+      sanitized["location.country"] = updateData.country;
 
-    // Check if this is an images-only update
-    const isImagesOnlyUpdate =
-      updateData.images &&
-      Object.keys(updateData).length === 1 &&
-      Array.isArray(updateData.images);
+    // Explicitly ignore images and other restricted fields
+    // e.g., delete updateData.images, updateData.user_id, etc.
 
-    if (isImagesOnlyUpdate) {
-      console.log(
-        "🖼️ [PRODUCT API] Detected images-only update, using direct database access"
+    if (Object.keys(sanitized).length === 0) {
+      return NextResponse.json(
+        { error: "No valid fields provided to update" },
+        { status: 400 }
       );
-
-      // For images-only updates, use direct database access to avoid ProductService issues
-      try {
-        const mongoose = require("mongoose");
-        const dbConnect = require("@/lib/mongoose").default;
-        const { Product } = require("@/models");
-
-        await dbConnect();
-
-        // Find product and verify ownership using user_id field
-        const product = await Product.findOne({
-          _id: params.id,
-          user_id: authResult.userId,
-        });
-
-        if (!product) {
-          console.log(
-            "❌ [PRODUCT API] Product not found or user does not have permission"
-          );
-          return NextResponse.json(
-            {
-              error:
-                "Product not found or you don't have permission to update it",
-            },
-            { status: 404 }
-          );
-        }
-
-        console.log("✅ [PRODUCT API] Product found, updating images...");
-
-        // Update the product images
-        const updatedProduct = await Product.findByIdAndUpdate(
-          params.id,
-          {
-            $set: { images: updateData.images },
-            updated_at: new Date(),
-          },
-          { new: true, runValidators: true }
-        );
-
-        if (!updatedProduct) {
-          return NextResponse.json(
-            { error: "Failed to update product" },
-            { status: 500 }
-          );
-        }
-
-        console.log("✅ [PRODUCT API] Images updated successfully");
-
-        const upObj = (updatedProduct as any).toObject
-          ? (updatedProduct as any).toObject()
-          : updatedProduct;
-        return NextResponse.json({
-          message: "Product images updated successfully",
-          product: {
-            ...upObj,
-            condition: upObj.details?.condition || undefined,
-          },
-        });
-      } catch (dbError: any) {
-        console.error("❌ [PRODUCT API] Database error:", dbError);
-        return NextResponse.json(
-          {
-            error: "Failed to update images: " + dbError.message,
-          },
-          { status: 500 }
-        );
-      }
     }
 
-    // For other updates, use the ProductService
-    console.log("🔄 [PRODUCT API] Using ProductService for update");
+    // Use the ProductService with sanitized payload
+    console.log("🔄 [PRODUCT API] Using ProductService for update (sanitized)");
     let product: any = null;
     try {
       product = await productService.updateProduct(
         params.id,
         authResult.userId,
-        updateData
+        sanitized as any
       );
     } catch (err: any) {
       return NextResponse.json(
