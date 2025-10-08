@@ -1,27 +1,63 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import axios from "axios"
-import { CategoryService } from "@/app/services/Category.Service"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2, Upload, X, Plus, MapPin, DollarSign, Tag } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import axios from "axios";
+import { CategoryService } from "@/app/services/Category.Service";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Loader2,
+  Upload,
+  X,
+  Plus,
+  MapPin,
+  DollarSign,
+  Tag,
+  CheckCircle,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Base form schema
 const baseFormSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters").max(100, "Title too long"),
-  description: z.string().min(20, "Description must be at least 20 characters").max(2000, "Description too long"),
+  title: z
+    .string()
+    .min(5, "Title must be at least 5 characters")
+    .max(100, "Title too long"),
+  description: z
+    .string()
+    .min(20, "Description must be at least 20 characters")
+    .max(2000, "Description too long"),
   categoryId: z.string().min(1, "Please select a category"),
   subcategoryId: z.string().min(1, "Please select a subcategory"),
   price: z.number().min(0, "Price must be positive"),
@@ -34,58 +70,66 @@ const baseFormSchema = z.object({
   whatsapp: z.string().optional(),
   email: z.string().email().optional(),
   preferredContact: z.enum(["phone", "whatsapp", "email"]).default("phone"),
-  images: z.array(z.string()).min(1, "At least one image is required").max(10, "Maximum 10 images allowed"),
+  images: z
+    .array(z.string())
+    .min(1, "At least one image is required")
+    .max(10, "Maximum 10 images allowed"),
   tags: z.array(z.string()).optional(),
-  customFields: z.record(z.any()).optional()
-})
+  customFields: z.record(z.any()).optional(),
+});
 
-type FormData = z.infer<typeof baseFormSchema>
+type FormData = z.infer<typeof baseFormSchema>;
 
 interface Category {
-  _id: string
-  name: string
-  slug: string
-  subcategories: Subcategory[]
+  _id: string;
+  name: string;
+  slug: string;
+  subcategories: Subcategory[];
 }
 
 interface Subcategory {
-  _id: string
-  name: string
-  slug: string
-  customFields: CustomField[]
+  _id: string;
+  name: string;
+  slug: string;
+  customFields: CustomField[];
 }
 
 interface CustomField {
-  _id: string
-  fieldName: string
-  fieldType: 'text' | 'number' | 'select' | 'boolean' | 'textarea' | 'date'
-  label: string
-  required: boolean
-  options?: string[]
-  placeholder?: string
+  _id: string;
+  fieldName: string;
+  fieldType: "text" | "number" | "select" | "boolean" | "textarea" | "date";
+  label: string;
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
   validation?: {
-    min?: number
-    max?: number
-    pattern?: string
-  }
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
 }
 
 interface SellFormProps {
-  user: any
+  user: any;
 }
 
 export function SellForm({ user }: SellFormProps) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
-  const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null)
-  const [customFields, setCustomFields] = useState<CustomField[]>([])
-  const [images, setImages] = useState<string[]>([])
-  const [imageUploading, setImageUploading] = useState(false)
-  const [tags, setTags] = useState<string[]>([])
-  const [newTag, setNewTag] = useState("")
+  const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [selectedSubcategory, setSelectedSubcategory] =
+    useState<Subcategory | null>(null);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [images, setImages] = useState<string[]>([]);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [countdown, setCountdown] = useState(8);
 
   const form = useForm<FormData>({
     resolver: zodResolver(baseFormSchema),
@@ -97,19 +141,36 @@ export function SellForm({ user }: SellFormProps) {
       email: user?.email || "",
       images: [],
       tags: [],
-      customFields: {}
-    }
-  })
+      customFields: {},
+    },
+  });
 
   // Load categories on component mount
   useEffect(() => {
-    loadCategories()
-  }, [])
+    loadCategories();
+  }, []);
+
+  // Success modal countdown auto-redirect to homepage
+  useEffect(() => {
+    if (!successOpen) return;
+    setCountdown(8);
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          if (successOpen) router.push("/");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [successOpen, router]);
 
   const loadCategories = async () => {
     try {
-  const service = new CategoryService()
-      const response = await service.getCategories()
+      const service = new CategoryService();
+      const response = await service.getCategories();
       const mapped = (response.categories || []).map((c: any) => ({
         _id: c._id ?? c.slug,
         name: c.name,
@@ -118,99 +179,109 @@ export function SellForm({ user }: SellFormProps) {
           _id: s._id ?? s.slug,
           name: s.name,
           slug: s.slug,
-          customFields: s.customFields || []
-        }))
-      })) as Category[]
-      setCategories(mapped)
+          customFields: s.customFields || [],
+        })),
+      })) as Category[];
+      setCategories(mapped);
     } catch (error) {
-      console.error('Failed to load categories:', error)
+      console.error("Failed to load categories:", error);
       toast({
         title: "Error",
         description: "Failed to load categories. Please try again.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   // Handle category selection
   const handleCategoryChange = (categoryId: string) => {
-    const category = categories.find(c => c._id === categoryId)
-    setSelectedCategory(category || null)
-    setSelectedSubcategory(null)
-    setCustomFields([])
-    form.setValue('categoryId', categoryId)
-    form.setValue('subcategoryId', '')
-  }
+    const category = categories.find((c) => c._id === categoryId);
+    setSelectedCategory(category || null);
+    setSelectedSubcategory(null);
+    setCustomFields([]);
+    form.setValue("categoryId", categoryId);
+    form.setValue("subcategoryId", "");
+  };
 
   // Handle subcategory selection
   const handleSubcategoryChange = (subcategoryId: string) => {
-    if (!selectedCategory) return
-    
-    const subcategory = selectedCategory.subcategories.find(s => s._id === subcategoryId)
-    setSelectedSubcategory(subcategory || null)
-    setCustomFields(subcategory?.customFields || [])
-    form.setValue('subcategoryId', subcategoryId)
-  }
+    if (!selectedCategory) return;
+
+    const subcategory = selectedCategory.subcategories.find(
+      (s) => s._id === subcategoryId
+    );
+    setSelectedSubcategory(subcategory || null);
+    setCustomFields(subcategory?.customFields || []);
+    form.setValue("subcategoryId", subcategoryId);
+  };
 
   // Handle image upload (placeholder - implement with Firebase Storage)
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files
-    if (!files) return
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files) return;
 
-    setImageUploading(true)
+    setImageUploading(true);
     try {
       // Placeholder for image upload implementation
       // In real implementation, upload to Firebase Storage
-      const uploadedUrls: string[] = []
-      
-      for (let i = 0; i < files.length && images.length + uploadedUrls.length < 10; i++) {
+      const uploadedUrls: string[] = [];
+
+      for (
+        let i = 0;
+        i < files.length && images.length + uploadedUrls.length < 10;
+        i++
+      ) {
         // Mock upload - replace with actual Firebase Storage upload
-        const mockUrl = `/placeholder.svg?height=300&width=300&text=Image+${images.length + uploadedUrls.length + 1}`
-        uploadedUrls.push(mockUrl)
+        const mockUrl = `/placeholder.svg?height=300&width=300&text=Image+${
+          images.length + uploadedUrls.length + 1
+        }`;
+        uploadedUrls.push(mockUrl);
       }
 
-      const newImages = [...images, ...uploadedUrls]
-      setImages(newImages)
-      form.setValue('images', newImages)
+      const newImages = [...images, ...uploadedUrls];
+      setImages(newImages);
+      form.setValue("images", newImages);
 
       toast({
         title: "Success",
-        description: `${uploadedUrls.length} image(s) uploaded successfully`
-      })
+        description: `${uploadedUrls.length} image(s) uploaded successfully`,
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to upload images. Please try again.",
-        variant: "destructive"
-      })
+        variant: "destructive",
+      });
     } finally {
-      setImageUploading(false)
+      setImageUploading(false);
     }
-  }
+  };
 
   // Remove image
   const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index)
-    setImages(newImages)
-    form.setValue('images', newImages)
-  }
+    const newImages = images.filter((_, i) => i !== index);
+    setImages(newImages);
+    form.setValue("images", newImages);
+  };
 
   // Add tag
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim()) && tags.length < 10) {
-      const newTags = [...tags, newTag.trim().toLowerCase()]
-      setTags(newTags)
-      form.setValue('tags', newTags)
-      setNewTag("")
+      const newTags = [...tags, newTag.trim().toLowerCase()];
+      setTags(newTags);
+      form.setValue("tags", newTags);
+      setNewTag("");
     }
-  }
+  };
 
   // Remove tag
   const removeTag = (tagToRemove: string) => {
-    const newTags = tags.filter(tag => tag !== tagToRemove)
-    setTags(newTags)
-    form.setValue('tags', newTags)
-  }
+    const newTags = tags.filter((tag) => tag !== tagToRemove);
+    setTags(newTags);
+    form.setValue("tags", newTags);
+  };
 
   // Submit form
   const onSubmit = async (data: FormData) => {
@@ -218,21 +289,21 @@ export function SellForm({ user }: SellFormProps) {
       toast({
         title: "Error",
         description: "Please select a category and subcategory",
-        variant: "destructive"
-      })
-      return
+        variant: "destructive",
+      });
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
       // Prepare custom fields data
-      const customFieldsData: { [key: string]: any } = {}
-      customFields.forEach(field => {
-        const value = form.getValues(`customFields.${field.fieldName}` as any)
-        if (value !== undefined && value !== '') {
-          customFieldsData[field.fieldName] = value
+      const customFieldsData: { [key: string]: any } = {};
+      customFields.forEach((field) => {
+        const value = form.getValues(`customFields.${field.fieldName}` as any);
+        if (value !== undefined && value !== "") {
+          customFieldsData[field.fieldName] = value;
         }
-      })
+      });
 
       const productData = {
         title: data.title,
@@ -242,61 +313,62 @@ export function SellForm({ user }: SellFormProps) {
         price: {
           amount: data.price,
           currency: data.currency,
-          negotiable: data.negotiable
+          negotiable: data.negotiable,
         },
         location: {
           city: data.city,
           state: data.state,
-          country: data.country
+          country: data.country,
         },
         contact: {
           phone: data.phone,
           whatsapp: data.whatsapp,
           email: data.email || user.email,
-          preferredMethod: data.preferredContact
+          preferredMethod: data.preferredContact,
         },
         images: data.images.map((url, index) => ({
           url,
           alt: `${data.title} - Image ${index + 1}`,
           isPrimary: index === 0,
-          order: index + 1
+          order: index + 1,
         })),
         customFields: Object.entries(customFieldsData).map(([key, value]) => ({
           fieldName: key,
-          value
+          value,
         })),
         tags: data.tags || [],
-        status: 'active'
-      }
+        status: "active",
+      };
 
-      const response = await axios.post('/api/products', productData)
+      const response = await axios.post("/api/products", productData);
 
       toast({
         title: "Success!",
-        description: "Your product has been listed successfully!"
-      })
+        description: "Your product has been listed successfully!",
+      });
 
-      // Redirect to product page or products list
-      router.push('/products')
-      
+      // Open success modal for confirmation and redirection choice
+      setSuccessOpen(true);
     } catch (error: any) {
-      console.error('Error creating product:', error)
+      console.error("Error creating product:", error);
       toast({
         title: "Error",
-        description: error.response?.data?.error || "Failed to create product. Please try again.",
-        variant: "destructive"
-      })
+        description:
+          error.response?.data?.error ||
+          "Failed to create product. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Render custom field based on type
   const renderCustomField = (field: CustomField) => {
-    const fieldKey = `customFields.${field.fieldName}` as any
+    const fieldKey = `customFields.${field.fieldName}` as any;
 
     switch (field.fieldType) {
-      case 'select':
+      case "select":
         return (
           <FormField
             key={field._id}
@@ -306,12 +378,22 @@ export function SellForm({ user }: SellFormProps) {
               <FormItem>
                 <FormLabel>
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </FormLabel>
-                <Select onValueChange={formField.onChange} defaultValue={formField.value}>
+                <Select
+                  onValueChange={formField.onChange}
+                  defaultValue={formField.value}
+                >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
+                      <SelectValue
+                        placeholder={
+                          field.placeholder ||
+                          `Select ${field.label.toLowerCase()}`
+                        }
+                      />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -326,9 +408,9 @@ export function SellForm({ user }: SellFormProps) {
               </FormItem>
             )}
           />
-        )
+        );
 
-      case 'boolean':
+      case "boolean":
         return (
           <FormField
             key={field._id}
@@ -349,9 +431,9 @@ export function SellForm({ user }: SellFormProps) {
               </FormItem>
             )}
           />
-        )
+        );
 
-      case 'textarea':
+      case "textarea":
         return (
           <FormField
             key={field._id}
@@ -361,21 +443,20 @@ export function SellForm({ user }: SellFormProps) {
               <FormItem>
                 <FormLabel>
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder={field.placeholder}
-                    {...formField}
-                  />
+                  <Textarea placeholder={field.placeholder} {...formField} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )
+        );
 
-      case 'number':
+      case "number":
         return (
           <FormField
             key={field._id}
@@ -385,7 +466,9 @@ export function SellForm({ user }: SellFormProps) {
               <FormItem>
                 <FormLabel>
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -394,14 +477,16 @@ export function SellForm({ user }: SellFormProps) {
                     max={field.validation?.max}
                     placeholder={field.placeholder}
                     {...formField}
-                    onChange={(e) => formField.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      formField.onChange(parseFloat(e.target.value) || 0)
+                    }
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )
+        );
 
       default: // text
         return (
@@ -413,21 +498,20 @@ export function SellForm({ user }: SellFormProps) {
               <FormItem>
                 <FormLabel>
                   {field.label}
-                  {field.required && <span className="text-red-500 ml-1">*</span>}
+                  {field.required && (
+                    <span className="text-red-500 ml-1">*</span>
+                  )}
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder={field.placeholder}
-                    {...formField}
-                  />
+                  <Input placeholder={field.placeholder} {...formField} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )
+        );
     }
-  }
+  };
 
   return (
     <Form {...form}>
@@ -452,7 +536,10 @@ export function SellForm({ user }: SellFormProps) {
                     <FormItem>
                       <FormLabel>Title *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter a descriptive title for your item" {...field} />
+                        <Input
+                          placeholder="Enter a descriptive title for your item"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -486,7 +573,10 @@ export function SellForm({ user }: SellFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category *</FormLabel>
-                        <Select onValueChange={handleCategoryChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={handleCategoryChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select category" />
@@ -494,7 +584,10 @@ export function SellForm({ user }: SellFormProps) {
                           </FormControl>
                           <SelectContent>
                             {categories.map((category) => (
-                              <SelectItem key={category._id} value={category._id}>
+                              <SelectItem
+                                key={category._id}
+                                value={category._id}
+                              >
                                 {category.name}
                               </SelectItem>
                             ))}
@@ -511,8 +604,8 @@ export function SellForm({ user }: SellFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Subcategory *</FormLabel>
-                        <Select 
-                          onValueChange={handleSubcategoryChange} 
+                        <Select
+                          onValueChange={handleSubcategoryChange}
                           defaultValue={field.value}
                           disabled={!selectedCategory}
                         >
@@ -522,11 +615,16 @@ export function SellForm({ user }: SellFormProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {selectedCategory?.subcategories.map((subcategory) => (
-                              <SelectItem key={subcategory._id} value={subcategory._id}>
-                                {subcategory.name}
-                              </SelectItem>
-                            ))}
+                            {selectedCategory?.subcategories.map(
+                              (subcategory) => (
+                                <SelectItem
+                                  key={subcategory._id}
+                                  value={subcategory._id}
+                                >
+                                  {subcategory.name}
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -574,7 +672,9 @@ export function SellForm({ user }: SellFormProps) {
                             step="0.01"
                             placeholder="0.00"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
                         <FormMessage />
@@ -588,7 +688,10 @@ export function SellForm({ user }: SellFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Currency</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
@@ -658,7 +761,10 @@ export function SellForm({ user }: SellFormProps) {
                       <FormItem>
                         <FormLabel>State/County</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter state or county" {...field} />
+                          <Input
+                            placeholder="Enter state or county"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -724,7 +830,10 @@ export function SellForm({ user }: SellFormProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Preferred Contact Method</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue />
@@ -761,9 +870,12 @@ export function SellForm({ user }: SellFormProps) {
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                       <p className="mb-2 text-sm text-muted-foreground">
-                        <span className="font-semibold">Click to upload</span> images
+                        <span className="font-semibold">Click to upload</span>{" "}
+                        images
                       </p>
-                      <p className="text-xs text-muted-foreground">PNG, JPG or JPEG (MAX. 5MB each)</p>
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG or JPEG (MAX. 5MB each)
+                      </p>
                     </div>
                     <input
                       type="file"
@@ -794,7 +906,9 @@ export function SellForm({ user }: SellFormProps) {
                           <X className="h-3 w-3" />
                         </button>
                         {index === 0 && (
-                          <Badge className="absolute bottom-1 left-1 text-xs">Primary</Badge>
+                          <Badge className="absolute bottom-1 left-1 text-xs">
+                            Primary
+                          </Badge>
                         )}
                       </div>
                     ))}
@@ -821,9 +935,16 @@ export function SellForm({ user }: SellFormProps) {
                     placeholder="Add tag"
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addTag())
+                    }
                   />
-                  <Button type="button" onClick={addTag} variant="outline" size="sm">
+                  <Button
+                    type="button"
+                    onClick={addTag}
+                    variant="outline"
+                    size="sm"
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -831,7 +952,11 @@ export function SellForm({ user }: SellFormProps) {
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
                         {tag}
                         <button
                           type="button"
@@ -848,13 +973,66 @@ export function SellForm({ user }: SellFormProps) {
             </Card>
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loading}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Creating Listing..." : "Create Listing"}
             </Button>
           </div>
         </div>
       </form>
+      {/* Success confirmation modal */}
+      <Dialog
+        open={successOpen}
+        onOpenChange={(open) => {
+          if (!open && successOpen) {
+            setSuccessOpen(false);
+            router.push("/");
+          } else {
+            setSuccessOpen(open);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Listing Created
+            </DialogTitle>
+            <DialogDescription>
+              Your listing has been successfully created. Where would you like
+              to go next?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">
+            Auto-redirecting to Homepage in {countdown}s
+          </div>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSuccessOpen(false);
+                router.push("/");
+              }}
+            >
+              Go to Homepage
+            </Button>
+            <Button
+              onClick={() => {
+                setSuccessOpen(false);
+                router.push("/dashboard");
+              }}
+              className="bg-gradient-to-r from-primary to-v0-dark-blue"
+            >
+              Go to Dashboard
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
-  )
+  );
 }

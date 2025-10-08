@@ -62,7 +62,7 @@ export default function SellForm() {
         if (prev <= 1) {
           clearInterval(interval);
           // Only redirect if the dialog is still open
-          if (successOpen) router.push("/dashboard");
+          if (successOpen) router.push("/");
           return 0;
         }
         return prev - 1;
@@ -348,7 +348,7 @@ export default function SellForm() {
             </DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            Auto-redirecting to Dashboard in {countdown}s
+            Auto-redirecting to Homepage in {countdown}s
           </div>
           <DialogFooter className="flex gap-2 sm:justify-end">
             <Button

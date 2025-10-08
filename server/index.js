@@ -31,6 +31,13 @@ const httpServer = createServer(app);
 
 // Attach Socket.IO to the HTTP server (no CORS restrictions)
 const io = new Server(httpServer, {
+  cors:{
+    origin: "*",
+    // origin: [ "http://localhost:3000", "https://buysellliberia.com"],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  },
   allowEIO3: true
 });
 

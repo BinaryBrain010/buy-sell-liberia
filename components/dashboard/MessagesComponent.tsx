@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  MessageCircle,
-  ArrowLeft,
-  Users,
-  Clock,
-  Send,
-  Plus,
-  Search,
-} from "lucide-react";
+import { MessageCircle, ArrowLeft, Send, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BuySellLoader from "@/components/loader/BuySellLoader";
 import { useChats } from "@/hooks/use-chats";
@@ -152,11 +144,11 @@ export const MessagesComponent = ({
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return "Unknown time";
-    
+
     try {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return "Invalid date";
-      
+
       return dateObj.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -276,13 +268,56 @@ export const MessagesComponent = ({
         });
         return;
       }
+      // Build deterministic greeting message for dedupe
+      const greeting = `Hi! I'm interested in your product: ${
+        propProductTitle || `Product ${productId.slice(-6)}`
+      }`;
+      const dedupeKey = `bsl_greeting_${currentUserId}_${sellerId}_${productId}`;
+
+      // If a chat already exists and contains this exact greeting from current user, don't send again
+      const existingForPair = chats.find((chat) => {
+        const u1 = typeof chat.user1 === "object" ? chat.user1._id : chat.user1;
+        const u2 = typeof chat.user2 === "object" ? chat.user2._id : chat.user2;
+        const chatProductId =
+          typeof chat.product === "object" ? chat.product._id : chat.product;
+        return (
+          chatProductId === productId &&
+          ((u1 === currentUserId && u2 === sellerId) ||
+            (u1 === sellerId && u2 === currentUserId))
+        );
+      });
+
+      if (existingForPair) {
+        const hasGreeting = (existingForPair.messages || []).some(
+          (m: any) => m.sender === currentUserId && m.content === greeting
+        );
+        if (hasGreeting) {
+          console.log(
+            "🔍 Chat Debug - Greeting already sent; not sending again"
+          );
+          setCurrentChat(existingForPair);
+          // Mark in storage so subsequent attempts also skip
+          try {
+            localStorage.setItem(dedupeKey, "1");
+          } catch {}
+          return;
+        }
+      }
+
+      // Also check localStorage flag to avoid resending across mounts
+      try {
+        const flag = localStorage.getItem(dedupeKey);
+        if (flag === "1" && existingForPair) {
+          console.log("🔍 Chat Debug - Dedupe flag set; skip sending greeting");
+          setCurrentChat(existingForPair);
+          return;
+        }
+      } catch {}
 
       const newMessage = {
         _id: Date.now().toString(),
         sender: currentUserId,
-        content: `Hi! I'm interested in your product: ${
-          propProductTitle || `Product ${productId.slice(-6)}`
-        }`,
+        content: greeting,
         sentAt: new Date(),
         readBy: [currentUserId],
       };
@@ -302,6 +337,9 @@ export const MessagesComponent = ({
       if (newChat) {
         setCurrentChat(newChat);
         setMessageInput("");
+        try {
+          localStorage.setItem(dedupeKey, "1");
+        } catch {}
       }
     } catch (error) {
       console.error("🔍 Chat Debug - Failed to create new chat:", error);
@@ -329,9 +367,9 @@ export const MessagesComponent = ({
   useEffect(() => {
     const uid = currentUserId || getCurrentUserId();
     if (uid) {
-      console.log('🔍 Loading chats for user:', uid);
+      console.log("🔍 Loading chats for user:", uid);
       getChats({ userId: uid }).catch((error) => {
-        console.error('🔍 Failed to load chats:', error);
+        console.error("🔍 Failed to load chats:", error);
         // Don't set error state here as useChats already handles it
       });
     }
@@ -542,6 +580,12 @@ export const MessagesComponent = ({
         );
         // Set existing chat as current
         setCurrentChat(existingChat);
+        // Set dedupe flag so greeting isn't resent on this product/user pair
+        try {
+          const uid = currentUserId || getCurrentUserId();
+          const key = `bsl_greeting_${uid}_${sellerId}_${productId}`;
+          localStorage.setItem(key, "1");
+        } catch {}
         setHasAttemptedNewChat(true);
       }
     }
@@ -693,16 +737,7 @@ export const MessagesComponent = ({
                 </div>
               </div>
 
-              {sellerId && productId && (
-                <Button
-                  onClick={handleCreateNewChat}
-                  disabled={isCreatingChat}
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {isCreatingChat ? "Creating..." : "New Chat"}
-                </Button>
-              )}
+              {/* New Chat button removed as requested */}
             </div>
 
             {sellerId && productId && !isValidObjectId(productId) && (
