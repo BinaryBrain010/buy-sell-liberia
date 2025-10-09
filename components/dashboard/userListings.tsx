@@ -98,8 +98,12 @@ export default function UserListings({ userId }: UserListingsProps) {
         description: p.description,
         price: p.price || { amount: 0, currency: "USD", negotiable: false },
         status: p.status || "active",
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
+        createdAt: p.createdAt
+          ? new Date(p.createdAt).toISOString()
+          : new Date().toISOString(),
+        updatedAt: p.updatedAt
+          ? new Date(p.updatedAt).toISOString()
+          : new Date().toISOString(),
         views: p.views || 0,
         featured: !!p.featured,
         category: p.category_id || p.category || "",
@@ -333,25 +337,25 @@ export default function UserListings({ userId }: UserListingsProps) {
     );
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
       {/* Enhanced Header Section */}
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
             {/* Title Section */}
-            <div className="space-y-2">
+            <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
-                  <Package className="h-6 w-6 text-white" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg shrink-0">
+                  <Package className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                 </div>
-                <div>
-                  <h2 className="text-3xl font-bold text-foreground">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">
                     My Listings
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm sm:text-base text-muted-foreground truncate">
                     Manage your posted items and track their performance
                   </p>
                 </div>
@@ -359,51 +363,59 @@ export default function UserListings({ userId }: UserListingsProps) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 w-full sm:w-auto flex-wrap">
+            <div className="flex gap-2 sm:gap-3 w-full lg:w-auto justify-end">
               <Button
                 variant="outline"
                 onClick={fetchUserListings}
-                className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
               >
-                <Package className="h-4 w-4 mr-2" /> Refresh
+                <Package className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button
                 onClick={() => router.push("/sell")}
-                className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="px-3 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                <Plus className="h-4 w-4 mr-2" /> New Listing
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">New Listing</span>
               </Button>
             </div>
           </div>
 
           {/* Enhanced Statistics */}
           {listings.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                <div className="text-2xl font-bold text-primary">
+            <div className="mt-4 sm:mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                <div className="text-lg sm:text-2xl font-bold text-primary">
                   {listings.length}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground truncate">
                   Total Listings
                 </div>
               </div>
-              <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">
                   {listings.filter((l) => l.status === "active").length}
                 </div>
-                <div className="text-sm text-muted-foreground">Active</div>
+                <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Active
+                </div>
               </div>
-              <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">
                   {listings.filter((l) => l.status === "sold").length}
                 </div>
-                <div className="text-sm text-muted-foreground">Sold</div>
+                <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Sold
+                </div>
               </div>
-              <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
-                <div className="text-2xl font-bold text-orange-600">
+              <div className="p-3 sm:p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
+                <div className="text-lg sm:text-2xl font-bold text-orange-600">
                   {listings.filter((l) => l.featured).length}
                 </div>
-                <div className="text-sm text-muted-foreground">Featured</div>
+                <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                  Featured
+                </div>
               </div>
             </div>
           )}
@@ -414,21 +426,21 @@ export default function UserListings({ userId }: UserListingsProps) {
       <div className="relative">
         <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-border/30">
+          <div className="flex flex-col lg:flex-row gap-3 sm:gap-4">
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4 flex-1">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-1">
               <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 sm:h-5 sm:w-5" />
                 <Input
                   placeholder="Search your listings..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-12 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-base"
+                  className="pl-10 sm:pl-12 h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm sm:text-base"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl">
+                <SelectTrigger className="w-full sm:w-48 h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm sm:text-base">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -442,8 +454,8 @@ export default function UserListings({ userId }: UserListingsProps) {
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 justify-center sm:justify-start">
+              <span className="text-xs sm:text-sm font-medium text-muted-foreground hidden sm:inline">
                 View:
               </span>
               <div className="flex border-2 border-border/30 rounded-xl overflow-hidden">
@@ -451,25 +463,25 @@ export default function UserListings({ userId }: UserListingsProps) {
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("grid")}
-                  className={`h-10 px-4 ${
+                  className={`h-8 sm:h-10 px-2 sm:px-4 ${
                     viewMode === "grid"
                       ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
-                  <Grid3X3 className="h-4 w-4" />
+                  <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("list")}
-                  className={`h-10 px-4 ${
+                  className={`h-8 sm:h-10 px-2 sm:px-4 ${
                     viewMode === "list"
                       ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
-                  <List className="h-4 w-4" />
+                  <List className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>
@@ -482,19 +494,19 @@ export default function UserListings({ userId }: UserListingsProps) {
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-green-500/5 to-blue-500/5 rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-foreground">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-border/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold text-foreground">
                 Your Listings ({filteredListings.length})
               </h3>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Showing {filteredListings.length} of {listings.length} listings
               </div>
             </div>
 
             {/* Conditional Rendering based on View Mode */}
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 {filteredListings.map((l) => (
                   <ListingCard
                     key={l._id}
@@ -506,7 +518,7 @@ export default function UserListings({ userId }: UserListingsProps) {
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {filteredListings.map((l) => (
                   <ListingListItem
                     key={l._id}
@@ -525,17 +537,17 @@ export default function UserListings({ userId }: UserListingsProps) {
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-12 border border-border/30">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 sm:p-12 border border-border/30">
             {searchTerm || statusFilter !== "all" ? (
-              <div className="text-center space-y-6">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
-                  <Search className="h-10 w-10 text-white" />
+              <div className="text-center space-y-4 sm:space-y-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Search className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">
+                  <h3 className="text-lg sm:text-2xl font-semibold mb-2">
                     No listings found
                   </h3>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                     No listings match your current search criteria. Try
                     adjusting your filters.
                   </p>
@@ -546,28 +558,28 @@ export default function UserListings({ userId }: UserListingsProps) {
                     setSearchTerm("");
                     setStatusFilter("all");
                   }}
-                  className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
                 >
                   Clear Filters
                 </Button>
               </div>
             ) : (
-              <div className="text-center space-y-6">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
-                  <Package className="h-10 w-10 text-white" />
+              <div className="text-center space-y-4 sm:space-y-6">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-lg">
+                  <Package className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">
+                  <h3 className="text-lg sm:text-2xl font-semibold mb-2">
                     No listings yet
                   </h3>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
                     You haven't created any listings yet. Start selling by
                     creating your first listing!
                   </p>
                 </div>
                 <Button
                   onClick={() => router.push("/sell")}
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   <Plus className="h-4 w-4 mr-2" /> Create Your First Listing
                 </Button>
@@ -644,11 +656,18 @@ function ListingListItem({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    try {
+      if (!dateString) return "Unknown date";
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Unknown date";
+      return date.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return "Unknown date";
+    }
   };
 
   return (
