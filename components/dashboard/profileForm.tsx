@@ -236,45 +236,47 @@ export default function ProfileForm({
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
       {/* Enhanced Profile Header */}
       <div className="relative">
         {/* Background accent */}
         <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
             {/* User Avatar & Info */}
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-xl">
-                <User className="h-12 w-12 text-white" />
+            <div className="flex items-center gap-4 sm:gap-6 w-full lg:w-auto">
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-primary to-v0-dark-blue flex items-center justify-center shadow-xl shrink-0">
+                <User className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
               </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-foreground">
+              <div className="space-y-1 sm:space-y-2 min-w-0 flex-1">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground truncate">
                   {profile.fullName || "User"}
                 </h2>
-                <p className="text-lg text-muted-foreground">
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground truncate">
                   @{profile.username}
                 </p>
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm">
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 rounded-full bg-green-500"></div>
                     Active
                   </span>
-                  <span className="text-muted-foreground">{profile.email}</span>
+                  <span className="text-muted-foreground truncate">
+                    {profile.email}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto justify-end">
               {!editing && (
                 <Button
                   onClick={() => setEditing(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  <Edit3 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Edit Profile</span>
                 </Button>
               )}
               {editing && (
@@ -282,14 +284,14 @@ export default function ProfileForm({
                   <Button
                     onClick={handleCancel}
                     variant="outline"
-                    className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {saving ? (
                       <>
@@ -300,12 +302,12 @@ export default function ProfileForm({
                           label="Saving"
                           className="mr-2"
                         />
-                        Saving...
+                        <span className="hidden sm:inline">Saving...</span>
                       </>
                     ) : (
                       <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Save Changes
+                        <Save className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Save Changes</span>
                       </>
                     )}
                   </Button>
@@ -322,12 +324,12 @@ export default function ProfileForm({
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-            <h3 className="text-xl font-semibold mb-6 text-foreground">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-border/30">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
               Personal Information
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-sm font-semibold">
                   Full Name
@@ -339,7 +341,7 @@ export default function ProfileForm({
                     handleInputChange("fullName", e.target.value)
                   }
                   disabled={!editing}
-                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  className="h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm"
                   placeholder="Enter full name"
                 />
               </div>
@@ -355,7 +357,7 @@ export default function ProfileForm({
                     handleInputChange("username", e.target.value)
                   }
                   disabled={!editing}
-                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  className="h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm"
                   placeholder="Enter username"
                 />
               </div>
@@ -364,25 +366,25 @@ export default function ProfileForm({
                 <Label htmlFor="email" className="text-sm font-semibold">
                   Email Address
                 </Label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <Input
                     id="email"
                     value={formData.email}
                     disabled
-                    className="flex-1 h-12 border-2 border-border/30 rounded-xl bg-muted/50"
+                    className="flex-1 h-10 sm:h-12 border-2 border-border/30 rounded-xl bg-muted/50 text-sm"
                     placeholder="Email address"
                   />
                   <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${
                       profile.emailVerified
                         ? "bg-green-100 dark:bg-green-900/20"
                         : "bg-yellow-100 dark:bg-yellow-900/20"
                     }`}
                   >
                     {profile.emailVerified ? (
-                      <CheckCircle className="h-6 w-6 text-green-600" />
+                      <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-6 w-6 text-yellow-600" />
+                      <AlertCircle className="h-4 w-4 sm:h-6 sm:w-6 text-yellow-600" />
                     )}
                   </div>
                 </div>
@@ -401,38 +403,24 @@ export default function ProfileForm({
                 <Label htmlFor="phone" className="text-sm font-semibold">
                   Phone Number
                 </Label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <Input
                     id="phone"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                     disabled={!editing}
-                    className="flex-1 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                    className="flex-1 h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm"
                     placeholder="Enter phone number"
                   />
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      profile.phoneVerified
-                        ? "bg-green-100 dark:bg-green-900/20"
-                        : "bg-yellow-100 dark:bg-yellow-900/20"
-                    }`}
-                  >
-                    {profile.phoneVerified ? (
-                      <CheckCircle className="h-6 w-6 text-green-600" />
-                    ) : (
-                      <AlertCircle className="h-6 w-6 text-yellow-600" />
-                    )}
-                  </div>
+                  {profile.phoneVerified && (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-green-100 dark:bg-green-900/20 shrink-0">
+                      <CheckCircle className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
+                    </div>
+                  )}
                 </div>
-                <p
-                  className={`text-xs ${
-                    profile.phoneVerified ? "text-green-600" : "text-yellow-600"
-                  }`}
-                >
-                  {profile.phoneVerified
-                    ? "Phone verified"
-                    : "Phone not verified"}
-                </p>
+                {profile.phoneVerified && (
+                  <p className="text-xs text-green-600">Phone verified</p>
+                )}
               </div>
             </div>
           </div>
@@ -442,12 +430,12 @@ export default function ProfileForm({
         <div className="relative">
           <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-purple-500/5 rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-            <h3 className="text-xl font-semibold mb-6 text-foreground">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-border/30">
+            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6 text-foreground">
               Location Information
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label htmlFor="city" className="text-sm font-semibold">
                   City
@@ -457,7 +445,7 @@ export default function ProfileForm({
                   value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
                   disabled={!editing}
-                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  className="h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm"
                   placeholder="Enter city"
                 />
               </div>
@@ -471,7 +459,7 @@ export default function ProfileForm({
                   value={formData.state}
                   onChange={(e) => handleInputChange("state", e.target.value)}
                   disabled={!editing}
-                  className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl"
+                  className="h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm"
                   placeholder="Enter state"
                 />
               </div>
@@ -485,7 +473,7 @@ export default function ProfileForm({
                   onValueChange={(value) => handleInputChange("country", value)}
                   disabled={!editing}
                 >
-                  <SelectTrigger className="h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl">
+                  <SelectTrigger className="h-10 sm:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-sm">
                     <SelectValue placeholder="Select country" />
                   </SelectTrigger>
                   <SelectContent>
