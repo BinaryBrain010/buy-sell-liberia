@@ -435,45 +435,45 @@ export default function DashboardPage() {
               </div>
 
               {/* Enhanced Navigation Tabs */}
-              <div className="flex-shrink-0 w-full lg:w-auto">
-                <TabsList className="flex w-full lg:w-auto gap-1 overflow-x-auto whitespace-nowrap bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg rounded-xl p-1">
+              <div className="w-full lg:w-auto">
+                <TabsList className="grid grid-cols-4 gap-0.5 w-full lg:flex lg:w-auto lg:gap-2 overflow-x-auto scrollbar-hide bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg rounded-xl p-0.5 lg:p-2">
                   <TabsTrigger
                     value="profile"
                     aria-label="Profile"
-                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[110px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[110px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">
+                    <User className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                    <span className="font-medium truncate">
                       Profile
                     </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="listings"
                     aria-label="Listings"
-                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[110px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[110px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <Package className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">
+                    <Package className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                    <span className="font-medium truncate">
                       Listings
                     </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="favourites"
                     aria-label="Favourites"
-                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[120px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[120px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">
+                    <Heart className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                    <span className="font-medium truncate">
                       Favourites
                     </span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="messages"
                     aria-label="Messages"
-                    className="flex items-center gap-2 px-4 py-3 shrink-0 min-w-[120px] data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[120px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
-                    <MessageCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline font-medium">
+                    <MessageCircle className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                    <span className="font-medium truncate">
                       Messages
                     </span>
                   </TabsTrigger>
