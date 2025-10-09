@@ -247,8 +247,12 @@ export default function CategoryPage() {
           showPhoneNumber: p.showPhoneNumber ?? false,
           views: p.views ?? 0,
           featured: p.featured ?? false,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
+          createdAt: p.createdAt
+            ? new Date(p.createdAt).toISOString()
+            : new Date().toISOString(),
+          updatedAt: p.updatedAt
+            ? new Date(p.updatedAt).toISOString()
+            : new Date().toISOString(),
         };
       });
       setProducts(mappedProducts);
