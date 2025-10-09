@@ -131,7 +131,15 @@ export function Navbar() {
             <div className="flex items-center gap-2 lg:hidden">
               {/* On very small screens keep header minimal (theme toggle + hamburger) */}
               <div className="block md:hidden">
-                {user ? <DropDownMenu includeThemeToggle /> : <ThemeToggle />}
+                {user ? (
+                  <div className="flex items-center gap-2">
+                    {/* Chat button should appear on the left of the user action button on mobile */}
+                    <UserActions />
+                    <DropDownMenu includeThemeToggle />
+                  </div>
+                ) : (
+                  <ThemeToggle />
+                )}
               </div>
 
               {/* Tablet (md) - compact controls: sell, user actions or auth buttons */}
