@@ -10,83 +10,91 @@ const isValidObjectId = (id?: string | null) =>
 // GET: Fetch chats for a user
 export async function GET(req: NextRequest) {
   try {
-    console.log('🔍 Chats API - Starting request');
+    console.log("🔍 Chats API - Starting request");
     await dbConnect();
-    console.log('🔍 Chats API - Database connected');
+    console.log("🔍 Chats API - Database connected");
 
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
     const productId = searchParams.get("productId");
 
-    console.log('🔍 Chats API - Request params:', { userId, productId });
+    console.log("🔍 Chats API - Request params:", { userId, productId });
 
     if (!userId)
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "userId is required" },
+        { status: 400 }
+      );
 
-  const query: any = {
-    $or: [
-      { user1: new mongoose.Types.ObjectId(userId) },
-      { user2: new mongoose.Types.ObjectId(userId) },
-    ],
-  };
+    const query: any = {
+      $or: [
+        { user1: new mongoose.Types.ObjectId(userId) },
+        { user2: new mongoose.Types.ObjectId(userId) },
+      ],
+    };
 
-  // If provided, only include product filter when it's a valid ObjectId
-  if (productId) {
-    if (!isValidObjectId(productId)) {
-      return NextResponse.json([], { status: 200 });
-    }
-    query.product = new mongoose.Types.ObjectId(productId);
-  }
-
-  console.log('🔍 Chats API - Executing query:', JSON.stringify(query));
-  
-  const chats = await Chat.find(query)
-    .populate("user1", "firstName lastName profile.avatar")
-    .populate("user2", "firstName lastName profile.avatar")
-    .populate("product", "title images")
-    .sort({ lastMessageAt: -1 })
-    .lean(); // Use lean() for better performance
-
-  console.log('🔍 Chats API - Found chats:', chats.length);
-
-  const normalizedChats = chats.map((chat) => {
-    try {
-      // Since we're using lean(), we don't need toObject()
-      const plain = chat;
-
-      if (!plain.product) {
-        plain.product = {
-          _id: "announcement",
-          title: "Announcement",
-          images: [],
-        };
+    // If provided, only include product filter when it's a valid ObjectId
+    if (productId) {
+      if (!isValidObjectId(productId)) {
+        return NextResponse.json([], { status: 200 });
       }
-
-      return plain;
-    } catch (error) {
-      console.error("Error processing chat:", error, "Chat ID:", chat._id);
-      // Fallback: return basic chat data
-      const plain = chat;
-      
-      if (!plain.product) {
-        plain.product = {
-          _id: "announcement",
-          title: "Announcement",
-          images: [],
-        };
-      }
-
-      return plain;
+      query.product = new mongoose.Types.ObjectId(productId);
     }
-  });
 
-  console.log('🔍 Chats API - Returning normalized chats:', normalizedChats.length);
-  return NextResponse.json(normalizedChats);
-  
+    console.log("🔍 Chats API - Executing query:", JSON.stringify(query));
+
+    const chats = await Chat.find(query)
+      .populate("user1", "firstName lastName profile.avatar")
+      .populate("user2", "firstName lastName profile.avatar")
+      .populate("product", "title images")
+      .sort({ lastMessageAt: -1 })
+      .lean(); // Use lean() for better performance
+
+    console.log("🔍 Chats API - Found chats:", chats.length);
+
+    const normalizedChats = chats.map((chat) => {
+      try {
+        // Since we're using lean(), we don't need toObject()
+        const plain = chat;
+
+        if (!plain.product) {
+          plain.product = {
+            _id: "announcement",
+            title: "Announcement",
+            images: [],
+          };
+        }
+
+        return plain;
+      } catch (error) {
+        console.error("Error processing chat:", error, "Chat ID:", chat._id);
+        // Fallback: return basic chat data
+        const plain = chat;
+
+        if (!plain.product) {
+          plain.product = {
+            _id: "announcement",
+            title: "Announcement",
+            images: [],
+          };
+        }
+
+        return plain;
+      }
+    });
+
+    console.log(
+      "🔍 Chats API - Returning normalized chats:",
+      normalizedChats.length
+    );
+    return NextResponse.json(normalizedChats);
   } catch (error) {
-    console.error('🔍 Chats API - Error:', error);
+    console.error("🔍 Chats API - Error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch chats", details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: "Failed to fetch chats",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -192,36 +200,74 @@ export async function POST(req: NextRequest) {
 
 // PUT: Mark a message as read
 export async function PUT(req: NextRequest) {
-  await dbConnect();
-  const body = await req.json();
-  const { chatId, messageId, userId } = body;
+  try {
+    await dbConnect();
+    const body = await req.json();
+    const { chatId, messageId, userId } = body || {};
 
-  if (!chatId || !messageId || !userId)
-    return NextResponse.json(
-      { error: "chatId, messageId, and userId are required" },
-      { status: 400 }
+    console.log("🔍 PUT /api/chats mark read payload:", {
+      chatId,
+      messageId,
+      userId,
+    });
+
+    if (!chatId || !messageId || !userId) {
+      return NextResponse.json(
+        { error: "chatId, messageId, and userId are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate ObjectIds
+    if (
+      !isValidObjectId(chatId) ||
+      !isValidObjectId(messageId) ||
+      !isValidObjectId(userId)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid chatId, messageId, or userId" },
+        { status: 400 }
+      );
+    }
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
+
+    const message = chat.messages.find(
+      (msg: { _id: { toString: () => any } }) =>
+        msg._id?.toString() === messageId
     );
+    if (!message) {
+      return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    }
 
-  const chat = await Chat.findById(chatId);
-  if (!chat)
-    return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    // Ensure readBy is an array
+    if (!Array.isArray(message.readBy)) {
+      message.readBy = [] as any;
+    }
 
-  const message = chat.messages.find(
-    (msg: { _id: { toString: () => any } }) => msg._id?.toString() === messageId
-  );
-  if (!message)
-    return NextResponse.json({ error: "Message not found" }, { status: 404 });
+    const alreadyRead = message.readBy
+      .map((id: { toString: () => any }) => id?.toString?.())
+      .includes(userId);
 
-  if (
-    !message.readBy
-      .map((id: { toString: () => any }) => id.toString())
-      .includes(userId)
-  ) {
-    message.readBy.push(new mongoose.Types.ObjectId(userId));
-    await chat.save();
+    if (!alreadyRead) {
+      message.readBy.push(new mongoose.Types.ObjectId(userId));
+      await chat.save();
+    }
+
+    return NextResponse.json({ success: true, updated: !alreadyRead });
+  } catch (error) {
+    console.error("❌ PUT /api/chats error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to mark message as read",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ success: true });
 }
 
 // DELETE: Remove all chats for a product

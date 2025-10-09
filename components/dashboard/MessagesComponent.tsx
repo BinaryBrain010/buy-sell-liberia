@@ -38,6 +38,7 @@ export const MessagesComponent = ({
     sendMessage,
     setCurrentChat,
     clearError,
+    markMessageAsRead,
   } = useChats();
 
   const [messageInput, setMessageInput] = useState("");
@@ -352,6 +353,27 @@ export const MessagesComponent = ({
     setCurrentChat(currentChat?._id === chat._id ? null : chat);
     if (isMobileView && chat) {
       setShowChatList(false);
+    }
+    // Mark unread messages as read for the current user (optimize to reduce calls)
+    const uid = currentUserId || getCurrentUserId();
+    if (chat && Array.isArray(chat.messages) && uid) {
+      // Prefer marking only the last unread message, assuming read implies previous ones are read
+      for (let i = chat.messages.length - 1; i >= 0; i--) {
+        const msg = chat.messages[i];
+        // Skip own messages
+        if (msg.sender === uid) continue;
+        const readByList = Array.isArray(msg.readBy)
+          ? msg.readBy.map((id: any) => String(id))
+          : [];
+        if (!readByList.includes(String(uid))) {
+          markMessageAsRead({
+            chatId: chat._id,
+            messageId: msg._id,
+            userId: uid,
+          });
+          break;
+        }
+      }
     }
   };
 
