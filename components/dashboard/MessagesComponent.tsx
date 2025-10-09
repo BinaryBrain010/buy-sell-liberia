@@ -607,7 +607,7 @@ export const MessagesComponent = ({
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         <BuySellLoader label="Loading your messages..." />
       </div>
     );
@@ -615,18 +615,20 @@ export const MessagesComponent = ({
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="text-center py-16">
-          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-6">
-            <MessageCircle className="h-10 w-10 text-white" />
+      <div className="p-3 md:p-6">
+        <div className="text-center py-8 md:py-16">
+          <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-xl md:rounded-2xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg mb-4 md:mb-6">
+            <MessageCircle className="h-8 w-8 md:h-10 md:w-10 text-white" />
           </div>
-          <h3 className="text-2xl font-semibold mb-2">
+          <h3 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2">
             Error Loading Messages
           </h3>
-          <p className="text-muted-foreground mb-6">{error}</p>
+          <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 px-4">
+            {error}
+          </p>
           <Button
             onClick={clearError}
-            className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+            className="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
           >
             Try Again
           </Button>
@@ -636,25 +638,25 @@ export const MessagesComponent = ({
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 md:p-6 space-y-6 md:space-y-8">
       {/* Enhanced Header Section */}
       <div className="relative">
         {/* Background accent */}
-        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+        <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-blue-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6">
             {/* Title Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
-                  <MessageCircle className="h-6 w-6 text-white" />
+            <div className="space-y-1 md:space-y-2">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center shadow-lg">
+                  <MessageCircle className="h-4 w-4 md:h-6 md:w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">
+                  <h2 className="text-xl md:text-3xl font-bold text-foreground">
                     Messages
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     Connect with buyers and sellers
                   </p>
                 </div>
@@ -663,32 +665,25 @@ export const MessagesComponent = ({
 
             {/* Statistics */}
             {chats.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                  <div className="text-2xl font-bold text-blue-600">
+              <div className="grid grid-cols-3 gap-3 md:gap-4 w-full lg:w-auto">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-blue-600">
                     {chats.length}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs md:text-sm text-muted-foreground">
                     Total Chats
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-green-600">
                     {Object.values(onlineUsers).filter(Boolean).length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Online</div>
-                </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {chats.reduce(
-                      (sum, chat) => sum + (chat.messages?.length || 0),
-                      0
-                    )}
+                  <div className="text-xs md:text-sm text-muted-foreground">
+                    Online
                   </div>
-                  <div className="text-sm text-muted-foreground">Messages</div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
-                  <div className="text-2xl font-bold text-orange-600">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-orange-600">
                     {
                       chats.filter((chat) => {
                         const lastMessage =
@@ -702,7 +697,9 @@ export const MessagesComponent = ({
                       }).length
                     }
                   </div>
-                  <div className="text-sm text-muted-foreground">Unread</div>
+                  <div className="text-xs md:text-sm text-muted-foreground">
+                    Unread
+                  </div>
                 </div>
               </div>
             )}
@@ -712,26 +709,26 @@ export const MessagesComponent = ({
 
       {/* Enhanced Messages Interface */}
       <div className="relative">
-        <div className="absolute -inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-2xl opacity-50" />
+        <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-green-500/5 via-blue-500/5 to-green-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 overflow-hidden">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl border border-border/30 overflow-hidden">
           {/* Messages Header */}
-          <div className="p-6 border-b border-border/30">
+          <div className="p-4 md:p-6 border-b border-border/30">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
                 {isMobileView && !showChatList && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleBackToChats}
-                    className="p-2 h-10 w-10 rounded-xl hover:bg-muted/50"
+                    className="p-2 h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-xl hover:bg-muted/50 flex-shrink-0"
                   >
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-3 w-3 md:h-4 md:w-4" />
                   </Button>
                 )}
-                <div className="flex items-center gap-2">
-                  <MessageCircle className="h-5 w-5 text-primary" />
-                  <h3 className="text-xl font-semibold text-foreground">
+                <div className="flex items-center gap-2 min-w-0">
+                  <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+                  <h3 className="text-lg md:text-xl font-semibold text-foreground truncate">
                     Your Conversations
                   </h3>
                 </div>
@@ -757,7 +754,7 @@ export const MessagesComponent = ({
           </div>
 
           {/* Messages Content */}
-          <div className="flex h-[520px]">
+          <div className="flex h-[400px] md:h-[520px]">
             {/* Left Column - Chat List */}
             <div
               className={`${
@@ -765,20 +762,20 @@ export const MessagesComponent = ({
               } border-r border-border/30 flex flex-col`}
             >
               {/* Chat List Header */}
-              <div className="p-4 border-b border-border/30">
+              <div className="p-3 md:p-4 border-b border-border/30">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search conversations..."
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-border/30 focus:border-primary/50 transition-colors bg-background/50"
+                    className="w-full pl-9 md:pl-10 pr-3 md:pr-4 py-2 text-sm md:text-base rounded-lg md:rounded-xl border border-border/30 focus:border-primary/50 transition-colors bg-background/50"
                   />
                 </div>
               </div>
 
               {/* Chat List */}
               <div className="flex-1 overflow-y-auto">
-                <div className="p-2 space-y-2">
+                <div className="p-1 md:p-2 space-y-1 md:space-y-2">
                   {sortedChats.length > 0 ? (
                     sortedChats.map((chat) => (
                       <ChatItem
@@ -793,9 +790,9 @@ export const MessagesComponent = ({
                       />
                     ))
                   ) : (
-                    <div className="p-8 text-center">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <p className="text-muted-foreground">
+                    <div className="p-4 md:p-8 text-center">
+                      <MessageCircle className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-2 md:mb-4 text-muted-foreground/50" />
+                      <p className="text-sm md:text-base text-muted-foreground">
                         No conversations yet
                       </p>
                     </div>
