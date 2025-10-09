@@ -49,6 +49,11 @@ export interface MarkMessageReadRequest {
   userId: string;
 }
 
+export interface MarkAllReadRequest {
+  chatId: string;
+  userId: string;
+}
+
 export interface ChatFilters {
   userId?: string;
   productId?: string;

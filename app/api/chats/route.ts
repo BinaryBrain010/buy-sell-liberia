@@ -203,7 +203,7 @@ export async function PUT(req: NextRequest) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { chatId, messageId, userId } = body || {};
+    const { chatId, messageId, userId, markAll } = body || {};
 
     console.log("🔍 PUT /api/chats mark read payload:", {
       chatId,
@@ -211,9 +211,9 @@ export async function PUT(req: NextRequest) {
       userId,
     });
 
-    if (!chatId || !messageId || !userId) {
+    if (!chatId || !userId || (!markAll && !messageId)) {
       return NextResponse.json(
-        { error: "chatId, messageId, and userId are required" },
+        { error: "chatId and userId are required; messageId is required unless markAll is true" },
         { status: 400 }
       );
     }
@@ -221,7 +221,7 @@ export async function PUT(req: NextRequest) {
     // Validate ObjectIds
     if (
       !isValidObjectId(chatId) ||
-      !isValidObjectId(messageId) ||
+      (!markAll && !isValidObjectId(messageId)) ||
       !isValidObjectId(userId)
     ) {
       return NextResponse.json(
@@ -230,34 +230,67 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const chat = await Chat.findById(chatId);
-    if (!chat) {
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    // Perform atomic update to avoid version conflicts
+    const chatObjectId = new mongoose.Types.ObjectId(chatId);
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    if (markAll) {
+      // Mark all unread messages in the chat (not sent by user) as read by this user
+      const updateResult = await Chat.updateOne(
+        {
+          _id: chatObjectId,
+        },
+        {
+          $addToSet: { "messages.$[msg].readBy": userObjectId },
+        },
+        {
+          arrayFilters: [
+            {
+              "msg.sender": { $ne: userObjectId },
+              "msg.readBy": { $ne: userObjectId },
+            },
+          ],
+        }
+      );
+
+      if ((updateResult as any).matchedCount === 0) {
+        return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, updated: (updateResult as any).modifiedCount > 0 });
+    } else {
+      const messageObjectId = new mongoose.Types.ObjectId(messageId);
+      const updateResult = await Chat.updateOne(
+        {
+          _id: chatObjectId,
+          "messages._id": messageObjectId,
+          // Only update if not already read by user
+          "messages.readBy": { $ne: userObjectId },
+        },
+        {
+          $addToSet: { "messages.$.readBy": userObjectId },
+        }
+      );
+
+      if ((updateResult as any).matchedCount === 0 && (updateResult as any).modifiedCount === 0) {
+        // Determine if the chat or message does not exist, or it was already read
+        const chatExists = await Chat.exists({ _id: chatObjectId });
+        if (!chatExists) {
+          return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+        }
+        const messageExists = await Chat.exists({
+          _id: chatObjectId,
+          "messages._id": messageObjectId,
+        });
+        if (!messageExists) {
+          return NextResponse.json({ error: "Message not found" }, { status: 404 });
+        }
+        // Chat and message exist, so it was already read
+        return NextResponse.json({ success: true, updated: false });
+      }
+
+      return NextResponse.json({ success: true, updated: true });
     }
-
-    const message = chat.messages.find(
-      (msg: { _id: { toString: () => any } }) =>
-        msg._id?.toString() === messageId
-    );
-    if (!message) {
-      return NextResponse.json({ error: "Message not found" }, { status: 404 });
-    }
-
-    // Ensure readBy is an array
-    if (!Array.isArray(message.readBy)) {
-      message.readBy = [] as any;
-    }
-
-    const alreadyRead = message.readBy
-      .map((id: { toString: () => any }) => id?.toString?.())
-      .includes(userId);
-
-    if (!alreadyRead) {
-      message.readBy.push(new mongoose.Types.ObjectId(userId));
-      await chat.save();
-    }
-
-    return NextResponse.json({ success: true, updated: !alreadyRead });
   } catch (error) {
     console.error("❌ PUT /api/chats error:", error);
     return NextResponse.json(

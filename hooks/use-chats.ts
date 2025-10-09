@@ -30,6 +30,7 @@ interface UseChatsReturn {
   getChatById: (chatId: string) => Promise<IChat | null>;
   sendMessage: (chatId: string, message: IMessage) => Promise<IChat | null>;
   getUnreadCount: (userId: string) => Promise<number>;
+  markAllAsRead: (chatId: string, userId: string) => Promise<boolean>;
 
   // Utility
   setCurrentChat: Dispatch<SetStateAction<IChat | null>>;
@@ -158,6 +159,11 @@ export const useChats = (): UseChatsReturn => {
               } as IChat;
             });
           }
+
+          // Notify globally so navbar (and any listeners) can refresh immediately
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('bsl:unread-updated'));
+          }
         }
 
         return result.success;
@@ -166,6 +172,63 @@ export const useChats = (): UseChatsReturn => {
           err instanceof Error ? err.message : "Failed to mark message as read";
         setError(errorMessage);
         console.error("Error marking message as read:", err);
+        return false;
+      }
+    },
+    [currentChat]
+  );
+
+  const markAllAsRead = useCallback(
+    async (chatId: string, userId: string): Promise<boolean> => {
+      try {
+        setError(null);
+        const result = await ChatService.markAllAsRead(chatId, userId);
+        if (result.success) {
+          // Update local state: add userId to readBy for all messages not sent by user and not already read
+          setChats((prevChats) =>
+            prevChats.map((chat) => {
+              if (chat._id !== chatId) return chat;
+              return {
+                ...chat,
+                messages: chat.messages.map((msg) => {
+                  const isOwn = msg.sender === userId;
+                  const already = msg.readBy?.includes(userId);
+                  if (!isOwn && !already) {
+                    return { ...msg, readBy: [...msg.readBy, userId] };
+                  }
+                  return msg;
+                }),
+              } as IChat;
+            })
+          );
+
+          if (currentChat?._id === chatId) {
+            setCurrentChat((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                messages: prev.messages.map((msg) => {
+                  const isOwn = msg.sender === userId;
+                  const already = msg.readBy?.includes(userId);
+                  if (!isOwn && !already) {
+                    return { ...msg, readBy: [...msg.readBy, userId] };
+                  }
+                  return msg;
+                }),
+              } as IChat;
+            });
+          }
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('bsl:unread-updated'));
+          }
+        }
+        return !!result.success;
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to mark all as read';
+        setError(errorMessage);
+        console.error('Error marking all as read:', err);
         return false;
       }
     },
@@ -326,6 +389,7 @@ export const useChats = (): UseChatsReturn => {
     getChatById,
     sendMessage,
     getUnreadCount,
+  markAllAsRead,
 
     // Utility
     setCurrentChat,

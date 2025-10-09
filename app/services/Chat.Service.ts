@@ -39,6 +39,14 @@ class ChatService {
   }
 
   /**
+   * Mark all unread messages in a chat as read for a user
+   */
+  async markAllAsRead(chatId: string, userId: string): Promise<{ success: boolean; updated?: boolean }> {
+    const response = await BaseService.put(this.baseUrl, { chatId, userId, markAll: true });
+    return response.data;
+  }
+
+  /**
    * Delete all chats for a product
    */
   async deleteChatsByProduct(productId: string): Promise<{ success: boolean }> {
