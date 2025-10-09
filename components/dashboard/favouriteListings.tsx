@@ -194,25 +194,25 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 md:p-6 space-y-6 md:space-y-8">
       {/* Enhanced Header Section */}
       <div className="relative">
         {/* Background accent */}
-        <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 via-pink-500/5 to-red-500/5 rounded-2xl opacity-50" />
+        <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-red-500/5 via-pink-500/5 to-red-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-8 border border-border/30">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-8 border border-border/30">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 md:gap-6">
             {/* Title Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <Heart className="h-6 w-6 text-white" />
+            <div className="space-y-1 md:space-y-2">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="w-8 h-8 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Heart className="h-4 w-4 md:h-6 md:w-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-foreground">
+                  <h2 className="text-xl md:text-3xl font-bold text-foreground">
                     Your Favorites
                   </h2>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm md:text-base text-muted-foreground">
                     {favourites.length} saved listing
                     {favourites.length !== 1 ? "s" : ""} you love
                   </p>
@@ -222,32 +222,36 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 
             {/* Statistics */}
             {favourites.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
-                  <div className="text-2xl font-bold text-red-600">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 w-full lg:w-auto">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-red-600">
                     {favourites.length}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs md:text-sm text-muted-foreground">
                     Total Saved
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
-                  <div className="text-2xl font-bold text-green-600">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-green-500/10 to-green-500/5 border border-green-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-green-600">
                     {favourites.filter((f) => f.status === "active").length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Active</div>
+                  <div className="text-xs md:text-sm text-muted-foreground">
+                    Active
+                  </div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
-                  <div className="text-2xl font-bold text-blue-600">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-blue-600">
                     {favourites.filter((f) => f.featured).length}
                   </div>
-                  <div className="text-sm text-muted-foreground">Featured</div>
+                  <div className="text-xs md:text-sm text-muted-foreground">
+                    Featured
+                  </div>
                 </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
-                  <div className="text-2xl font-bold text-purple-600">
+                <div className="p-3 md:p-4 rounded-lg md:rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+                  <div className="text-lg md:text-2xl font-bold text-purple-600">
                     {favourites.reduce((sum, f) => sum + (f.views || 0), 0)}
                   </div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-xs md:text-sm text-muted-foreground">
                     Total Views
                   </div>
                 </div>
@@ -259,50 +263,50 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 
       {/* Enhanced Search and Filter Section */}
       <div className="relative">
-        <div className="absolute -inset-2 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-pink-500/5 rounded-2xl opacity-50" />
+        <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-pink-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-        <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-          <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-border/30">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
             {/* Search */}
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-5 w-5" />
+              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 md:h-5 md:w-5" />
               <Input
                 placeholder="Search your favorites..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-xl text-base"
+                className="pl-10 md:pl-12 h-10 md:h-12 border-2 border-border/30 focus:border-primary/50 transition-colors rounded-lg md:rounded-xl text-sm md:text-base"
               />
             </div>
 
             {/* View Toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">
+            <div className="flex items-center gap-2 justify-center sm:justify-start">
+              <span className="text-xs md:text-sm font-medium text-muted-foreground whitespace-nowrap">
                 View:
               </span>
-              <div className="flex border-2 border-border/30 rounded-xl overflow-hidden">
+              <div className="flex border-2 border-border/30 rounded-lg md:rounded-xl overflow-hidden">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("grid")}
-                  className={`h-10 px-4 ${
+                  className={`h-8 md:h-10 px-3 md:px-4 ${
                     viewMode === "grid"
                       ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
-                  <Grid3X3 className="h-4 w-4" />
+                  <Grid3X3 className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setViewMode("list")}
-                  className={`h-10 px-4 ${
+                  className={`h-8 md:h-10 px-3 md:px-4 ${
                     viewMode === "list"
                       ? "bg-gradient-to-r from-primary to-v0-dark-blue text-white shadow-lg"
                       : "hover:bg-muted/50"
                   }`}
                 >
-                  <List className="h-4 w-4" />
+                  <List className="h-3 w-3 md:h-4 md:w-4" />
                 </Button>
               </div>
             </div>
@@ -313,14 +317,14 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       {/* Enhanced Favorites Display */}
       {filteredFavourites.length > 0 ? (
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/5 via-pink-500/5 to-blue-500/5 rounded-2xl opacity-50" />
+          <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-blue-500/5 via-pink-500/5 to-blue-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-6 border border-border/30">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-foreground">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-4 md:p-6 border border-border/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 md:gap-6 mb-4 md:mb-6">
+              <h3 className="text-lg md:text-xl font-semibold text-foreground">
                 Your Favorites ({filteredFavourites.length})
               </h3>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs md:text-sm text-muted-foreground">
                 Showing {filteredFavourites.length} of {favourites.length}{" "}
                 favorites
               </div>
@@ -328,7 +332,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 
             {/* Conditional Rendering based on View Mode */}
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
                 {filteredFavourites.map((listing) => (
                   <div key={listing._id} className="relative group">
                     <ProductCard
@@ -367,7 +371,7 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                 ))}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {filteredFavourites.map((listing) => (
                   <FavoriteListItem
                     key={listing._id}
@@ -383,19 +387,19 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
       ) : (
         /* Enhanced Empty States */
         <div className="relative">
-          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-2xl opacity-50" />
+          <div className="absolute -inset-1 md:-inset-2 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-orange-500/5 rounded-xl md:rounded-2xl opacity-50" />
 
-          <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl p-12 border border-border/30">
+          <div className="relative bg-background/80 backdrop-blur-sm rounded-xl md:rounded-2xl p-6 md:p-12 border border-border/30">
             {searchTerm ? (
-              <div className="text-center space-y-6">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
-                  <Search className="h-10 w-10 text-white" />
+              <div className="text-center space-y-4 md:space-y-6">
+                <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-xl md:rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <Search className="h-8 w-8 md:h-10 md:w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">
+                  <h3 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2">
                     No matching favorites
                   </h3>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 px-4">
                     No favorites match your search criteria. Try adjusting your
                     search terms.
                   </p>
@@ -403,28 +407,28 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
                 <Button
                   variant="outline"
                   onClick={() => setSearchTerm("")}
-                  className="px-6 py-3 border-2 border-border/30 hover:border-primary/50 transition-colors"
+                  className="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base border-2 border-border/30 hover:border-primary/50 transition-colors"
                 >
                   Clear Search
                 </Button>
               </div>
             ) : (
-              <div className="text-center space-y-6">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <Heart className="h-10 w-10 text-white" />
+              <div className="text-center space-y-4 md:space-y-6">
+                <div className="w-16 h-16 md:w-20 md:h-20 mx-auto rounded-xl md:rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <Heart className="h-8 w-8 md:h-10 md:w-10 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-semibold mb-2">
+                  <h3 className="text-xl md:text-2xl font-semibold mb-1 md:mb-2">
                     No favorites yet
                   </h3>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-sm md:text-base text-muted-foreground mb-4 md:mb-6 px-4">
                     Start browsing listings and save your favorites here.
                     They'll appear in this section!
                   </p>
                 </div>
                 <Button
                   onClick={() => (window.location.href = "/products")}
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                 >
                   Browse Listings
                 </Button>
@@ -474,22 +478,39 @@ function FavoriteListItem({
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    try {
+      // Validate date string
+      if (!dateString || dateString === "Invalid Date") {
+        return "Unknown date";
+      }
+
+      const date = new Date(dateString);
+
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return "Unknown date";
+      }
+
+      return date.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Unknown date";
+    }
   };
 
   const currencySymbol = listing.price?.currency === "LRD" ? "L$" : "$";
 
   return (
-    <div className="bg-background/50 backdrop-blur-sm rounded-xl border border-border/30 hover:border-border/50 transition-all duration-300 hover:shadow-lg overflow-hidden">
-      <div className="p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
+    <div className="bg-background/50 backdrop-blur-sm rounded-lg md:rounded-xl border border-border/30 hover:border-border/50 transition-all duration-300 hover:shadow-lg overflow-hidden">
+      <div className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6">
           {/* Image Section */}
           <div className="flex-shrink-0">
-            <div className="w-full lg:w-48 h-48 rounded-xl overflow-hidden bg-muted/50">
+            <div className="w-full md:w-32 lg:w-48 h-32 md:h-32 lg:h-48 rounded-lg md:rounded-xl overflow-hidden bg-muted/50">
               {listing.images && listing.images.length > 0 ? (
                 <img
                   src={resolveImageUrl(listing.images[0])}
@@ -502,7 +523,7 @@ function FavoriteListItem({
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <Heart className="h-12 w-12 text-muted-foreground" />
+                  <Heart className="h-6 w-6 md:h-8 md:w-8 lg:h-12 lg:w-12 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -512,18 +533,18 @@ function FavoriteListItem({
           <div className="flex-1 min-w-0">
             <div className="flex flex-col h-full">
               {/* Header */}
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between mb-2 md:mb-3">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-semibold text-foreground mb-2 line-clamp-2 break-words overflow-hidden">
+                  <h3 className="text-lg md:text-xl font-semibold text-foreground mb-1 md:mb-2 line-clamp-2 break-words overflow-hidden">
                     {listing.title}
                   </h3>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-2xl font-bold text-primary">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-3">
+                    <span className="text-lg md:text-2xl font-bold text-primary">
                       {currencySymbol}
                       {listing.price?.amount || 0}
                     </span>
                     {listing.price?.negotiable && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs md:text-sm text-muted-foreground">
                         (Negotiable)
                       </span>
                     )}
@@ -546,21 +567,21 @@ function FavoriteListItem({
               </div>
 
               {/* Description */}
-              <div className="mb-4">
-                <p className="text-muted-foreground leading-relaxed line-clamp-3 break-words overflow-hidden">
+              <div className="mb-3 md:mb-4">
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3 break-words overflow-hidden">
                   {listing.description}
                 </p>
               </div>
 
               {/* Meta Information */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
                 <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-3 w-3 md:h-4 md:w-4" />
                   <span>{listing.views || 0} views</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>
+                  <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="truncate">
                     Listed{" "}
                     {formatDate(
                       typeof listing.createdAt === "string"
@@ -571,19 +592,19 @@ function FavoriteListItem({
                 </div>
                 {listing.location?.city && (
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{listing.location.city}</span>
+                    <MapPin className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="truncate">{listing.location.city}</span>
                   </div>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 mt-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 md:gap-3 mt-auto">
                 <Button
                   onClick={() =>
                     (window.location.href = `/products/${listing._id}`)
                   }
-                  className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
+                  className="px-4 md:px-6 py-2 md:py-3 text-sm md:text-base bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 flex-1 sm:flex-initial"
                 >
                   View Details
                 </Button>
@@ -592,13 +613,13 @@ function FavoriteListItem({
                   variant="outline"
                   size="sm"
                   disabled={isRemoving}
-                  className="px-4 py-2 border-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 transition-colors"
+                  className="px-3 md:px-4 py-2 text-sm border-2 border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-900/20 transition-colors flex-1 sm:flex-initial"
                 >
                   {isRemoving ? (
                     <>
                       <BuySellLoader
                         variant="inline"
-                        size={16}
+                        size={14}
                         hideLabel
                         label="Removing"
                         className="mr-2"
@@ -607,7 +628,7 @@ function FavoriteListItem({
                     </>
                   ) : (
                     <>
-                      <Heart className="h-4 w-4 mr-2 fill-red-500" />
+                      <Heart className="h-3 w-3 md:h-4 md:w-4 mr-2 fill-red-500" />
                       Remove
                     </>
                   )}
