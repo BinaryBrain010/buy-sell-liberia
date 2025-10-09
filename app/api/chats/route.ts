@@ -213,7 +213,10 @@ export async function PUT(req: NextRequest) {
 
     if (!chatId || !userId || (!markAll && !messageId)) {
       return NextResponse.json(
-        { error: "chatId and userId are required; messageId is required unless markAll is true" },
+        {
+          error:
+            "chatId and userId are required; messageId is required unless markAll is true",
+        },
         { status: 400 }
       );
     }
@@ -257,7 +260,10 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "Chat not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ success: true, updated: (updateResult as any).modifiedCount > 0 });
+      return NextResponse.json({
+        success: true,
+        updated: (updateResult as any).modifiedCount > 0,
+      });
     } else {
       const messageObjectId = new mongoose.Types.ObjectId(messageId);
       const updateResult = await Chat.updateOne(
@@ -272,18 +278,27 @@ export async function PUT(req: NextRequest) {
         }
       );
 
-      if ((updateResult as any).matchedCount === 0 && (updateResult as any).modifiedCount === 0) {
+      if (
+        (updateResult as any).matchedCount === 0 &&
+        (updateResult as any).modifiedCount === 0
+      ) {
         // Determine if the chat or message does not exist, or it was already read
         const chatExists = await Chat.exists({ _id: chatObjectId });
         if (!chatExists) {
-          return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+          return NextResponse.json(
+            { error: "Chat not found" },
+            { status: 404 }
+          );
         }
         const messageExists = await Chat.exists({
           _id: chatObjectId,
           "messages._id": messageObjectId,
         });
         if (!messageExists) {
-          return NextResponse.json({ error: "Message not found" }, { status: 404 });
+          return NextResponse.json(
+            { error: "Message not found" },
+            { status: 404 }
+          );
         }
         // Chat and message exist, so it was already read
         return NextResponse.json({ success: true, updated: false });

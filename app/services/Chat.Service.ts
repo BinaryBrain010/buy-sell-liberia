@@ -1,5 +1,11 @@
 import BaseService from "./BaseService";
-import { IChat, IMessage, CreateChatRequest, MarkMessageReadRequest, ChatFilters } from "@/types/chat";
+import {
+  IChat,
+  IMessage,
+  CreateChatRequest,
+  MarkMessageReadRequest,
+  ChatFilters,
+} from "@/types/chat";
 
 class ChatService {
   private readonly baseUrl = "/chats";
@@ -9,16 +15,18 @@ class ChatService {
    */
   async getChats(filters: ChatFilters): Promise<IChat[]> {
     const params = new URLSearchParams();
-    
+
     if (filters.userId) {
       params.append("userId", filters.userId);
     }
-    
+
     if (filters.productId) {
       params.append("productId", filters.productId);
     }
 
-    const response = await BaseService.get(`${this.baseUrl}?${params.toString()}`);
+    const response = await BaseService.get(
+      `${this.baseUrl}?${params.toString()}`
+    );
     return response.data;
   }
 
@@ -33,7 +41,9 @@ class ChatService {
   /**
    * Mark a message as read
    */
-  async markMessageAsRead(readData: MarkMessageReadRequest): Promise<{ success: boolean }> {
+  async markMessageAsRead(
+    readData: MarkMessageReadRequest
+  ): Promise<{ success: boolean }> {
     const response = await BaseService.put(this.baseUrl, readData);
     return response.data;
   }
@@ -41,8 +51,15 @@ class ChatService {
   /**
    * Mark all unread messages in a chat as read for a user
    */
-  async markAllAsRead(chatId: string, userId: string): Promise<{ success: boolean; updated?: boolean }> {
-    const response = await BaseService.put(this.baseUrl, { chatId, userId, markAll: true });
+  async markAllAsRead(
+    chatId: string,
+    userId: string
+  ): Promise<{ success: boolean; updated?: boolean }> {
+    const response = await BaseService.put(this.baseUrl, {
+      chatId,
+      userId,
+      markAll: true,
+    });
     return response.data;
   }
 
@@ -50,7 +67,9 @@ class ChatService {
    * Delete all chats for a product
    */
   async deleteChatsByProduct(productId: string): Promise<{ success: boolean }> {
-    const response = await BaseService.delete(`${this.baseUrl}?productId=${productId}`);
+    const response = await BaseService.delete(
+      `${this.baseUrl}?productId=${productId}`
+    );
     return response.data;
   }
 
@@ -66,7 +85,10 @@ class ChatService {
    * Send a message to an existing chat
    */
   async sendMessage(chatId: string, message: IMessage): Promise<IChat> {
-    const response = await BaseService.post(`${this.baseUrl}/${chatId}/messages`, { message });
+    const response = await BaseService.post(
+      `${this.baseUrl}/${chatId}/messages`,
+      { message }
+    );
     return response.data;
   }
 
@@ -74,7 +96,9 @@ class ChatService {
    * Get unread message count for a user
    */
   async getUnreadCount(userId: string): Promise<{ count: number }> {
-    const response = await BaseService.get(`${this.baseUrl}/unread-count?userId=${userId}`);
+    const response = await BaseService.get(
+      `${this.baseUrl}/unread-count?userId=${userId}`
+    );
     return response.data;
   }
 }

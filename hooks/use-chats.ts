@@ -161,8 +161,8 @@ export const useChats = (): UseChatsReturn => {
           }
 
           // Notify globally so navbar (and any listeners) can refresh immediately
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('bsl:unread-updated'));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("bsl:unread-updated"));
           }
         }
 
@@ -219,16 +219,16 @@ export const useChats = (): UseChatsReturn => {
             });
           }
 
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('bsl:unread-updated'));
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("bsl:unread-updated"));
           }
         }
         return !!result.success;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to mark all as read';
+          err instanceof Error ? err.message : "Failed to mark all as read";
         setError(errorMessage);
-        console.error('Error marking all as read:', err);
+        console.error("Error marking all as read:", err);
         return false;
       }
     },
@@ -389,7 +389,7 @@ export const useChats = (): UseChatsReturn => {
     getChatById,
     sendMessage,
     getUnreadCount,
-  markAllAsRead,
+    markAllAsRead,
 
     // Utility
     setCurrentChat,

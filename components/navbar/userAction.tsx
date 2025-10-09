@@ -48,7 +48,11 @@ export default function UserActions() {
         // Only refresh if the message is addressed to this user and not sent by them
         const toId = String(payload?.to || "");
         const fromId = String(payload?.from || "");
-        if (user?.id && toId === String(user.id) && fromId !== String(user.id)) {
+        if (
+          user?.id &&
+          toId === String(user.id) &&
+          fromId !== String(user.id)
+        ) {
           fetchUnread();
         }
       } catch {
@@ -65,7 +69,10 @@ export default function UserActions() {
       mounted = false;
       clearInterval(interval);
       if (typeof window !== "undefined") {
-        window.removeEventListener("bsl:unread-updated", handleImmediateRefresh);
+        window.removeEventListener(
+          "bsl:unread-updated",
+          handleImmediateRefresh
+        );
       }
       socket.off("message", handleSocketMessage);
     };
