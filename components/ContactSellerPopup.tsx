@@ -146,6 +146,10 @@ export function ContactSellerButton({
   };
 
   const openWhatsApp = () => {
+    if (!isAuthenticated) {
+      setIsDialogOpen(true);
+      return;
+    }
     if (!sellerWhatsapp) return;
     const number = sellerWhatsapp.replace(/[^\d]/g, "");
     const text = `Hi ${sellerName}, I'm interested in ${productTitle}.`;
@@ -261,26 +265,18 @@ export function ContactSellerButton({
                       <p className="text-sm text-muted-foreground mb-2">
                         WhatsApp
                       </p>
-                      <div className="flex items-center justify-between gap-2">
-                        <a
-                          href={`https://wa.me/${sellerWhatsapp.replace(
-                            /[^\d]/g,
-                            ""
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm underline"
-                        >
-                          {sellerWhatsapp}
-                        </a>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={copyWhatsapp}
-                        >
+                      <div className="flex gap-2">
+                        <Button onClick={openWhatsApp} className="flex-1">
+                          <FaWhatsapp className="h-4 w-4 mr-2 text-[#25D366]" />
+                          Open WhatsApp
+                        </Button>
+                        <Button variant="outline" onClick={copyWhatsapp}>
                           <Copy className="h-4 w-4" />
                         </Button>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        {sellerWhatsapp}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -304,16 +300,61 @@ export function ContactSellerButton({
   if (variant === "whatsapp") {
     if (!sellerWhatsapp) return null;
     return (
-      <Button
-        size="sm"
-        variant="outline"
-        className={`${getButtonSize()} ${className}`}
-        onClick={openWhatsApp}
-        aria-label="Contact on WhatsApp"
-      >
-        <FaWhatsapp className="h-3 w-3 text-[#25D366]" />
-        {size === "lg" && <span className="ml-2">WhatsApp</span>}
-      </Button>
+      <>
+        <Button
+          size="sm"
+          variant="outline"
+          className={`${getButtonSize()} ${className}`}
+          onClick={openWhatsApp}
+          aria-label="Contact on WhatsApp"
+          disabled={isCheckingAuth}
+        >
+          <FaWhatsapp className="h-3 w-3 text-[#25D366]" />
+          {size === "lg" && <span className="ml-2">WhatsApp</span>}
+        </Button>
+
+        {/* Contact Details Dialog for WhatsApp */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Contact {sellerName}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {!isAuthenticated ? (
+                <div className="text-center space-y-4 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    You need to be logged in to contact the seller via WhatsApp.
+                  </p>
+                  <Button onClick={handleLogin} className="w-full">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login to Contact
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center space-y-4 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    You will be redirected to WhatsApp to contact {sellerName}.
+                  </p>
+                  <Button onClick={openWhatsApp} className="w-full">
+                    <FaWhatsapp className="h-4 w-4 mr-2 text-[#25D366]" />
+                    Open WhatsApp
+                  </Button>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onOpenChange={setIsAuthModalOpen}
+          onLoginSuccess={() => {
+            setIsAuthModalOpen(false);
+            checkAuthStatus();
+          }}
+        />
+      </>
     );
   }
 
@@ -426,26 +467,18 @@ export function ContactSellerButton({
                     <p className="text-sm text-muted-foreground mb-2">
                       WhatsApp
                     </p>
-                    <div className="flex items-center justify-between gap-2">
-                      <a
-                        href={`https://wa.me/${sellerWhatsapp.replace(
-                          /[^\d]/g,
-                          ""
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm underline"
-                      >
-                        {sellerWhatsapp}
-                      </a>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyWhatsapp}
-                      >
+                    <div className="flex gap-2">
+                      <Button onClick={openWhatsApp} className="flex-1">
+                        <FaWhatsapp className="h-4 w-4 mr-2 text-[#25D366]" />
+                        Open WhatsApp
+                      </Button>
+                      <Button variant="outline" onClick={copyWhatsapp}>
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                      {sellerWhatsapp}
+                    </p>
                   </div>
                 )}
               </div>
