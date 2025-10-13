@@ -112,12 +112,12 @@ export function HowItWorksSection() {
     <section className="py-8 md:py-12 lg:py-20 bg-gradient-to-b from-background to-muted/20 relative overflow-visible z-0">
       {/* Background Elements (non-interactive) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 -left-12 md:-left-20 h-28 w-28 md:h-40 md:w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
-        <div className="absolute bottom-1/4 -right-12 md:-right-20 h-24 w-24 md:h-32 md:w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
+        <div className="absolute top-1/4 -left-6 md:-left-20 h-20 w-20 sm:h-28 sm:w-28 md:h-40 md:w-40 rounded-full bg-gradient-to-br from-v0-green/10 to-transparent blur-3xl" />
+        <div className="absolute bottom-1/4 -right-6 md:-right-20 h-16 w-16 sm:h-24 sm:w-24 md:h-32 md:w-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 px-2 sm:px-4">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
             How It Works
           </h2>
@@ -128,7 +128,7 @@ export function HowItWorksSection() {
         </div>
 
         {/* Selling Process - Enhanced Design */}
-        <div className="mb-20">
+        <div className="mb-20 px-2 sm:px-4">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20 mb-6">
               <span className="text-2xl">🚀</span>
@@ -145,7 +145,7 @@ export function HowItWorksSection() {
           </div>
 
           {/* Enhanced Step Layout */}
-          <div className="relative max-w-5xl md:max-w-6xl mx-auto mb-12">
+          <div className="relative max-w-full md:max-w-6xl mx-auto mb-12 px-2 sm:px-6">
             {/* Progress Line (visible from md) */}
             <div className="absolute md:top-20 lg:top-24 left-4 right-4 md:left-0 md:right-0 h-1 bg-gradient-to-r from-primary via-v0-green to-v0-orange rounded-full hidden md:block" />
 
@@ -160,7 +160,7 @@ export function HowItWorksSection() {
                     {step.step}
                   </div>
 
-                  <Card className="relative bg-gradient-to-br from-background/90 via-primary/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/20 transition-all duration-500 h-full overflow-hidden mt-2 md:mt-6">
+                  <Card className="relative bg-gradient-to-br from-background/90 via-primary/5 to-background/90 backdrop-blur-sm border-2 border-border/30 hover:border-primary/60 hover:shadow-lg hover:shadow-primary/20 transition-all duration-500 h-full overflow-hidden mt-2 md:mt-6 min-h-[220px]">
                     {/* Decorative Top Accent */}
                     <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary to-v0-green opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     <CardContent className="p-4 sm:p-6 pt-10 sm:pt-12 text-center">
@@ -195,8 +195,7 @@ export function HowItWorksSection() {
           </div>
 
           <div className="text-center mt-2">
-            <div className="hover:scale-105 transition-transform">
-            </div>
+            <div className="hover:scale-105 transition-transform"></div>
           </div>
         </div>
 
@@ -218,7 +217,7 @@ export function HowItWorksSection() {
           </div>
 
           {/* Enhanced Step Layout */}
-          <div className="relative max-w-5xl md:max-w-6xl mx-auto mb-12">
+          <div className="relative max-w-full md:max-w-6xl mx-auto mb-12 px-2 sm:px-6">
             {/* Progress Line (visible from md) */}
             <div className="absolute md:top-20 lg:top-24 left-4 right-4 md:left-0 md:right-0 h-1 bg-gradient-to-r from-v0-green via-v0-orange to-primary rounded-full hidden md:block" />
 

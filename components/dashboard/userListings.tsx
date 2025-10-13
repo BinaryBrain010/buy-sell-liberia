@@ -20,12 +20,15 @@ import {
   Eye,
   Calendar,
   MapPin,
+  ArrowUp,
+  Star,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategoryService } from "@/app/services/Category.Service";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
 import { ListingCard } from "./ListingCard";
 import { ListingEditModal } from "./ListingEditModal";
+import BumpModal from "./BumpModal";
 
 export interface Listing {
   _id: string;
@@ -69,6 +72,8 @@ export default function UserListings({ userId }: UserListingsProps) {
     }>
   >([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [bumpCount, setBumpCount] = useState(0);
+  const [isBumpModalOpen, setIsBumpModalOpen] = useState(false);
   const router = useRouter();
 
   useAuthLogout(() => {
@@ -155,6 +160,18 @@ export default function UserListings({ userId }: UserListingsProps) {
     }
     fetchUserListings();
     fetchCategories();
+    // Fetch user bump count from users API
+    (async function fetchBumpCount() {
+      try {
+        const resp = await fetch("/api/users/me");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        // backend may use 'bumps' or 'bumpCount'
+        setBumpCount(Number(data.bumpCount ?? data.bumps ?? 0));
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [userId]);
 
   const handleUpdateListing = async (
@@ -371,6 +388,22 @@ export default function UserListings({ userId }: UserListingsProps) {
               >
                 <Package className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Refresh</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsBumpModalOpen(true)}
+                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+              >
+                <ArrowUp className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Bump</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {}}
+                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+              >
+                <Star className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Feature</span>
               </Button>
               <Button
                 onClick={() => router.push("/sell")}
@@ -604,6 +637,17 @@ export default function UserListings({ userId }: UserListingsProps) {
         onSave={handleUpdateListing}
         saving={isUpdating}
         imageLoading={isImageLoading}
+      />
+      <BumpModal
+        open={isBumpModalOpen}
+        onOpenChange={setIsBumpModalOpen}
+        bumpCount={bumpCount}
+        listings={listings.map((l) => ({ _id: l._id, title: l.title }))}
+        onConfirm={(listingId) => {
+          // UI-only: decrement local bump count and log selection
+          console.log("Bump requested for listing:", listingId);
+          setBumpCount((c) => Math.max(0, c - 1));
+        }}
       />
     </div>
   );
