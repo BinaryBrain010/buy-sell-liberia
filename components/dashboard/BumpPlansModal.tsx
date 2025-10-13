@@ -82,8 +82,7 @@ export default function BumpPlansModal({ open, onOpenChange }: Props) {
 
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Choose a bump plan. This is a demo UI — integrate your payment
-            provider to process purchases.
+            Choose a bump plan.
           </p>
 
           {loading ? (
