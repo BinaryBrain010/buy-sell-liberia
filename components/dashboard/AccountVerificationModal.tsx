@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,15 +9,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
-export interface BumpPlanSummary {
-  id: string;
-  title?: string;
-  bumps: number;
-  price: number;
-  currency?: string;
-  description?: string;
-}
 
 type PaymentDetails = {
   mtn?: { name?: string; number?: string } | null;
@@ -32,46 +23,56 @@ type PaymentDetails = {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  plan: BumpPlanSummary | null;
-  productId: string | null;
 }
 
-export default function BumpPaymentModal({
+export default function AccountVerificationModal({
   open,
   onOpenChange,
-  plan,
-  productId,
 }: Props) {
+  const [plans, setPlans] = useState<any>(null);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
     null
   );
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [method, setMethod] = useState<string>("MTN");
   const [transactionId, setTransactionId] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const accountPlans = useMemo(
+    () => plans?.plans?.account_verification ?? {},
+    [plans]
+  );
+  const currency = plans?.currency ?? "L$";
+
   useEffect(() => {
     if (!open) return;
     let mounted = true;
-    setError(null);
-    fetch("/api/monetization/details")
-      .then((r) => r.json())
-      .then((json) => {
+    (async () => {
+      try {
+        const [p, d] = await Promise.all([
+          fetch("/api/monetization/plans")
+            .then((r) => r.json())
+            .catch(() => ({})),
+          fetch("/api/monetization/details")
+            .then((r) => r.json())
+            .catch(() => ({})),
+        ]);
         if (!mounted) return;
-        setPaymentDetails(json?.paymentDetails || {});
-        // Set default method to the first available
+        setPlans(p);
+        setPaymentDetails(d?.paymentDetails || null);
+        const firstKey =
+          Object.keys(p?.plans?.account_verification || {})[0] || null;
+        setSelectedPlan(firstKey);
         const available = [
-          json?.paymentDetails?.mtn ? "MTN" : null,
-          json?.paymentDetails?.orange ? "Orange" : null,
-          json?.paymentDetails?.bank ? "Bank" : null,
+          d?.paymentDetails?.mtn ? "MTN" : null,
+          d?.paymentDetails?.orange ? "Orange" : null,
+          d?.paymentDetails?.bank ? "Bank" : null,
         ].filter(Boolean) as string[];
         if (available.length > 0) setMethod(available[0]);
-      })
-      .catch(() => {
-        if (!mounted) return;
-        setPaymentDetails(null);
-      });
+      } catch (e) {}
+    })();
     return () => {
       mounted = false;
     };
@@ -90,12 +91,8 @@ export default function BumpPaymentModal({
     try {
       setSubmitting(true);
       setError(null);
-      if (!plan) {
-        setError("No plan selected");
-        return;
-      }
-      if (!productId) {
-        setError("Please select a listing to apply your bump credits");
+      if (!selectedPlan) {
+        setError("Please select a plan");
         return;
       }
       if (!transactionId || !screenshotFile) {
@@ -103,30 +100,25 @@ export default function BumpPaymentModal({
         return;
       }
       const screenshot = await toBase64(screenshotFile);
-      // Map bumps -> plan key expected by backend settings (e.g., 1 -> 1_bump, 5 -> 5_bumps)
-      const planKey = plan.bumps === 1 ? "1_bump" : `${plan.bumps}_bumps`;
-
       const resp = await fetch("/api/monetization/manual-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          featureType: "bump_listing",
-          listing: productId,
-          plan: planKey,
+          featureType: "account_verification",
+          plan: selectedPlan,
           method,
           screenshot,
           transactionId,
-          userNotes: `Bump plan: ${plan.title ?? plan.bumps + " bumps"} for ${
-            plan.price
-          } ${plan.currency ?? ""}`.trim(),
+          userNotes: `Account verification: ${selectedPlan}`,
         }),
       });
       const data = await resp.json();
-      if (!resp.ok) {
-        throw new Error(data?.error || "Failed to submit payment");
-      }
+      if (!resp.ok)
+        throw new Error(data?.error || "Failed to submit verification payment");
       onOpenChange(false);
-      alert("Payment submitted. You will be notified after admin approval.");
+      alert(
+        "Verification request submitted. You will be notified after admin review."
+      );
     } catch (e: any) {
       setError(e.message || "Submission failed");
     } finally {
@@ -134,36 +126,54 @@ export default function BumpPaymentModal({
     }
   }
 
+  const hasPlans = Object.keys(accountPlans).length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Submit Bump Payment</DialogTitle>
+          <DialogTitle>Apply for Account Verification</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
-          {/* Plan Summary */}
-          <div className="rounded border p-3">
-            <div className="font-medium">Selected Plan</div>
+          {!hasPlans ? (
             <div className="text-sm text-muted-foreground">
-              {plan ? (
-                <>
-                  <div>
-                    {plan.title ??
-                      `${plan.bumps} bump${plan.bumps > 1 ? "s" : ""}`}
-                  </div>
-                  <div>
-                    {plan.currency ?? "L$"} {plan.price}
-                  </div>
-                  {plan.description ? <div>{plan.description}</div> : null}
-                </>
-              ) : (
-                <div>No plan selected</div>
-              )}
+              Account verification plans are not available at the moment.
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="font-medium">Select Plan</div>
+              <div className="space-y-2">
+                {Object.entries(accountPlans).map(([key, val]: any) => (
+                  <label
+                    key={key}
+                    className={`flex items-center justify-between p-3 rounded border cursor-pointer hover:bg-muted/50 ${
+                      selectedPlan === key
+                        ? "border-primary/50 bg-muted/50"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <div className="font-medium">{val?.label ?? key}</div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="font-semibold">
+                        {currency} {val?.price ?? 0}
+                      </div>
+                      <input
+                        type="radio"
+                        name="verif-plan"
+                        checked={selectedPlan === key}
+                        onChange={() => setSelectedPlan(key)}
+                        className="h-4 w-4"
+                      />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Payment Details */}
           <div className="space-y-3">
             <div className="font-medium">Pay to</div>
             {!paymentDetails ? (
@@ -202,48 +212,45 @@ export default function BumpPaymentModal({
             )}
           </div>
 
-          {/* Method Select */}
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Payment Method</div>
-            <div className="flex gap-3 text-sm">
-              {paymentDetails?.mtn && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "MTN"}
-                    onChange={() => setMethod("MTN")}
-                  />{" "}
-                  MTN
-                </label>
-              )}
-              {paymentDetails?.orange && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Orange"}
-                    onChange={() => setMethod("Orange")}
-                  />{" "}
-                  Orange
-                </label>
-              )}
-              {paymentDetails?.bank && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Bank"}
-                    onChange={() => setMethod("Bank")}
-                  />{" "}
-                  Bank
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Transaction */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm font-medium">Payment Method</div>
+              <div className="flex gap-3 text-sm mt-2">
+                {paymentDetails?.mtn && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="method"
+                      checked={method === "MTN"}
+                      onChange={() => setMethod("MTN")}
+                    />{" "}
+                    MTN
+                  </label>
+                )}
+                {paymentDetails?.orange && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="method"
+                      checked={method === "Orange"}
+                      onChange={() => setMethod("Orange")}
+                    />{" "}
+                    Orange
+                  </label>
+                )}
+                {paymentDetails?.bank && (
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="method"
+                      checked={method === "Bank"}
+                      onChange={() => setMethod("Bank")}
+                    />{" "}
+                    Bank
+                  </label>
+                )}
+              </div>
+            </div>
             <div>
               <div className="text-sm font-medium">Transaction ID</div>
               <input
@@ -252,9 +259,7 @@ export default function BumpPaymentModal({
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
               />
-            </div>
-            <div>
-              <div className="text-sm font-medium">Screenshot</div>
+              <div className="text-sm font-medium mt-3">Screenshot</div>
               <input
                 type="file"
                 accept="image/*"
@@ -278,9 +283,9 @@ export default function BumpPaymentModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting || !plan || !productId}
+              disabled={submitting || !selectedPlan}
             >
-              Post
+              Submit
             </Button>
           </div>
         </DialogFooter>

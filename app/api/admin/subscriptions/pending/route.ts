@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import UserSubscription from "../../../../models/UserSubscription";
-import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
-import dbConnect from "../../../../lib/mongoose";
-import { ensureModelsRegistered } from "../../../../lib/ensure-models";
+import UserSubscription from "@/models/UserSubscription";
+import { AdminAuthService } from "../../../modules/auth/services/admin-auth.service";
+import dbConnect from "@/lib/mongoose";
+import { ensureModelsRegistered } from "@/lib/ensure-models";
 
 // GET: Get pending subscription requests (admin only)
 export async function GET(request: NextRequest) {
@@ -14,7 +14,11 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split(" ")[1];
     const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== "object" || (payload.role !== "admin" && payload.role !== "super_admin")) {
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      (payload.role !== "admin" && payload.role !== "super_admin")
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -31,48 +35,56 @@ export async function GET(request: NextRequest) {
     const [pendingSubscriptions, total] = await Promise.all([
       UserSubscription.find({ status: "pending" })
         .populate("user", "fullName username email phone")
-        .populate("plan", "name type description price maxAds featuredAds homepageBanner features")
+        .populate(
+          "plan",
+          "name type description price maxAds featuredAds homepageBanner features"
+        )
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       UserSubscription.countDocuments({ status: "pending" }),
     ]);
 
     return NextResponse.json({
       success: true,
-      subscriptions: pendingSubscriptions.map(sub => ({
-        id: sub._id,
-        user: {
-          id: sub.user._id,
-          fullName: sub.user.fullName,
-          username: sub.user.username,
-          email: sub.user.email,
-          phone: sub.user.phone,
-        },
-        plan: {
-          id: sub.plan._id,
-          name: sub.plan.name,
-          type: sub.plan.type,
-          description: sub.plan.description,
-          price: sub.plan.price,
-          maxAds: sub.plan.maxAds,
-          featuredAds: sub.plan.featuredAds,
-          homepageBanner: sub.plan.homepageBanner,
-          features: sub.plan.features,
-        },
-        planType: sub.planType,
-        status: sub.status,
-        paymentStatus: sub.paymentStatus,
-        amount: sub.amount,
-        currency: sub.currency,
-        paymentMethod: sub.paymentMethod,
-        transactionId: sub.transactionId,
-        paymentScreenshot: sub.paymentScreenshot,
-        paymentNotes: sub.paymentNotes,
-        startDate: sub.startDate,
-        endDate: sub.endDate,
-        createdAt: sub.createdAt,
-      })),
+      subscriptions: (pendingSubscriptions as any[]).map((sub) => {
+        const user = (sub as any).user || {};
+        const plan = (sub as any).plan || {};
+        return {
+          id: sub._id,
+          user: {
+            id: user._id,
+            fullName: user.fullName,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+          },
+          plan: {
+            id: plan._id,
+            name: plan.name,
+            type: plan.type,
+            description: plan.description,
+            price: plan.price,
+            maxAds: plan.maxAds,
+            featuredAds: plan.featuredAds,
+            homepageBanner: plan.homepageBanner,
+            features: plan.features,
+          },
+          planType: sub.planType,
+          status: sub.status,
+          paymentStatus: sub.paymentStatus,
+          amount: sub.amount,
+          currency: sub.currency,
+          paymentMethod: sub.paymentMethod,
+          transactionId: sub.transactionId,
+          paymentScreenshot: sub.paymentScreenshot,
+          paymentNotes: sub.paymentNotes,
+          startDate: sub.startDate,
+          endDate: sub.endDate,
+          createdAt: sub.createdAt,
+        };
+      }),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),

@@ -14,6 +14,12 @@ export interface SystemSettings {
   monetizationEnabled: boolean;
   registrationEnabled: boolean;
   maintenanceMode: boolean;
+  paidCategoriesEnabled?: boolean;
+  // Monetization feature toggles (granular)
+  isFeaturedActive?: boolean;
+  isSubscriptionActive?: boolean;
+  isPaidCategoryActive?: boolean;
+  isBannerAdsActive?: boolean;
 
   // Payment Configuration
   paymentContactInfo: {
@@ -39,6 +45,11 @@ export class SettingsService {
     PAYMENT_CONTACT_INFO: "payment_contact_info",
     MONETIZATION_PRICES: "monetization_prices",
     MONETIZATION_PAYMENT_DETAILS: "monetization_payment_details",
+    PAID_CATEGORIES_ENABLED: "paid_categories_enabled",
+    FEATURED_ACTIVE: "is_featured_active",
+    SUBSCRIPTIONS_ACTIVE: "is_subscription_active",
+    PAID_CATEGORY_ACTIVE: "is_paid_category_active",
+    BANNER_ADS_ACTIVE: "is_banner_ads_active",
   };
 
   /**
@@ -96,6 +107,20 @@ export class SettingsService {
       registrationEnabled:
         settingsMap[this.SETTING_KEYS.REGISTRATION_ENABLED] !== false,
       maintenanceMode: Boolean(settingsMap[this.SETTING_KEYS.MAINTENANCE_MODE]),
+      paidCategoriesEnabled: Boolean(
+        settingsMap[this.SETTING_KEYS.PAID_CATEGORIES_ENABLED]
+      ),
+      // granular feature toggles (default false)
+      isFeaturedActive: Boolean(settingsMap[this.SETTING_KEYS.FEATURED_ACTIVE]),
+      isSubscriptionActive: Boolean(
+        settingsMap[this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE]
+      ),
+      isPaidCategoryActive: Boolean(
+        settingsMap[this.SETTING_KEYS.PAID_CATEGORY_ACTIVE]
+      ),
+      isBannerAdsActive: Boolean(
+        settingsMap[this.SETTING_KEYS.BANNER_ADS_ACTIVE]
+      ),
       paymentContactInfo:
         settingsMap[this.SETTING_KEYS.PAYMENT_CONTACT_INFO] || {},
       monetizationPrices:
@@ -226,46 +251,58 @@ export class SettingsService {
       [this.SETTING_KEYS.MONETIZATION_ENABLED]: false,
       [this.SETTING_KEYS.REGISTRATION_ENABLED]: true,
       [this.SETTING_KEYS.MAINTENANCE_MODE]: false,
+      [this.SETTING_KEYS.PAID_CATEGORIES_ENABLED]: false,
+      // granular feature toggles default: inactive at launch
+      [this.SETTING_KEYS.FEATURED_ACTIVE]: false,
+      [this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE]: false,
+      [this.SETTING_KEYS.PAID_CATEGORY_ACTIVE]: false,
+      [this.SETTING_KEYS.BANNER_ADS_ACTIVE]: false,
       [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
       [this.SETTING_KEYS.MONETIZATION_PRICES]: {
+        // Prices in USD for featured listings per product
         featured_listing: {
-          "3_days": { 
-            price: 150, 
-            duration: 3, 
-            label: "3 Days",
-            description: "Feature your listing for 3 days"
-          },
-          "7_days": { 
-            price: 300, 
-            duration: 7, 
+          "7_days": {
+            price: 4.99,
+            duration: 7,
             label: "7 Days",
-            description: "Feature your listing for 1 week"
+            description: "Feature your listing for 7 days",
           },
-          "14_days": { 
-            price: 500, 
-            duration: 14, 
-            label: "14 Days",
-            description: "Feature your listing for 2 weeks"
-          }
-        }
+          "30_days": {
+            price: 8.99,
+            duration: 30,
+            label: "30 Days",
+            description: "Feature your listing for 30 days",
+          },
+        },
+        // Optional: banner ad packages (disabled by default via toggle)
+        banner_ad: {
+          "7_days_homepage": {
+            price: 19.99,
+            duration: 7,
+            label: "Homepage 7 Days",
+          },
+        },
       },
       [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {
         mtn: {
           number: "",
           name: "",
-          instructions: "Send payment to the MTN number above and enter your transaction ID"
+          instructions:
+            "Send payment to the MTN number above and enter your transaction ID",
         },
         orange: {
           number: "",
           name: "",
-          instructions: "Send payment to the Orange number above and enter your transaction ID"
+          instructions:
+            "Send payment to the Orange number above and enter your transaction ID",
         },
         bank: {
           accountNumber: "",
           accountName: "",
           bankName: "",
-          instructions: "Transfer to the bank account above and upload your payment receipt"
-        }
+          instructions:
+            "Transfer to the bank account above and upload your payment receipt",
+        },
       },
     };
   }
@@ -320,6 +357,11 @@ export class SettingsService {
       monetizationEnabled: this.SETTING_KEYS.MONETIZATION_ENABLED,
       registrationEnabled: this.SETTING_KEYS.REGISTRATION_ENABLED,
       maintenanceMode: this.SETTING_KEYS.MAINTENANCE_MODE,
+      paidCategoriesEnabled: this.SETTING_KEYS.PAID_CATEGORIES_ENABLED,
+      isFeaturedActive: this.SETTING_KEYS.FEATURED_ACTIVE,
+      isSubscriptionActive: this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE,
+      isPaidCategoryActive: this.SETTING_KEYS.PAID_CATEGORY_ACTIVE,
+      isBannerAdsActive: this.SETTING_KEYS.BANNER_ADS_ACTIVE,
       paymentContactInfo: this.SETTING_KEYS.PAYMENT_CONTACT_INFO,
       monetizationPrices: this.SETTING_KEYS.MONETIZATION_PRICES,
       monetizationPaymentDetails:

@@ -13,7 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { User, Save, Edit3, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  User,
+  Save,
+  Edit3,
+  CheckCircle,
+  AlertCircle,
+  ShieldCheck,
+} from "lucide-react";
+import AccountVerificationModal from "@/components/dashboard/AccountVerificationModal";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
 
@@ -47,6 +55,7 @@ export default function ProfileForm({
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const { toast } = useToast();
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -270,6 +279,14 @@ export default function ProfileForm({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setVerifyOpen(true)}
+                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+              >
+                <ShieldCheck className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Apply for Verification</span>
+              </Button>
               {!editing && (
                 <Button
                   onClick={() => setEditing(true)}
@@ -496,6 +513,10 @@ export default function ProfileForm({
           </div>
         </div>
       </div>
+      <AccountVerificationModal
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+      />
     </div>
   );
 }

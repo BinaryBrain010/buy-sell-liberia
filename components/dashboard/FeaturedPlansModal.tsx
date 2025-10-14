@@ -9,34 +9,43 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import BumpPaymentModal, {
-  BumpPlanSummary,
-} from "@/components/dashboard/BumpPaymentModal";
+import FeaturedPaymentModal, {
+  FeaturedPlanSummary,
+} from "./FeaturedPaymentModal";
 
 interface Plan {
-  id: string;
+  id: string; // plan key like "3_days"
   title?: string;
-  bumps: number;
+  days: number;
   price: number;
   currency?: string;
   description?: string;
 }
 
+interface ListingShort {
+  _id: string;
+  title: string;
+}
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  productId?: string | null;
+  productId?: string | null; // listing to feature; if absent, show selector
+  listings?: ListingShort[]; // optional list of listings to choose from
 }
 
-export default function BumpPlansModal({
+export default function FeaturedPlansModal({
   open,
   onOpenChange,
   productId,
+  listings = [],
 }: Props) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [selectedListingId, setSelectedListingId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -46,14 +55,13 @@ export default function BumpPlansModal({
       .then((r) => r.json())
       .then((json) => {
         if (!mounted) return;
-        // Unified response: json.plans.bump_listing is an object keyed by plan id
-        const bumpGroup = (json as any)?.plans?.bump_listing || {};
+        const featuredGroup = (json as any)?.plans?.featured_listing || {};
         const currency = (json as any)?.currency || "L$";
-        const mapped: Plan[] = Object.entries(bumpGroup).map(
+        const mapped: Plan[] = Object.entries(featuredGroup).map(
           ([key, val]: [string, any]) => ({
             id: key,
             title: val?.label,
-            bumps: Number(val?.credits ?? 0),
+            days: Number(val?.duration ?? 0),
             price: Number(val?.price ?? 0),
             currency,
             description: val?.description || "",
@@ -64,6 +72,13 @@ export default function BumpPlansModal({
       })
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
+
+    // Initialize default selected listing if not provided
+    if (!productId && listings && listings.length > 0) {
+      setSelectedListingId(listings[0]._id);
+    } else if (productId) {
+      setSelectedListingId(productId);
+    }
 
     return () => {
       mounted = false;
@@ -81,11 +96,37 @@ export default function BumpPlansModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Buy Bumps</DialogTitle>
+            <DialogTitle>Feature Listing</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Choose a bump plan.</p>
+            {!productId && listings.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Select a listing</div>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {listings.map((l) => (
+                    <label
+                      key={l._id}
+                      className={`flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-muted/50 ${
+                        selectedListingId === l._id ? "bg-muted/50" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="feature-listing"
+                        checked={selectedListingId === l._id}
+                        onChange={() => setSelectedListingId(l._id)}
+                        className="h-4 w-4"
+                      />
+                      <div className="text-sm truncate">{l.title}</div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Choose a featured plan.
+            </p>
 
             {loading ? (
               <div className="text-sm text-muted-foreground">
@@ -106,7 +147,7 @@ export default function BumpPlansModal({
                   >
                     <div className="flex flex-col">
                       <div className="font-medium">
-                        {p.title ?? `${p.bumps} bump${p.bumps > 1 ? "s" : ""}`}
+                        {p.title ?? `${p.days} day${p.days > 1 ? "s" : ""}`}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {p.description}
@@ -114,14 +155,14 @@ export default function BumpPlansModal({
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-sm text-muted-foreground">
-                        {p.bumps} bump{p.bumps > 1 ? "s" : ""}
+                        {p.days} day{p.days > 1 ? "s" : ""}
                       </div>
                       <div className="font-semibold">
                         {p.currency} {p.price}
                       </div>
                       <input
                         type="radio"
-                        name="plan"
+                        name="featured-plan"
                         checked={selected === p.id}
                         onChange={() => setSelected(p.id)}
                         className="h-4 w-4"
@@ -138,30 +179,37 @@ export default function BumpPlansModal({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleBuy} disabled={!selected || loading}>
+              <Button
+                onClick={handleBuy}
+                disabled={
+                  !selected ||
+                  loading ||
+                  (!productId && listings.length > 0 && !selectedListingId)
+                }
+              >
                 Buy
               </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <BumpPaymentModal
+      <FeaturedPaymentModal
         open={paymentOpen}
         onOpenChange={setPaymentOpen}
         plan={(() => {
           const p = plans.find((x) => x.id === selected);
           if (!p) return null;
-          const planSummary: BumpPlanSummary = {
+          const planSummary: FeaturedPlanSummary = {
             id: p.id,
             title: p.title,
-            bumps: p.bumps,
+            days: p.days,
             price: p.price,
             currency: p.currency,
             description: p.description,
           };
           return planSummary;
         })()}
-        productId={productId ?? null}
+        productId={productId ?? selectedListingId ?? null}
       />
     </>
   );

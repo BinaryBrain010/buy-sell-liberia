@@ -73,10 +73,15 @@ export interface ICategory extends Document {
   description?: string;
   isActive?: boolean;
   sortOrder?: number;
+  // Monetization: paid categories
+  isPaidCategory?: boolean;
+  pricePerListing?: number; // USD per listing if paid
   subcategories: ISubcategory[];
   created_at?: Date;
   updated_at?: Date;
-  getSubcategory(subcategoryId: mongoose.Types.ObjectId): ISubcategory | undefined;
+  getSubcategory(
+    subcategoryId: mongoose.Types.ObjectId
+  ): ISubcategory | undefined;
   getSubcategoryBySlug(slug: string): ISubcategory | undefined;
 }
 
@@ -88,6 +93,8 @@ const categorySchema = new Schema<ICategory>(
     description: { type: String, trim: true },
     isActive: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
+    isPaidCategory: { type: Boolean, default: false },
+    pricePerListing: { type: Number, default: 0, min: 0 },
     subcategories: [subcategorySchema],
   },
   {
@@ -103,7 +110,9 @@ categorySchema.index({ sortOrder: 1 });
 categorySchema.pre<ICategory>("save", function (next) {
   const slugs = this.subcategories.map((sub) => sub.slug);
   if (new Set(slugs).size !== slugs.length) {
-    return next(new Error("Subcategory slugs must be unique within a category"));
+    return next(
+      new Error("Subcategory slugs must be unique within a category")
+    );
   }
   next();
 });
@@ -137,6 +146,7 @@ categorySchema.set("toJSON", { virtuals: true });
 
 // ✅ Prevent model overwrite (critical for Next.js dev)
 const Category: Model<ICategory> =
-  mongoose.models.Category || mongoose.model<ICategory>("Category", categorySchema);
+  mongoose.models.Category ||
+  mongoose.model<ICategory>("Category", categorySchema);
 
 export default Category;

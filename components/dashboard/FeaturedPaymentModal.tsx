@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-export interface BumpPlanSummary {
-  id: string;
+export interface FeaturedPlanSummary {
+  id: string; // plan key
   title?: string;
-  bumps: number;
+  days: number;
   price: number;
   currency?: string;
   description?: string;
@@ -32,11 +32,11 @@ type PaymentDetails = {
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  plan: BumpPlanSummary | null;
+  plan: FeaturedPlanSummary | null;
   productId: string | null;
 }
 
-export default function BumpPaymentModal({
+export default function FeaturedPaymentModal({
   open,
   onOpenChange,
   plan,
@@ -60,7 +60,6 @@ export default function BumpPaymentModal({
       .then((json) => {
         if (!mounted) return;
         setPaymentDetails(json?.paymentDetails || {});
-        // Set default method to the first available
         const available = [
           json?.paymentDetails?.mtn ? "MTN" : null,
           json?.paymentDetails?.orange ? "Orange" : null,
@@ -95,7 +94,7 @@ export default function BumpPaymentModal({
         return;
       }
       if (!productId) {
-        setError("Please select a listing to apply your bump credits");
+        setError("Please select a listing to feature");
         return;
       }
       if (!transactionId || !screenshotFile) {
@@ -103,20 +102,18 @@ export default function BumpPaymentModal({
         return;
       }
       const screenshot = await toBase64(screenshotFile);
-      // Map bumps -> plan key expected by backend settings (e.g., 1 -> 1_bump, 5 -> 5_bumps)
-      const planKey = plan.bumps === 1 ? "1_bump" : `${plan.bumps}_bumps`;
 
       const resp = await fetch("/api/monetization/manual-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          featureType: "bump_listing",
+          featureType: "featured_listing",
           listing: productId,
-          plan: planKey,
+          plan: plan.id, // e.g., "7_days"
           method,
           screenshot,
           transactionId,
-          userNotes: `Bump plan: ${plan.title ?? plan.bumps + " bumps"} for ${
+          userNotes: `Featured plan: ${plan.title ?? `${plan.days} days`} for ${
             plan.price
           } ${plan.currency ?? ""}`.trim(),
         }),
@@ -138,7 +135,7 @@ export default function BumpPaymentModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Submit Bump Payment</DialogTitle>
+          <DialogTitle>Submit Featured Payment</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -150,7 +147,7 @@ export default function BumpPaymentModal({
                 <>
                   <div>
                     {plan.title ??
-                      `${plan.bumps} bump${plan.bumps > 1 ? "s" : ""}`}
+                      `${plan.days} day${plan.days > 1 ? "s" : ""}`}
                   </div>
                   <div>
                     {plan.currency ?? "L$"} {plan.price}

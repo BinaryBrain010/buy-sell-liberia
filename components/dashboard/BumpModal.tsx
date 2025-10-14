@@ -132,7 +132,11 @@ export function BumpModal({
           </DialogFooter>
         )}
       </DialogContent>
-      <BumpPlansModal open={isPlansOpen} onOpenChange={setIsPlansOpen} />
+      <BumpPlansModal
+        open={isPlansOpen}
+        onOpenChange={setIsPlansOpen}
+        productId={selected}
+      />
     </Dialog>
   );
 }

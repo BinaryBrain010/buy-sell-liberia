@@ -29,6 +29,7 @@ import { useAuthLogout } from "@/hooks/use-auth-logout";
 import { ListingCard } from "./ListingCard";
 import { ListingEditModal } from "./ListingEditModal";
 import BumpModal from "./BumpModal";
+import FeaturedPlansModal from "./FeaturedPlansModal";
 
 export interface Listing {
   _id: string;
@@ -74,6 +75,8 @@ export default function UserListings({ userId }: UserListingsProps) {
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [bumpCount, setBumpCount] = useState(0);
   const [isBumpModalOpen, setIsBumpModalOpen] = useState(false);
+  const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
+  const [featureTargetId, setFeatureTargetId] = useState<string | null>(null);
   const router = useRouter();
 
   useAuthLogout(() => {
@@ -399,7 +402,11 @@ export default function UserListings({ userId }: UserListingsProps) {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {}}
+                onClick={() => {
+                  // If a listing is selected elsewhere, setFeatureTargetId; otherwise user can pick inside modal via its dependency on selected item
+                  setFeatureTargetId(null);
+                  setIsFeatureModalOpen(true);
+                }}
                 className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
               >
                 <Star className="h-4 w-4 sm:mr-2" />
@@ -643,11 +650,31 @@ export default function UserListings({ userId }: UserListingsProps) {
         onOpenChange={setIsBumpModalOpen}
         bumpCount={bumpCount}
         listings={listings.map((l) => ({ _id: l._id, title: l.title }))}
-        onConfirm={(listingId) => {
-          // UI-only: decrement local bump count and log selection
-          console.log("Bump requested for listing:", listingId);
-          setBumpCount((c) => Math.max(0, c - 1));
+        onConfirm={async (listingId) => {
+          try {
+            // Call backend to bump the listing using available credits
+            const resp = await fetch(`/api/products/${listingId}/bump`, {
+              method: "GET",
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+              console.error("Bump failed:", data?.error || data);
+              alert(data?.error || "Failed to bump listing. Please try again.");
+              return;
+            }
+            // Success: decrement local bump count and optionally update local listing state
+            setBumpCount((c) => Math.max(0, c - 1));
+          } catch (e: any) {
+            console.error("Bump error:", e?.message || e);
+            alert(e?.message || "Failed to bump listing. Please try again.");
+          }
         }}
+      />
+      <FeaturedPlansModal
+        open={isFeatureModalOpen}
+        onOpenChange={setIsFeatureModalOpen}
+        productId={featureTargetId}
+        listings={listings.map((l) => ({ _id: l._id, title: l.title }))}
       />
     </div>
   );
