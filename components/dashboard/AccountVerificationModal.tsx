@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 type PaymentDetails = {
   mtn?: { name?: string; number?: string } | null;
@@ -34,11 +35,11 @@ export default function AccountVerificationModal({
     null
   );
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [method, setMethod] = useState<string>("MTN");
   const [transactionId, setTransactionId] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastCopied, setLastCopied] = useState<string | null>(null);
 
   const accountPlans = useMemo(
     () => plans?.plans?.account_verification ?? {},
@@ -51,32 +52,38 @@ export default function AccountVerificationModal({
     let mounted = true;
     (async () => {
       try {
-        const [p, d] = await Promise.all([
+        const [p, s] = await Promise.all([
           fetch("/api/monetization/plans")
             .then((r) => r.json())
             .catch(() => ({})),
-          fetch("/api/monetization/details")
+          fetch("/api/settings/public")
             .then((r) => r.json())
             .catch(() => ({})),
         ]);
         if (!mounted) return;
         setPlans(p);
-        setPaymentDetails(d?.paymentDetails || null);
+        // prefer public settings paymentDetails; fallback to plans.paymentDetails
+        const pd = s?.paymentDetails;
+        const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
+        setPaymentDetails(hasAny ? pd : p?.paymentDetails || null);
         const firstKey =
           Object.keys(p?.plans?.account_verification || {})[0] || null;
         setSelectedPlan(firstKey);
-        const available = [
-          d?.paymentDetails?.mtn ? "MTN" : null,
-          d?.paymentDetails?.orange ? "Orange" : null,
-          d?.paymentDetails?.bank ? "Bank" : null,
-        ].filter(Boolean) as string[];
-        if (available.length > 0) setMethod(available[0]);
       } catch (e) {}
     })();
     return () => {
       mounted = false;
     };
   }, [open]);
+
+  // Ensure a default plan is auto-selected when plans load
+  useEffect(() => {
+    if (!selectedPlan) {
+      const firstKey = Object.keys(accountPlans || {})[0];
+      if (firstKey) setSelectedPlan(firstKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountPlans]);
 
   async function toBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -106,7 +113,6 @@ export default function AccountVerificationModal({
         body: JSON.stringify({
           featureType: "account_verification",
           plan: selectedPlan,
-          method,
           screenshot,
           transactionId,
           userNotes: `Account verification: ${selectedPlan}`,
@@ -116,9 +122,10 @@ export default function AccountVerificationModal({
       if (!resp.ok)
         throw new Error(data?.error || "Failed to submit verification payment");
       onOpenChange(false);
-      alert(
-        "Verification request submitted. You will be notified after admin review."
-      );
+      toast({
+        title: "Verification request sent",
+        description: "We'll notify you after the review is complete.",
+      });
     } catch (e: any) {
       setError(e.message || "Submission failed");
     } finally {
@@ -127,6 +134,15 @@ export default function AccountVerificationModal({
   }
 
   const hasPlans = Object.keys(accountPlans).length > 0;
+
+  const handleCopy = async (label: string, text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setLastCopied(label);
+      setTimeout(() => setLastCopied(null), 1500);
+    } catch {}
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,30 +197,78 @@ export default function AccountVerificationModal({
                 Loading payment details…
               </div>
             ) : (
-              <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">MTN Mobile Money</div>
-                    <div>Name: {paymentDetails.mtn.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.mtn.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.mtn.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("mtn", paymentDetails.mtn?.number)
+                        }
+                      >
+                        {lastCopied === "mtn" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">Orange Money</div>
-                    <div>Name: {paymentDetails.orange.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.orange.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.orange.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("orange", paymentDetails.orange?.number)
+                        }
+                      >
+                        {lastCopied === "orange" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3 sm:col-span-2">
                     <div className="font-medium">Bank Transfer</div>
-                    <div>Bank: {paymentDetails.bank.bankName ?? "-"}</div>
-                    <div>
-                      Account Name: {paymentDetails.bank.accountName ?? "-"}
+                    <div className="text-xs text-muted-foreground">
+                      {paymentDetails.bank.bankName ?? "-"}
                     </div>
-                    <div>
-                      Account Number: {paymentDetails.bank.accountNumber ?? "-"}
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Account Name</span>
+                        <span className="font-mono">
+                          {paymentDetails.bank.accountName ?? "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Account Number</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono">
+                            {paymentDetails.bank.accountNumber ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy(
+                                "bank",
+                                paymentDetails.bank?.accountNumber
+                              )
+                            }
+                          >
+                            {lastCopied === "bank" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -213,44 +277,6 @@ export default function AccountVerificationModal({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium">Payment Method</div>
-              <div className="flex gap-3 text-sm mt-2">
-                {paymentDetails?.mtn && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="method"
-                      checked={method === "MTN"}
-                      onChange={() => setMethod("MTN")}
-                    />{" "}
-                    MTN
-                  </label>
-                )}
-                {paymentDetails?.orange && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="method"
-                      checked={method === "Orange"}
-                      onChange={() => setMethod("Orange")}
-                    />{" "}
-                    Orange
-                  </label>
-                )}
-                {paymentDetails?.bank && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="method"
-                      checked={method === "Bank"}
-                      onChange={() => setMethod("Bank")}
-                    />{" "}
-                    Bank
-                  </label>
-                )}
-              </div>
-            </div>
             <div>
               <div className="text-sm font-medium">Transaction ID</div>
               <input
@@ -266,6 +292,10 @@ export default function AccountVerificationModal({
                 className="mt-1 w-full text-sm"
                 onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
               />
+            </div>
+            <div className="text-xs text-muted-foreground self-end">
+              Tip: After sending your payment, add the transaction ID and a
+              screenshot here, then submit. We’ll review your request shortly.
             </div>
           </div>
 
@@ -283,7 +313,9 @@ export default function AccountVerificationModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting || !selectedPlan}
+              disabled={
+                submitting || !selectedPlan || !transactionId || !screenshotFile
+              }
             >
               Submit
             </Button>

@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 export interface BumpPlanSummary {
   id: string;
@@ -45,28 +46,32 @@ export default function BumpPaymentModal({
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
     null
   );
-  const [method, setMethod] = useState<string>("MTN");
   const [transactionId, setTransactionId] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastCopied, setLastCopied] = useState<string | null>(null);
+  // Derived readiness state
+  const canSend =
+    !!plan && !!transactionId.trim() && !!screenshotFile && !submitting;
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     setError(null);
-    fetch("/api/monetization/details")
-      .then((r) => r.json())
-      .then((json) => {
+    Promise.all([
+      fetch("/api/settings/public")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/monetization/plans")
+        .then((r) => r.json())
+        .catch(() => ({})),
+    ])
+      .then(([s, p]) => {
         if (!mounted) return;
-        setPaymentDetails(json?.paymentDetails || {});
-        // Set default method to the first available
-        const available = [
-          json?.paymentDetails?.mtn ? "MTN" : null,
-          json?.paymentDetails?.orange ? "Orange" : null,
-          json?.paymentDetails?.bank ? "Bank" : null,
-        ].filter(Boolean) as string[];
-        if (available.length > 0) setMethod(available[0]);
+        const pd = s?.paymentDetails;
+        const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
+        setPaymentDetails(hasAny ? pd : p?.paymentDetails || null);
       })
       .catch(() => {
         if (!mounted) return;
@@ -94,10 +99,7 @@ export default function BumpPaymentModal({
         setError("No plan selected");
         return;
       }
-      if (!productId) {
-        setError("Please select a listing to apply your bump credits");
-        return;
-      }
+      // productId is optional for purchasing bump credits (credits apply to account)
       if (!transactionId || !screenshotFile) {
         setError("Transaction ID and screenshot are required");
         return;
@@ -106,33 +108,46 @@ export default function BumpPaymentModal({
       // Map bumps -> plan key expected by backend settings (e.g., 1 -> 1_bump, 5 -> 5_bumps)
       const planKey = plan.bumps === 1 ? "1_bump" : `${plan.bumps}_bumps`;
 
+      const payload: any = {
+        featureType: "bump_listing",
+        plan: planKey,
+        screenshot,
+        transactionId,
+        userNotes: `Bump plan: ${plan.title ?? plan.bumps + " bumps"} for ${
+          plan.price
+        } ${plan.currency ?? ""}`.trim(),
+      };
+      if (productId) payload.listing = productId;
+
       const resp = await fetch("/api/monetization/manual-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          featureType: "bump_listing",
-          listing: productId,
-          plan: planKey,
-          method,
-          screenshot,
-          transactionId,
-          userNotes: `Bump plan: ${plan.title ?? plan.bumps + " bumps"} for ${
-            plan.price
-          } ${plan.currency ?? ""}`.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await resp.json();
       if (!resp.ok) {
         throw new Error(data?.error || "Failed to submit payment");
       }
       onOpenChange(false);
-      alert("Payment submitted. You will be notified after admin approval.");
+      toast({
+        title: "Payment submitted",
+        description: "We'll notify you once bump credits are approved.",
+      });
     } catch (e: any) {
       setError(e.message || "Submission failed");
     } finally {
       setSubmitting(false);
     }
   }
+
+  const handleCopy = async (label: string, text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setLastCopied(label);
+      setTimeout(() => setLastCopied(null), 1500);
+    } catch {}
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -171,81 +186,100 @@ export default function BumpPaymentModal({
                 Loading payment details…
               </div>
             ) : (
-              <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">MTN Mobile Money</div>
-                    <div>Name: {paymentDetails.mtn.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.mtn.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.mtn.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("mtn", paymentDetails.mtn?.number)
+                        }
+                      >
+                        {lastCopied === "mtn" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">Orange Money</div>
-                    <div>Name: {paymentDetails.orange.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.orange.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.orange.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("orange", paymentDetails.orange?.number)
+                        }
+                      >
+                        {lastCopied === "orange" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3 sm:col-span-2">
                     <div className="font-medium">Bank Transfer</div>
-                    <div>Bank: {paymentDetails.bank.bankName ?? "-"}</div>
-                    <div>
-                      Account Name: {paymentDetails.bank.accountName ?? "-"}
+                    <div className="text-xs text-muted-foreground">
+                      {paymentDetails.bank.bankName ?? "-"}
                     </div>
-                    <div>
-                      Account Number: {paymentDetails.bank.accountNumber ?? "-"}
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Account Name</span>
+                        <span className="font-mono">
+                          {paymentDetails.bank.accountName ?? "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Account Number</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono">
+                            {paymentDetails.bank.accountNumber ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy(
+                                "bank",
+                                paymentDetails.bank?.accountNumber
+                              )
+                            }
+                          >
+                            {lastCopied === "bank" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             )}
           </div>
-
-          {/* Method Select */}
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Payment Method</div>
-            <div className="flex gap-3 text-sm">
-              {paymentDetails?.mtn && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "MTN"}
-                    onChange={() => setMethod("MTN")}
-                  />{" "}
-                  MTN
-                </label>
-              )}
-              {paymentDetails?.orange && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Orange"}
-                    onChange={() => setMethod("Orange")}
-                  />{" "}
-                  Orange
-                </label>
-              )}
-              {paymentDetails?.bank && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Bank"}
-                    onChange={() => setMethod("Bank")}
-                  />{" "}
-                  Bank
-                </label>
-              )}
-            </div>
+          <div className="text-xs text-muted-foreground">
+            Tip: Send your payment, then add the Transaction ID and a screenshot
+            here and submit. We will credit your bump(s) after approval.
           </div>
 
           {/* Transaction */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <div className="text-sm font-medium">Transaction ID</div>
+              <div className="text-sm font-medium flex items-center justify-between">
+                <span>Transaction ID</span>
+                {!transactionId.trim() && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 className="mt-1 w-full border rounded px-3 h-9 text-sm"
                 placeholder="e.g., MM230914XYZ"
@@ -254,7 +288,14 @@ export default function BumpPaymentModal({
               />
             </div>
             <div>
-              <div className="text-sm font-medium">Screenshot</div>
+              <div className="text-sm font-medium flex items-center justify-between">
+                <span>Screenshot</span>
+                {!screenshotFile && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 type="file"
                 accept="image/*"
@@ -265,6 +306,16 @@ export default function BumpPaymentModal({
           </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}
+          {!canSend && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Complete the following to enable Send:</div>
+              <ul className="list-disc ml-4 space-y-0.5">
+                {!plan && <li>Select a bump plan</li>}
+                {!transactionId.trim() && <li>Enter transaction ID</li>}
+                {!screenshotFile && <li>Attach screenshot</li>}
+              </ul>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -276,11 +327,8 @@ export default function BumpPaymentModal({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || !plan || !productId}
-            >
-              Post
+            <Button onClick={handleSubmit} disabled={!canSend}>
+              Send
             </Button>
           </div>
         </DialogFooter>

@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       userNotes,
     } = body || {};
 
-    if (!featureType || !plan || !method || !transactionId || !screenshot) {
+    if (!featureType || !plan || !transactionId || !screenshot) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -87,21 +87,36 @@ export async function POST(req: NextRequest) {
       if (!settings.isFeaturedActive && !prices.bump_listing) {
         // Allow bumps even if featured is off; check explicit bumps config
       }
-      const cfg = prices.bump_listing || {};
-      const p = cfg[plan];
-      if (!p)
+      const defaultBumpPricing: Record<string, any> = {
+        "1_bump": { price: 100, credits: 1, label: "1 Bump" },
+        "3_bumps": { price: 250, credits: 3, label: "3 Bumps" },
+        "5_bumps": { price: 400, credits: 5, label: "5 Bumps" },
+        "10_bumps": { price: 750, credits: 10, label: "10 Bumps" },
+      };
+      // If custom pricing exists, merge over defaults so unspecified default tiers still work.
+      const cfg =
+        prices.bump_listing && Object.keys(prices.bump_listing).length
+          ? { ...defaultBumpPricing, ...prices.bump_listing }
+          : defaultBumpPricing;
+      let p = cfg[plan];
+      // Secondary fallback: if plan not found and custom pricing defined, try raw custom object (handles typos like 10_bump vs 10_bumps)
+      if (!p && prices.bump_listing) {
+        p = (prices.bump_listing as any)[plan];
+      }
+      if (!p) {
         return NextResponse.json(
-          { error: "Invalid plan for bump listing" },
+          {
+            error: "Invalid plan for bump listing",
+            available: Object.keys(cfg),
+            received: plan,
+          },
           { status: 400 }
         );
+      }
       amount = Number(p.price) || 0;
       bumpCredits = Number(p.credits) || 0;
       featureDuration = bumpCredits; // store credits in featureDuration for compatibility; bumpCredits is explicit too
-      if (!listing)
-        return NextResponse.json(
-          { error: "listing is required for bump listing" },
-          { status: 400 }
-        );
+      // listing is optional now; credits are user-level until applied
     } else if (featureType === "account_verification") {
       const cfg = prices.account_verification || {};
       const p = cfg[plan];
@@ -202,7 +217,7 @@ export async function POST(req: NextRequest) {
       listing: listing || undefined,
       amount,
       currency: settings.platformCurrency || "LRD",
-      method,
+      method: method || undefined,
       screenshot,
       transactionId,
       userNotes,

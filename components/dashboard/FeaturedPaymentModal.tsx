@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 export interface FeaturedPlanSummary {
   id: string; // plan key
@@ -45,27 +46,29 @@ export default function FeaturedPaymentModal({
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
     null
   );
-  const [method, setMethod] = useState<string>("MTN");
   const [transactionId, setTransactionId] = useState("");
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastCopied, setLastCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     setError(null);
-    fetch("/api/monetization/details")
-      .then((r) => r.json())
-      .then((json) => {
+    Promise.all([
+      fetch("/api/settings/public")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/monetization/plans")
+        .then((r) => r.json())
+        .catch(() => ({})),
+    ])
+      .then(([s, p]) => {
         if (!mounted) return;
-        setPaymentDetails(json?.paymentDetails || {});
-        const available = [
-          json?.paymentDetails?.mtn ? "MTN" : null,
-          json?.paymentDetails?.orange ? "Orange" : null,
-          json?.paymentDetails?.bank ? "Bank" : null,
-        ].filter(Boolean) as string[];
-        if (available.length > 0) setMethod(available[0]);
+        const pd = s?.paymentDetails;
+        const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
+        setPaymentDetails(hasAny ? pd : p?.paymentDetails || null);
       })
       .catch(() => {
         if (!mounted) return;
@@ -110,7 +113,6 @@ export default function FeaturedPaymentModal({
           featureType: "featured_listing",
           listing: productId,
           plan: plan.id, // e.g., "7_days"
-          method,
           screenshot,
           transactionId,
           userNotes: `Featured plan: ${plan.title ?? `${plan.days} days`} for ${
@@ -123,13 +125,26 @@ export default function FeaturedPaymentModal({
         throw new Error(data?.error || "Failed to submit payment");
       }
       onOpenChange(false);
-      alert("Payment submitted. You will be notified after admin approval.");
+      toast({
+        title: "Payment submitted",
+        description:
+          "We'll notify you once it's approved and your listing is featured.",
+      });
     } catch (e: any) {
       setError(e.message || "Submission failed");
     } finally {
       setSubmitting(false);
     }
   }
+
+  const handleCopy = async (label: string, text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setLastCopied(label);
+      setTimeout(() => setLastCopied(null), 1500);
+    } catch {}
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,30 +183,78 @@ export default function FeaturedPaymentModal({
                 Loading payment details…
               </div>
             ) : (
-              <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">MTN Mobile Money</div>
-                    <div>Name: {paymentDetails.mtn.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.mtn.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.mtn.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("mtn", paymentDetails.mtn?.number)
+                        }
+                      >
+                        {lastCopied === "mtn" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3">
                     <div className="font-medium">Orange Money</div>
-                    <div>Name: {paymentDetails.orange.name ?? "-"}</div>
-                    <div>Number: {paymentDetails.orange.number ?? "-"}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="font-mono">
+                        {paymentDetails.orange.number ?? "-"}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleCopy("orange", paymentDetails.orange?.number)
+                        }
+                      >
+                        {lastCopied === "orange" ? "Copied" : "Copy"}
+                      </Button>
+                    </div>
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-2">
+                  <div className="rounded border p-3 sm:col-span-2">
                     <div className="font-medium">Bank Transfer</div>
-                    <div>Bank: {paymentDetails.bank.bankName ?? "-"}</div>
-                    <div>
-                      Account Name: {paymentDetails.bank.accountName ?? "-"}
+                    <div className="text-xs text-muted-foreground">
+                      {paymentDetails.bank.bankName ?? "-"}
                     </div>
-                    <div>
-                      Account Number: {paymentDetails.bank.accountNumber ?? "-"}
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Account Name</span>
+                        <span className="font-mono">
+                          {paymentDetails.bank.accountName ?? "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Account Number</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono">
+                            {paymentDetails.bank.accountNumber ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy(
+                                "bank",
+                                paymentDetails.bank?.accountNumber
+                              )
+                            }
+                          >
+                            {lastCopied === "bank" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -199,44 +262,11 @@ export default function FeaturedPaymentModal({
             )}
           </div>
 
-          {/* Method Select */}
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Payment Method</div>
-            <div className="flex gap-3 text-sm">
-              {paymentDetails?.mtn && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "MTN"}
-                    onChange={() => setMethod("MTN")}
-                  />{" "}
-                  MTN
-                </label>
-              )}
-              {paymentDetails?.orange && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Orange"}
-                    onChange={() => setMethod("Orange")}
-                  />{" "}
-                  Orange
-                </label>
-              )}
-              {paymentDetails?.bank && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="method"
-                    checked={method === "Bank"}
-                    onChange={() => setMethod("Bank")}
-                  />{" "}
-                  Bank
-                </label>
-              )}
-            </div>
+          {/* Helper */}
+          <div className="text-xs text-muted-foreground">
+            Tip: Send your payment, then add the Transaction ID and a screenshot
+            here and submit. We’ll review and feature your listing after
+            approval.
           </div>
 
           {/* Transaction */}
@@ -275,7 +305,13 @@ export default function FeaturedPaymentModal({
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={submitting || !plan || !productId}
+              disabled={
+                submitting ||
+                !plan ||
+                !productId ||
+                !transactionId ||
+                !screenshotFile
+              }
             >
               Post
             </Button>

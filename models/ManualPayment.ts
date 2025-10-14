@@ -16,7 +16,7 @@ export interface IManualPayment extends Document {
   listing?: mongoose.Types.ObjectId; // optional for non-listing features
   amount: number;
   currency?: "USD" | "LRD" | string;
-  method: ManualPaymentMethod;
+  method?: ManualPaymentMethod; // optional – UI may omit explicit method selection
   screenshot: string; // URL or file path
   transactionId: string;
   status: ManualPaymentStatus;
@@ -41,12 +41,15 @@ const manualPaymentSchema = new Schema<IManualPayment>(
       type: Schema.Types.ObjectId,
       ref: "Product",
       required: function (this: any) {
-        return ["featured_listing", "bump_listing"].includes(this.featureType);
+        // Required only for features bound to a specific listing
+        return ["featured_listing", "paid_category_listing"].includes(
+          this.featureType
+        );
       },
     },
     amount: { type: Number, required: true },
     currency: { type: String, enum: ["USD", "LRD"], default: "LRD" },
-    method: { type: String, enum: ["MTN", "Orange", "Bank"], required: true },
+    method: { type: String, enum: ["MTN", "Orange", "Bank"], required: false },
     screenshot: { type: String, required: true },
     transactionId: { type: String, required: true },
     status: {
@@ -81,7 +84,14 @@ const manualPaymentSchema = new Schema<IManualPayment>(
   }
 );
 
-const ManualPayment: Model<IManualPayment> =
-  mongoose.models.ManualPayment ||
-  mongoose.model<IManualPayment>("ManualPayment", manualPaymentSchema);
+// If the model was previously compiled with an older schema (e.g., method/listing required),
+// delete it so we can recompile with the relaxed constraints during hot reload in Next.js.
+if (mongoose.models.ManualPayment) {
+  // @ts-ignore
+  delete mongoose.models.ManualPayment;
+}
+const ManualPayment: Model<IManualPayment> = mongoose.model<IManualPayment>(
+  "ManualPayment",
+  manualPaymentSchema
+);
 export default ManualPayment;
