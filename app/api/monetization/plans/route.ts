@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SettingsService } from '@/app/api/modules/shared/services/settings.service';
+import { NextRequest, NextResponse } from "next/server";
+import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
 
 /**
  * GET /api/monetization/plans
@@ -15,7 +15,11 @@ import { SettingsService } from '@/app/api/modules/shared/services/settings.serv
  *     banner_ad?: Record<string,{ price:number, duration:number, label:string }>,
  *     paid_category_listing?: Record<string,{ price:number, label:string }>
  *   },
- *   paidCategoriesEnabled?: boolean
+ *   paidCategoriesEnabled?: boolean,
+ *   paidCategories?: {
+ *     enabled: boolean,
+ *     enforceActive: boolean
+ *   }
  * }
  */
 export async function GET(req: NextRequest) {
@@ -41,26 +45,62 @@ export async function GET(req: NextRequest) {
     const paidCategoryPricing = prices.paid_category_listing || null;
 
     const paymentDetails = settings.monetizationPaymentDetails || {};
+    const contact: any = (settings as any).paymentContactInfo || {};
+    const normalizedPaymentDetails = {
+      mtn:
+        paymentDetails.mtn ||
+        (contact.mtnNumber
+          ? { number: contact.mtnNumber, name: contact.mtnName || undefined }
+          : null),
+      orange:
+        paymentDetails.orange ||
+        (contact.orangeNumber
+          ? {
+              number: contact.orangeNumber,
+              name: contact.orangeName || undefined,
+            }
+          : null),
+      bank:
+        paymentDetails.bank ||
+        (contact.bankName ||
+        contact.bankAccountNumber ||
+        contact.bankAccountName
+          ? {
+              bankName: contact.bankName || undefined,
+              accountName: contact.bankAccountName || undefined,
+              accountNumber: contact.bankAccountNumber || undefined,
+            }
+          : null),
+    };
 
     return NextResponse.json({
       enabled: !!settings.monetizationEnabled,
-      currency: settings.platformCurrency || 'LRD',
-      paymentDetails: {
-        mtn: paymentDetails.mtn || null,
-        orange: paymentDetails.orange || null,
-        bank: paymentDetails.bank || null,
-      },
+      currency: settings.platformCurrency || "LRD",
+      paymentDetails: normalizedPaymentDetails,
       plans: {
         bump_listing: bumpPricing,
         featured_listing: featuredPricing,
-        ...(verificationPricing ? { account_verification: verificationPricing } : {}),
+        ...(verificationPricing
+          ? { account_verification: verificationPricing }
+          : {}),
         ...(bannerAdPricing ? { banner_ad: bannerAdPricing } : {}),
-        ...(paidCategoryPricing ? { paid_category_listing: paidCategoryPricing } : {}),
+        ...(paidCategoryPricing
+          ? { paid_category_listing: paidCategoryPricing }
+          : {}),
       },
-  paidCategoriesEnabled: !!(settings as any).paidCategoriesEnabled,
+      // Backward compat flag
+      paidCategoriesEnabled: !!(settings as any).paidCategoriesEnabled,
+      // Normalized object for clients moving forward
+      paidCategories: {
+        enabled: !!(settings as any).paidCategoriesEnabled,
+        enforceActive: !!(settings as any).isPaidCategoryActive,
+      },
     });
   } catch (error: any) {
-    console.error('Error in /api/monetization/plans GET:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch plans' }, { status: 500 });
+    console.error("Error in /api/monetization/plans GET:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch plans" },
+      { status: 500 }
+    );
   }
 }
