@@ -75,6 +75,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       enabled: !!settings.monetizationEnabled,
+      // granular toggles for UI gating
+      isFeaturedActive: !!settings.isFeaturedActive,
+      isSubscriptionActive: !!settings.isSubscriptionActive,
+      isBannerAdsActive: !!settings.isBannerAdsActive,
+      isPaidCategoryActive: !!(settings as any).isPaidCategoryActive,
       currency: settings.platformCurrency || "LRD",
       paymentDetails: normalizedPaymentDetails,
       plans: {

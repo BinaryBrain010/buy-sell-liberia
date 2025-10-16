@@ -56,6 +56,8 @@ export default function ProfileForm({
   const [editing, setEditing] = useState(false);
   const { toast } = useToast();
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [isSubscriptionActive, setIsSubscriptionActive] =
+    useState<boolean>(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -126,6 +128,25 @@ export default function ProfileForm({
       fetchProfile();
     }
   }, [userId]);
+
+  // Fetch monetization toggles for gating buttons
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/monetization/plans");
+        const json = await res.json();
+        if (!mounted) return;
+        setIsSubscriptionActive(Boolean(json?.isSubscriptionActive));
+      } catch {
+        if (!mounted) return;
+        setIsSubscriptionActive(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Handle form input changes
   const handleInputChange = (field: string, value: any) => {
@@ -279,14 +300,18 @@ export default function ProfileForm({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setVerifyOpen(true)}
-                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
-              >
-                <ShieldCheck className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Apply for Verification</span>
-              </Button>
+              {isSubscriptionActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => setVerifyOpen(true)}
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  <ShieldCheck className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    Apply for Verification
+                  </span>
+                </Button>
+              )}
               {!editing && (
                 <Button
                   onClick={() => setEditing(true)}

@@ -8,6 +8,7 @@ This document summarizes the end-to-end changes implemented on the `plans-integr
   - Plans: `GET /api/monetization/plans`
   - Payment details: `GET /api/monetization/details`
   - Manual payment submission: `POST /api/monetization/manual-payment`
+  - List my manual payments: `GET /api/monetization/manual-payment?page=1&limit=20&status=pending&featureType=bump_listing`
 - Listing bump is executed server-side:
   - `GET /api/products/{id}/bump` (consumes a bump credit and bumps listing)
 - New dashboard tab: Monetization, with quick access to buy/use bumps and feature listings.
@@ -64,6 +65,8 @@ Updated
   - Payment destinations (MTN/Orange/Bank) for users to pay to.
 - `app/api/monetization/manual-payment/route.ts`
   - Accepts unified manual payment requests for multiple `featureType`s: `featured_listing`, `bump_listing`, `account_verification`, etc.
+  - Also supports `GET` for the authenticated user's submissions (pagination + filters: `status`, `featureType`).
+  - Admins can list all submissions via `GET /api/admin/manual-payments`.
 - `app/api/products/[id]/[action]/route.ts`
   - `GET /api/products/{id}/bump` executes the bump using available credits.
 

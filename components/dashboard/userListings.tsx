@@ -77,6 +77,9 @@ export default function UserListings({ userId }: UserListingsProps) {
   const [isBumpModalOpen, setIsBumpModalOpen] = useState(false);
   const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
   const [featureTargetId, setFeatureTargetId] = useState<string | null>(null);
+  const [isSubscriptionActive, setIsSubscriptionActive] =
+    useState<boolean>(false);
+  const [isFeaturedActive, setIsFeaturedActive] = useState<boolean>(false);
   const router = useRouter();
 
   useAuthLogout(() => {
@@ -163,6 +166,18 @@ export default function UserListings({ userId }: UserListingsProps) {
     }
     fetchUserListings();
     fetchCategories();
+    // fetch monetization toggles for gating buttons
+    (async () => {
+      try {
+        const res = await fetch("/api/monetization/plans");
+        const json = await res.json();
+        setIsSubscriptionActive(Boolean(json?.isSubscriptionActive));
+        setIsFeaturedActive(Boolean(json?.isFeaturedActive));
+      } catch {
+        setIsSubscriptionActive(false);
+        setIsFeaturedActive(false);
+      }
+    })();
     // Fetch user bump count from users API
     (async function fetchBumpCount() {
       try {
@@ -392,26 +407,30 @@ export default function UserListings({ userId }: UserListingsProps) {
                 <Package className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsBumpModalOpen(true)}
-                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
-              >
-                <ArrowUp className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Bump</span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  // If a listing is selected elsewhere, setFeatureTargetId; otherwise user can pick inside modal via its dependency on selected item
-                  setFeatureTargetId(null);
-                  setIsFeatureModalOpen(true);
-                }}
-                className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
-              >
-                <Star className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Feature</span>
-              </Button>
+              {isSubscriptionActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBumpModalOpen(true)}
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  <ArrowUp className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Bump</span>
+                </Button>
+              )}
+              {isFeaturedActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // If a listing is selected elsewhere, setFeatureTargetId; otherwise user can pick inside modal via its dependency on selected item
+                    setFeatureTargetId(null);
+                    setIsFeatureModalOpen(true);
+                  }}
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  <Star className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Feature</span>
+                </Button>
+              )}
               <Button
                 onClick={() => router.push("/sell")}
                 className="px-3 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"

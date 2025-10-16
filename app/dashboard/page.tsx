@@ -64,6 +64,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [monetizationEnabled, setMonetizationEnabled] = useState<
+    boolean | null
+  >(null);
   const [chatParams, setChatParams] = useState<{
     sellerId?: string;
     productId?: string;
@@ -85,6 +88,33 @@ export default function DashboardPage() {
     checkAuthentication();
     checkUrlParams();
   }, []);
+
+  // Fetch monetization settings from server to control visibility
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/monetization/plans")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!mounted) return;
+        setMonetizationEnabled(Boolean(json?.enabled));
+        // If monetization tab is active but disabled, fallback to profile and inform user
+        if (!json?.enabled && activeTab === "monetization") {
+          setActiveTab("profile");
+          toast({
+            title: "Monetization disabled",
+            description: "This feature is currently unavailable.",
+          });
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setMonetizationEnabled(false);
+        if (activeTab === "monetization") setActiveTab("profile");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, toast]);
 
   const checkUrlParams = () => {
     if (typeof window !== "undefined") {
@@ -477,14 +507,16 @@ export default function DashboardPage() {
                     <MessageCircle className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
                     <span className="font-medium truncate">Messages</span>
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="monetization"
-                    aria-label="Monetization"
-                    className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[130px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
-                  >
-                    <BadgeDollarSign className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
-                    <span className="font-medium truncate">Monetization</span>
-                  </TabsTrigger>
+                  {monetizationEnabled && (
+                    <TabsTrigger
+                      value="monetization"
+                      aria-label="Monetization"
+                      className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[130px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    >
+                      <BadgeDollarSign className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                      <span className="font-medium truncate">Monetization</span>
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </div>
             </div>
@@ -595,26 +627,28 @@ export default function DashboardPage() {
             </div>
           </TabsContent>
 
-          <TabsContent value="monetization" className="space-y-6">
-            {user?.id || user?._id ? (
-              <MonetizationTab userId={user?.id || user?._id} />
-            ) : (
-              <div className="text-center py-16">
-                <div className="relative">
-                  <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
-                  <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
-                    <BadgeDollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold mb-2">
-                      User ID Not Found
-                    </h3>
-                    <p className="text-muted-foreground">
-                      Unable to load monetization: User ID is missing
-                    </p>
+          {monetizationEnabled && (
+            <TabsContent value="monetization" className="space-y-6">
+              {user?.id || user?._id ? (
+                <MonetizationTab userId={user?.id || user?._id} />
+              ) : (
+                <div className="text-center py-16">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
+                    <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
+                      <BadgeDollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                      <h3 className="text-2xl font-semibold mb-2">
+                        User ID Not Found
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Unable to load monetization: User ID is missing
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </TabsContent>
+              )}
+            </TabsContent>
+          )}
         </div>
       </Tabs>
     </div>

@@ -19,6 +19,70 @@ import ManualPayment from "@/models/ManualPayment";
  *   userNotes?: string
  * }
  */
+export async function GET(req: NextRequest) {
+  try {
+    const auth = await verifyToken(req);
+    if (!auth.success || !auth.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await dbConnect();
+
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+    const limit = Math.min(
+      Math.max(parseInt(searchParams.get("limit") || "20", 10), 1),
+      100
+    );
+    const status = searchParams.get("status"); // pending | approved | rejected
+    const featureType = searchParams.get("featureType");
+
+    const filter: any = { user: auth.userId };
+    if (status) filter.status = status;
+    if (featureType) filter.featureType = featureType;
+
+    const total = await ManualPayment.countDocuments(filter);
+    const skip = (page - 1) * limit;
+
+    const payments = await ManualPayment.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("listing", "title")
+      .lean();
+
+    // Redact oversized fields from list view (keep lightweight)
+    const items = payments.map((p: any) => ({
+      _id: p._id,
+      amount: p.amount,
+      currency: p.currency,
+      status: p.status,
+      transactionId: p.transactionId,
+      listing: p.listing || null,
+      featureType: p.featureType,
+      featurePlan: p.featurePlan,
+      featureDuration: p.featureDuration,
+      bumpCredits: p.bumpCredits ?? null,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }));
+
+    return NextResponse.json({
+      payments: items,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error: any) {
+    console.error("Error in /api/monetization/manual-payment GET:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to fetch manual payments" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifyToken(req);
