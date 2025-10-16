@@ -3,7 +3,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 export interface IBannerAd extends Document {
   imageUrl: string;
   targetUrl: string;
-  placement: string; // e.g., 'homepage_top', 'category_sidebar', 'listing_inline'
+  placement: string;  
   isActive: boolean;
   startsAt?: Date | null;
   endsAt?: Date | null;

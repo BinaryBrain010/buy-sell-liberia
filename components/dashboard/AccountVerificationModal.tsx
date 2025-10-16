@@ -40,6 +40,7 @@ export default function AccountVerificationModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const accountPlans = useMemo(
     () => plans?.plans?.account_verification ?? {},
@@ -94,6 +95,22 @@ export default function AccountVerificationModal({
     });
   }
 
+  function handleScreenshotChange(f: File | null) {
+    setScreenshotFile(f);
+    if (!f) {
+      setPreview(null);
+      return;
+    }
+    if (f.size > 2 * 1024 * 1024) {
+      setError("Screenshot must be under 2MB");
+      setScreenshotFile(null);
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    setPreview(url);
+  }
+
   async function handleSubmit() {
     try {
       setSubmitting(true);
@@ -127,7 +144,9 @@ export default function AccountVerificationModal({
         description: "We'll notify you after the review is complete.",
       });
     } catch (e: any) {
-      setError(e.message || "Submission failed");
+      const msg = e?.message || "Submission failed";
+      setError(msg);
+      toast({ title: "Error", description: msg });
     } finally {
       setSubmitting(false);
     }
@@ -146,12 +165,14 @@ export default function AccountVerificationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg">
+      <DialogContent className="w-[95vw] sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Apply for Account Verification</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
+            Apply for Account Verification
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {!hasPlans ? (
             <div className="text-sm text-muted-foreground">
               Account verification plans are not available at the moment.
@@ -191,7 +212,9 @@ export default function AccountVerificationModal({
           )}
 
           <div className="space-y-3">
-            <div className="font-medium">Pay to</div>
+            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+              Pay To
+            </div>
             {!paymentDetails ? (
               <div className="text-sm text-muted-foreground">
                 Loading payment details…
@@ -199,7 +222,7 @@ export default function AccountVerificationModal({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">MTN Mobile Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -218,7 +241,7 @@ export default function AccountVerificationModal({
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">Orange Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -237,7 +260,7 @@ export default function AccountVerificationModal({
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-3 sm:col-span-2">
+                  <div className="rounded border p-3 sm:col-span-2 bg-background/50">
                     <div className="font-medium">Bank Transfer</div>
                     <div className="text-xs text-muted-foreground">
                       {paymentDetails.bank.bankName ?? "-"}
@@ -276,22 +299,54 @@ export default function AccountVerificationModal({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium">Transaction ID</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-col">
+              <div className="text-sm font-medium flex items-center justify-between">
+                <span>Transaction ID</span>
+                {!transactionId.trim() && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 className="mt-1 w-full border rounded px-3 h-9 text-sm"
                 placeholder="e.g., MM230914XYZ"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
               />
-              <div className="text-sm font-medium mt-3">Screenshot</div>
+              <div className="text-sm font-medium mt-3 flex items-center justify-between">
+                <span>Screenshot</span>
+                {!screenshotFile && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 type="file"
                 accept="image/*"
                 className="mt-1 w-full text-sm"
-                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                onChange={(e) =>
+                  handleScreenshotChange(e.target.files?.[0] || null)
+                }
               />
+              {preview && (
+                <div className="mt-2 relative group">
+                  <img
+                    src={preview}
+                    alt="Screenshot preview"
+                    className="h-28 w-full object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleScreenshotChange(null)}
+                    className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
             <div className="text-xs text-muted-foreground self-end">
               Tip: After sending your payment, add the transaction ID and a
@@ -317,7 +372,7 @@ export default function AccountVerificationModal({
                 submitting || !selectedPlan || !transactionId || !screenshotFile
               }
             >
-              Submit
+              Send
             </Button>
           </div>
         </DialogFooter>

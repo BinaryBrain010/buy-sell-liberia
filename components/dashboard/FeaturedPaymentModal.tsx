@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,17 @@ export default function FeaturedPaymentModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const canSend = useMemo(
+    () =>
+      !submitting &&
+      !!plan &&
+      !!productId &&
+      !!transactionId.trim() &&
+      !!screenshotFile,
+    [submitting, plan, productId, transactionId, screenshotFile]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -88,23 +99,31 @@ export default function FeaturedPaymentModal({
     });
   }
 
+  function handleScreenshotChange(f: File | null) {
+    setScreenshotFile(f);
+    if (!f) {
+      setPreview(null);
+      return;
+    }
+    if (f.size > 2 * 1024 * 1024) {
+      setError("Screenshot must be under 2MB");
+      setScreenshotFile(null);
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    setPreview(url);
+  }
+
   async function handleSubmit() {
     try {
       setSubmitting(true);
       setError(null);
-      if (!plan) {
-        setError("No plan selected");
+      if (!canSend || !plan || !screenshotFile) {
+        setError("Please complete required fields");
         return;
       }
-      if (!productId) {
-        setError("Please select a listing to feature");
-        return;
-      }
-      if (!transactionId || !screenshotFile) {
-        setError("Transaction ID and screenshot are required");
-        return;
-      }
-      const screenshot = await toBase64(screenshotFile);
+      const screenshot = await toBase64(screenshotFile as File);
 
       const resp = await fetch("/api/monetization/manual-payment", {
         method: "POST",
@@ -131,7 +150,9 @@ export default function FeaturedPaymentModal({
           "We'll notify you once it's approved and your listing is featured.",
       });
     } catch (e: any) {
-      setError(e.message || "Submission failed");
+      const msg = e?.message || "Submission failed";
+      setError(msg);
+      toast({ title: "Error", description: msg });
     } finally {
       setSubmitting(false);
     }
@@ -148,16 +169,20 @@ export default function FeaturedPaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg">
+      <DialogContent className="w-[95vw] sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Submit Featured Payment</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
+            Submit Featured Payment
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Plan Summary */}
-          <div className="rounded border p-3">
-            <div className="font-medium">Selected Plan</div>
-            <div className="text-sm text-muted-foreground">
+          <div className="rounded border p-4 bg-background/50">
+            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+              Selected Plan
+            </div>
+            <div className="mt-1 text-sm text-foreground">
               {plan ? (
                 <>
                   <div>
@@ -177,7 +202,9 @@ export default function FeaturedPaymentModal({
 
           {/* Payment Details */}
           <div className="space-y-3">
-            <div className="font-medium">Pay to</div>
+            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+              Pay To
+            </div>
             {!paymentDetails ? (
               <div className="text-sm text-muted-foreground">
                 Loading payment details…
@@ -185,7 +212,7 @@ export default function FeaturedPaymentModal({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">MTN Mobile Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -204,7 +231,7 @@ export default function FeaturedPaymentModal({
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">Orange Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -223,7 +250,7 @@ export default function FeaturedPaymentModal({
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-3 sm:col-span-2">
+                  <div className="rounded border p-3 sm:col-span-2 bg-background/50">
                     <div className="font-medium">Bank Transfer</div>
                     <div className="text-xs text-muted-foreground">
                       {paymentDetails.bank.bankName ?? "-"}
@@ -263,16 +290,23 @@ export default function FeaturedPaymentModal({
           </div>
 
           {/* Helper */}
-          <div className="text-xs text-muted-foreground">
-            Tip: Send your payment, then add the Transaction ID and a screenshot
-            here and submit. We’ll review and feature your listing after
-            approval.
+          <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3 leading-relaxed">
+            <strong className="font-medium">Tip:</strong> Send your payment then
+            fill in the Transaction ID & upload the screenshot. After approval
+            your listing will automatically be featured.
           </div>
 
           {/* Transaction */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm font-medium">Transaction ID</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="flex flex-col">
+              <div className="text-sm font-medium flex items-center justify-between">
+                <span>Transaction ID</span>
+                {!transactionId.trim() && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 className="mt-1 w-full border rounded px-3 h-9 text-sm"
                 placeholder="e.g., MM230914XYZ"
@@ -280,18 +314,54 @@ export default function FeaturedPaymentModal({
                 onChange={(e) => setTransactionId(e.target.value)}
               />
             </div>
-            <div>
-              <div className="text-sm font-medium">Screenshot</div>
+            <div className="flex flex-col">
+              <div className="text-sm font-medium flex items-center justify-between">
+                <span>Screenshot</span>
+                {!screenshotFile && (
+                  <span className="text-xs text-muted-foreground">
+                    Required
+                  </span>
+                )}
+              </div>
               <input
                 type="file"
                 accept="image/*"
                 className="mt-1 w-full text-sm"
-                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                onChange={(e) =>
+                  handleScreenshotChange(e.target.files?.[0] || null)
+                }
               />
+              {preview && (
+                <div className="mt-2 relative group">
+                  <img
+                    src={preview}
+                    alt="Screenshot preview"
+                    className="h-28 w-full object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleScreenshotChange(null)}
+                    className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {error && <div className="text-sm text-destructive">{error}</div>}
+          {!canSend && (
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>Complete the following to enable Send:</div>
+              <ul className="list-disc ml-4 space-y-0.5">
+                {!plan && <li>Select a plan</li>}
+                {!productId && <li>Select a listing</li>}
+                {!transactionId.trim() && <li>Enter transaction ID</li>}
+                {!screenshotFile && <li>Attach screenshot</li>}
+              </ul>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -303,17 +373,8 @@ export default function FeaturedPaymentModal({
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                submitting ||
-                !plan ||
-                !productId ||
-                !transactionId ||
-                !screenshotFile
-              }
-            >
-              Post
+            <Button onClick={handleSubmit} disabled={!canSend}>
+              Send
             </Button>
           </div>
         </DialogFooter>

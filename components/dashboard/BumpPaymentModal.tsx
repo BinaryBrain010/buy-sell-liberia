@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -51,9 +51,12 @@ export default function BumpPaymentModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   // Derived readiness state
-  const canSend =
-    !!plan && !!transactionId.trim() && !!screenshotFile && !submitting;
+  const canSend = useMemo(
+    () => !!plan && !!transactionId.trim() && !!screenshotFile && !submitting,
+    [plan, transactionId, screenshotFile, submitting]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +92,22 @@ export default function BumpPaymentModal({
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  function handleScreenshotChange(f: File | null) {
+    setScreenshotFile(f);
+    if (!f) {
+      setPreview(null);
+      return;
+    }
+    if (f.size > 2 * 1024 * 1024) {
+      setError("Screenshot must be under 2MB");
+      setScreenshotFile(null);
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(f);
+    setPreview(url);
   }
 
   async function handleSubmit() {
@@ -134,7 +153,9 @@ export default function BumpPaymentModal({
         description: "We'll notify you once bump credits are approved.",
       });
     } catch (e: any) {
-      setError(e.message || "Submission failed");
+      const msg = e?.message || "Submission failed";
+      setError(msg);
+      toast({ title: "Error", description: msg });
     } finally {
       setSubmitting(false);
     }
@@ -151,16 +172,20 @@ export default function BumpPaymentModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:max-w-lg">
+      <DialogContent className="w-[95vw] sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Submit Bump Payment</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
+            Submit Bump Payment
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* Plan Summary */}
-          <div className="rounded border p-3">
-            <div className="font-medium">Selected Plan</div>
-            <div className="text-sm text-muted-foreground">
+          <div className="rounded border p-4 bg-background/50">
+            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+              Selected Plan
+            </div>
+            <div className="mt-1 text-sm text-foreground">
               {plan ? (
                 <>
                   <div>
@@ -180,7 +205,9 @@ export default function BumpPaymentModal({
 
           {/* Payment Details */}
           <div className="space-y-3">
-            <div className="font-medium">Pay to</div>
+            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+              Pay To
+            </div>
             {!paymentDetails ? (
               <div className="text-sm text-muted-foreground">
                 Loading payment details…
@@ -188,7 +215,7 @@ export default function BumpPaymentModal({
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 {paymentDetails.mtn && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">MTN Mobile Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -207,7 +234,7 @@ export default function BumpPaymentModal({
                   </div>
                 )}
                 {paymentDetails.orange && (
-                  <div className="rounded border p-3">
+                  <div className="rounded border p-3 bg-background/50">
                     <div className="font-medium">Orange Money</div>
                     <div className="mt-1 flex items-center justify-between">
                       <span className="font-mono">
@@ -226,7 +253,7 @@ export default function BumpPaymentModal({
                   </div>
                 )}
                 {paymentDetails.bank && (
-                  <div className="rounded border p-3 sm:col-span-2">
+                  <div className="rounded border p-3 sm:col-span-2 bg-background/50">
                     <div className="font-medium">Bank Transfer</div>
                     <div className="text-xs text-muted-foreground">
                       {paymentDetails.bank.bankName ?? "-"}
@@ -264,14 +291,15 @@ export default function BumpPaymentModal({
               </div>
             )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            Tip: Send your payment, then add the Transaction ID and a screenshot
-            here and submit. We will credit your bump(s) after approval.
+          <div className="text-xs text-muted-foreground bg-muted/40 rounded p-3 leading-relaxed">
+            <strong className="font-medium">Tip:</strong> Send your payment then
+            fill in the Transaction ID & upload the screenshot. After approval
+            we’ll credit your bump credits.
           </div>
 
           {/* Transaction */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium flex items-center justify-between">
                 <span>Transaction ID</span>
                 {!transactionId.trim() && (
@@ -287,7 +315,7 @@ export default function BumpPaymentModal({
                 onChange={(e) => setTransactionId(e.target.value)}
               />
             </div>
-            <div>
+            <div className="flex flex-col">
               <div className="text-sm font-medium flex items-center justify-between">
                 <span>Screenshot</span>
                 {!screenshotFile && (
@@ -300,8 +328,26 @@ export default function BumpPaymentModal({
                 type="file"
                 accept="image/*"
                 className="mt-1 w-full text-sm"
-                onChange={(e) => setScreenshotFile(e.target.files?.[0] || null)}
+                onChange={(e) =>
+                  handleScreenshotChange(e.target.files?.[0] || null)
+                }
               />
+              {preview && (
+                <div className="mt-2 relative group">
+                  <img
+                    src={preview}
+                    alt="Screenshot preview"
+                    className="h-28 w-full object-cover rounded border"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleScreenshotChange(null)}
+                    className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
