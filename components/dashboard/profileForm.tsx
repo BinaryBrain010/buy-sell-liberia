@@ -58,6 +58,9 @@ export default function ProfileForm({
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] =
     useState<boolean>(false);
+  const isVerified = Boolean(
+    (profile as any)?.profile?.verificationStatus === "fully_verified"
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -300,7 +303,7 @@ export default function ProfileForm({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto justify-end">
-              {isSubscriptionActive && (
+              {isSubscriptionActive && !isVerified && (
                 <Button
                   variant="outline"
                   onClick={() => setVerifyOpen(true)}
@@ -311,6 +314,15 @@ export default function ProfileForm({
                     Apply for Verification
                   </span>
                 </Button>
+              )}
+              {isVerified && (
+                <div
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800 text-xs sm:text-sm"
+                  title="This account is verified"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span className="font-medium">Verified</span>
+                </div>
               )}
               {!editing && (
                 <Button

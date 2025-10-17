@@ -450,7 +450,7 @@ export async function GET(request: NextRequest) {
       result.products.map(async (product) => {
         const populatedProduct = await product.populate(
           "user_id",
-          "fullName username email profile.avatar profile.location"
+          "fullName username email profile.avatar profile.location profile.verificationStatus"
         );
         const obj = populatedProduct.toObject();
         return {

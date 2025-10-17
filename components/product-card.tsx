@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MapPin, Clock, Eye, Star } from "lucide-react";
+import { Heart, MapPin, Clock, Eye, Star, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
@@ -280,6 +280,17 @@ export function ProductCard({
                 <FavouriteButton productId={product._id} />
               )}
             </div>
+            {/* Verified pill under title if seller is verified */}
+            {(product as any)?.user?.profile?.verificationStatus ===
+              "fully_verified" && (
+              <div
+                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                title="Verified seller"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Verified Seller
+              </div>
+            )}
 
             {/* Price + Negotiable */}
             <div className="mt-1 mb-2 flex items-center gap-3">
@@ -438,6 +449,16 @@ export function ProductCard({
                 <FavouriteButton productId={product._id} />
               )}
             </div>
+            {(product as any)?.user?.profile?.verificationStatus ===
+              "fully_verified" && (
+              <div
+                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                title="Verified seller"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Verified
+              </div>
+            )}
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
               {product.category && typeof product.category === "string" && (

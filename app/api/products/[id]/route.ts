@@ -21,14 +21,17 @@ export async function GET(
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    const prodObj = (product as any).toObject
-      ? (product as any).toObject()
-      : product;
+    const populated = await (product as any).populate(
+      "user_id",
+      "fullName username email profile.avatar profile.location profile.verificationStatus"
+    );
+    const prodObj = populated.toObject ? populated.toObject() : populated;
     return NextResponse.json({
       message: "Product retrieved successfully",
       product: {
         ...prodObj,
         condition: prodObj.details?.condition || undefined,
+        user: populated.user_id,
       },
     });
   } catch (error: any) {

@@ -10,6 +10,7 @@ import {
   Eye,
   Star,
   User,
+  ShieldCheck,
   ZoomIn,
   X,
   ChevronLeft,
@@ -171,6 +172,10 @@ export default function ProductDetail(productData: ProductDetailProps) {
     productData?.user_id?.fullName ||
     productData?.user_id?.username ||
     "Unknown Seller";
+  const sellerVerified =
+    productData?.user?.profile?.verificationStatus === "fully_verified" ||
+    productData?.user_id?.profile?.verificationStatus === "fully_verified" ||
+    productData?.seller?.profile?.verificationStatus === "fully_verified";
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -409,6 +414,17 @@ export default function ProductDetail(productData: ProductDetailProps) {
                               Available
                             </span>
                           </div>
+                          {sellerVerified && (
+                            <div
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                              title="Verified seller"
+                            >
+                              <ShieldCheck className="h-3 w-3" />
+                              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                                Verified Seller
+                              </span>
+                            </div>
+                          )}
                           {productData.featured && (
                             <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
                               <Star className="h-3 w-3" />
@@ -629,6 +645,15 @@ export default function ProductDetail(productData: ProductDetailProps) {
                             <div className="text-base md:text-lg font-semibold text-foreground leading-snug">
                               {displayName}
                             </div>
+                            {sellerVerified && (
+                              <div
+                                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-xs"
+                                title="This seller is verified"
+                              >
+                                <ShieldCheck className="h-3 w-3" />
+                                Verified Seller
+                              </div>
+                            )}
                           </div>
                         </div>
 
