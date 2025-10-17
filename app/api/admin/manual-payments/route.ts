@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import ManualPayment from "../../../../models/ManualPayment";
 import User from "../../../../models/User";
 import Product from "../../../../models/Product";
+import RevenueEntry from "../../../../models/RevenueEntry";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
 import "../../../../models";
 import {
@@ -240,6 +241,62 @@ export async function PATCH(request: NextRequest) {
     payment.reviewedAt = new Date();
     await payment.save();
 
+    // Create or update revenue entry for this approved manual payment (idempotent)
+    let revenueAction: "created" | "updated" | "skipped" = "skipped";
+    let revenueEntryId: string | undefined;
+    const amount = Number(payment.amount || 0);
+    const currency = (payment as any).currency || "LRD";
+    try {
+      if (amount > 0) {
+        const refId = String(payment._id);
+        const existing = await RevenueEntry.findOne({
+          type: "income",
+          source: "manual_payment",
+          referenceId: refId,
+        });
+        if (!existing) {
+          const rev = await RevenueEntry.create({
+            type: "income",
+            amount,
+            currency,
+            source: "manual_payment",
+            referenceId: refId,
+            note: `Manual payment approved for ${featureType}:${
+              (payment as any).featurePlan
+            }${payment.listing ? ` listing:${payment.listing}` : ""}`,
+            meta: {
+              featureType,
+              featurePlan: (payment as any).featurePlan,
+              featureDuration,
+              bumpCredits: (payment as any).bumpCredits ?? undefined,
+              approvedAt: new Date().toISOString(),
+            },
+            createdBy: payment.reviewedBy as any,
+          });
+          revenueAction = "created";
+          revenueEntryId = String(rev._id);
+        } else {
+          await RevenueEntry.updateOne(
+            { _id: existing._id },
+            {
+              $set: {
+                amount,
+                currency,
+                "meta.approvedAt": new Date().toISOString(),
+              },
+            }
+          );
+          revenueAction = "updated";
+          revenueEntryId = String(existing._id);
+        }
+      }
+    } catch (revErr) {
+      console.error(
+        "Revenue logging failed on admin manual-payment approve (PATCH):",
+        revErr
+      );
+    }
+
     // Audit logs for approval and any listing change
     try {
       const logger = createAdminAuditLogger(
@@ -265,6 +322,10 @@ export async function PATCH(request: NextRequest) {
           status: "approved",
           bumpCredits: bumpCredits || undefined,
           featureDuration: featureDuration || undefined,
+          revenue: {
+            action: revenueAction,
+            entryId: revenueEntryId,
+          },
         }
       );
       if (featureType === "featured_listing" && payment.listing) {
@@ -281,7 +342,16 @@ export async function PATCH(request: NextRequest) {
       console.error("Audit log (approve) failed:", e);
     }
 
-    return NextResponse.json({ success: true, status: payment.status });
+    return NextResponse.json({
+      success: true,
+      status: payment.status,
+      revenue: {
+        action: revenueAction,
+        entryId: revenueEntryId || null,
+        amount,
+        currency,
+      },
+    });
   } catch (error: any) {
     console.error("Manual payments PATCH error:", error);
     return NextResponse.json(

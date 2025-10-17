@@ -12,6 +12,7 @@ import Review from "@/models/Review";
 import ManualPayment from "@/models/ManualPayment";
 import Employee from "@/models/Employee";
 import WithdrawalLog from "@/models/WithdrawalLog";
+import RevenueEntry from "@/models/RevenueEntry";
 
 /**
  * Ensure all models are registered
@@ -29,6 +30,7 @@ export function ensureModelsRegistered() {
     Review,
     ManualPayment,
     Employee,
-    WithdrawalLog
+    WithdrawalLog,
+    RevenueEntry,
   };
 }

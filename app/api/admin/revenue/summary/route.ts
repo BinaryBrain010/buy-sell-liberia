@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import ManualPayment from "@/models/ManualPayment";
 import Product from "@/models/Product";
+import RevenueEntry from "@/models/RevenueEntry";
 import { AdminAuthService } from "../../../modules/auth/services/admin-auth.service";
 import { connectDB } from "@/lib/mongoose";
 
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
       if (endDate) query.createdAt.$lte = endDate;
     }
 
-    // Aggregate payments
+    // Aggregate payments (legacy total revenue for approved manual payments)
     const payments = await ManualPayment.find(query).populate("listing");
 
     // Total revenue
@@ -68,19 +69,59 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    return NextResponse.json({
-      totalRevenue,
-      breakdownByPaymentMethod,
-      breakdownByFeatureType,
-      payments: payments.map((p) => ({
-        _id: p._id,
-        amount: p.amount,
-        method: p.method,
-        createdAt: p.createdAt,
-        listing: p.listing?._id,
-        featured: (p.listing as any)?.featured || false,
-      })),
-    });
+    // Revenue-based net totals (income - expense - withdrawal), grouped by currency
+    const revMatch: any = {};
+    if (startDate || endDate) {
+      revMatch.createdAt = {};
+      if (startDate) revMatch.createdAt.$gte = startDate;
+      if (endDate) revMatch.createdAt.$lte = endDate;
+    }
+    const rows = await RevenueEntry.aggregate([
+      { $match: revMatch },
+      {
+        $group: {
+          _id: { currency: "$currency", type: "$type" },
+          total: { $sum: "$amount" },
+        },
+      },
+    ]);
+    const totalsByCurrency: Record<
+      string,
+      { income: number; expense: number; withdrawal: number; net: number }
+    > = {};
+    for (const r of rows) {
+      const cur = r._id.currency || "LRD";
+      const t = r._id.type as "income" | "expense" | "withdrawal";
+      totalsByCurrency[cur] ||= {
+        income: 0,
+        expense: 0,
+        withdrawal: 0,
+        net: 0,
+      };
+      totalsByCurrency[cur][t] += r.total || 0;
+    }
+    for (const cur of Object.keys(totalsByCurrency)) {
+      const s = totalsByCurrency[cur];
+      s.net = (s.income || 0) - (s.expense || 0) - (s.withdrawal || 0);
+    }
+
+    return NextResponse.json(
+      {
+        totalRevenue,
+        breakdownByPaymentMethod,
+        breakdownByFeatureType,
+        totalsByCurrency, // includes net per currency from RevenueEntry
+        payments: payments.map((p) => ({
+          _id: p._id,
+          amount: p.amount,
+          method: p.method,
+          createdAt: p.createdAt,
+          listing: p.listing?._id,
+          featured: (p.listing as any)?.featured || false,
+        })),
+      },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error: any) {
     console.error("Error in /api/admin/revenue/summary GET:", error);
     return NextResponse.json(

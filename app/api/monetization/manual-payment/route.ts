@@ -7,6 +7,7 @@ import SubscriptionPlan from "@/models/SubscriptionPlan";
 import BumpPlan from "@/models/BumpPlan";
 import Product from "@/models/Product";
 import ManualPayment from "@/models/ManualPayment";
+// Revenue is recorded ONLY on approval; no revenue logging here
 
 /**
  * POST /api/monetization/manual-payment
@@ -296,6 +297,8 @@ export async function POST(req: NextRequest) {
       featureDuration,
       bumpCredits,
     });
+
+    // Note: Revenue entry is recorded only when an admin approves the payment
 
     return NextResponse.json(
       { success: true, paymentId: payment._id },

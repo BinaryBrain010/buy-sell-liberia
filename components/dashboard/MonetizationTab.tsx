@@ -123,31 +123,7 @@ export default function MonetizationTab({ userId }: { userId: string }) {
             Buy bumps, feature your listings, and view payment details.
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <span className="px-2 py-1 rounded-full text-xs bg-muted text-foreground">
-            Currency: {currencyCode} ({currencySymbol})
-          </span>
-          <span
-            className={`px-2 py-1 rounded-full text-xs ${
-              paidCategories.enabled
-                ? "bg-emerald-100 text-emerald-800"
-                : "bg-muted"
-            }`}
-          >
-            Paid Categories: {paidCategories.enabled ? "Enabled" : "Disabled"}
-          </span>
-          {paidCategories.enabled && (
-            <span
-              className={`px-2 py-1 rounded-full text-xs ${
-                paidCategories.enforceActive
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-muted"
-              }`}
-            >
-              Enforcement: {paidCategories.enforceActive ? "On" : "Off"}
-            </span>
-          )}
-        </div>
+        {/* Pills removed: currency and paid categories */}
       </div>
 
       {/* Listing selector */}
