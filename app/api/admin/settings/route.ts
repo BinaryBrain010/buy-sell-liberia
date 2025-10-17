@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       email: adminEmail,
       name: adminName,
     } = extractUserInfoFromPayload(payload);
-    const updates = await req.json();
+  const updates = await req.json();
 
     // Validate required fields
     if (
@@ -105,6 +105,28 @@ export async function POST(req: NextRequest) {
         { error: "Max listing photos must be between 1 and 20" },
         { status: 400 }
       );
+    }
+
+    // Validate conversion rates if provided
+    if (typeof updates.usdToLrdRate !== "undefined") {
+      const v = Number(updates.usdToLrdRate);
+      if (!Number.isFinite(v) || v <= 0 || v > 100000) {
+        return NextResponse.json(
+          { error: "usdToLrdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
+      updates.usdToLrdRate = v;
+    }
+    if (typeof updates.lrdToUsdRate !== "undefined") {
+      const v = Number(updates.lrdToUsdRate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1000) {
+        return NextResponse.json(
+          { error: "lrdToUsdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
+      updates.lrdToUsdRate = v;
     }
 
     // Get current settings before update for audit logging
@@ -184,8 +206,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const adminUserId = payload._id || payload.id || payload.email || "unknown";
-    const { key, value } = await req.json();
+  const adminUserId = payload._id || payload.id || payload.email || "unknown";
+  const { key, value } = await req.json();
 
     if (!key) {
       return NextResponse.json(
@@ -214,6 +236,24 @@ export async function PATCH(req: NextRequest) {
         { error: "Max listing photos must be between 1 and 20" },
         { status: 400 }
       );
+    }
+    if (key === "usdToLrdRate") {
+      const v = Number(value);
+      if (!Number.isFinite(v) || v <= 0 || v > 100000) {
+        return NextResponse.json(
+          { error: "usdToLrdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
+    }
+    if (key === "lrdToUsdRate") {
+      const v = Number(value);
+      if (!Number.isFinite(v) || v <= 0 || v > 1000) {
+        return NextResponse.json(
+          { error: "lrdToUsdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
     }
 
     // Map property name to database key
@@ -285,7 +325,7 @@ export async function PUT(req: NextRequest) {
 
     const adminUserId = payload._id || payload.id || payload.email || "unknown";
     const body = await req.json();
-    const { platformLogo, platformCurrency, toggles } = body || {};
+  const { platformLogo, platformCurrency, toggles, usdToLrdRate, lrdToUsdRate } = body || {};
 
     // Validate inputs
     if (
@@ -339,6 +379,26 @@ export async function PUT(req: NextRequest) {
       updates.platformLogo = platformLogo;
     if (typeof platformCurrency !== "undefined")
       updates.platformCurrency = platformCurrency;
+    if (typeof usdToLrdRate !== "undefined") {
+      const v = Number(usdToLrdRate);
+      if (!Number.isFinite(v) || v <= 0 || v > 100000) {
+        return NextResponse.json(
+          { error: "usdToLrdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
+      updates.usdToLrdRate = v;
+    }
+    if (typeof lrdToUsdRate !== "undefined") {
+      const v = Number(lrdToUsdRate);
+      if (!Number.isFinite(v) || v <= 0 || v > 1000) {
+        return NextResponse.json(
+          { error: "lrdToUsdRate must be a positive number" },
+          { status: 400 }
+        );
+      }
+      updates.lrdToUsdRate = v;
+    }
     if (typeof toggles !== "undefined") {
       if (typeof toggles.monetizationEnabled !== "undefined")
         updates.monetizationEnabled = toggles.monetizationEnabled;
@@ -412,8 +472,8 @@ export async function DELETE(req: NextRequest) {
     }
 
     const adminUserId = payload._id || payload.id || payload.email || "unknown";
-    const body = await req.json().catch(() => ({}));
-    const { logo = false, currency = false, toggles = false } = body || {};
+  const body = await req.json().catch(() => ({}));
+  const { logo = false, currency = false, toggles = false } = body || {};
 
     const propsToReset: (keyof SystemSettings)[] = [];
     if (logo) propsToReset.push("platformLogo");

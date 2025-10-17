@@ -5,6 +5,9 @@ export interface SystemSettings {
   // Platform Configuration
   platformCurrency: "LRD" | "USD";
   platformLogo?: string;
+  // Currency Conversion Settings
+  usdToLrdRate: number; // how many LRD for 1 USD
+  lrdToUsdRate: number; // how many USD for 1 LRD
 
   // Listing Configuration
   listingExpirationDays: number;
@@ -37,6 +40,8 @@ export class SettingsService {
   private static readonly SETTING_KEYS = {
     PLATFORM_CURRENCY: "platform_currency",
     PLATFORM_LOGO: "platform_logo",
+    USD_TO_LRD_RATE: "usd_to_lrd_rate",
+    LRD_TO_USD_RATE: "lrd_to_usd_rate",
     LISTING_EXPIRATION_DAYS: "listing_expiration_days",
     MAX_LISTING_PHOTOS: "max_listing_photos",
     MONETIZATION_ENABLED: "monetization_enabled",
@@ -98,6 +103,12 @@ export class SettingsService {
       platformCurrency:
         settingsMap[this.SETTING_KEYS.PLATFORM_CURRENCY] || "USD",
       platformLogo: settingsMap[this.SETTING_KEYS.PLATFORM_LOGO] || "",
+      usdToLrdRate: Number(
+        settingsMap[this.SETTING_KEYS.USD_TO_LRD_RATE] ?? 200
+      ),
+      lrdToUsdRate: Number(
+        settingsMap[this.SETTING_KEYS.LRD_TO_USD_RATE] ?? 0.005
+      ),
       listingExpirationDays:
         settingsMap[this.SETTING_KEYS.LISTING_EXPIRATION_DAYS] ?? 90,
       maxListingPhotos: settingsMap[this.SETTING_KEYS.MAX_LISTING_PHOTOS] ?? 10,
@@ -246,6 +257,8 @@ export class SettingsService {
     return {
       [this.SETTING_KEYS.PLATFORM_CURRENCY]: "LRD",
       [this.SETTING_KEYS.PLATFORM_LOGO]: "",
+      [this.SETTING_KEYS.USD_TO_LRD_RATE]: 200,
+      [this.SETTING_KEYS.LRD_TO_USD_RATE]: 0.005,
       [this.SETTING_KEYS.LISTING_EXPIRATION_DAYS]: 90,
       [this.SETTING_KEYS.MAX_LISTING_PHOTOS]: 10,
       [this.SETTING_KEYS.MONETIZATION_ENABLED]: false,
@@ -328,6 +341,8 @@ export class SettingsService {
     const keyMap: Record<keyof SystemSettings, string> = {
       platformCurrency: this.SETTING_KEYS.PLATFORM_CURRENCY,
       platformLogo: this.SETTING_KEYS.PLATFORM_LOGO,
+      usdToLrdRate: this.SETTING_KEYS.USD_TO_LRD_RATE,
+      lrdToUsdRate: this.SETTING_KEYS.LRD_TO_USD_RATE,
       listingExpirationDays: this.SETTING_KEYS.LISTING_EXPIRATION_DAYS,
       maxListingPhotos: this.SETTING_KEYS.MAX_LISTING_PHOTOS,
       monetizationEnabled: this.SETTING_KEYS.MONETIZATION_ENABLED,
