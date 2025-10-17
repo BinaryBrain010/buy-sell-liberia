@@ -5,12 +5,20 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Package, Heart, MessageCircle, Shield } from "lucide-react";
+import {
+  User,
+  Package,
+  Heart,
+  MessageCircle,
+  Shield,
+  BadgeDollarSign,
+} from "lucide-react";
 import BuySellLoader from "@/components/loader/BuySellLoader";
 import { useToast } from "@/hooks/use-toast";
 import { MessagesComponent } from "@/components/dashboard/MessagesComponent";
 import UserListings from "@/components/dashboard/userListings";
 import ProfileForm from "@/components/dashboard/profileForm";
+import MonetizationTab from "@/components/dashboard/MonetizationTab";
 import FavouriteListings from "@/components/dashboard/favouriteListings";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
 
@@ -56,6 +64,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [monetizationEnabled, setMonetizationEnabled] = useState<
+    boolean | null
+  >(null);
   const [chatParams, setChatParams] = useState<{
     sellerId?: string;
     productId?: string;
@@ -77,6 +88,33 @@ export default function DashboardPage() {
     checkAuthentication();
     checkUrlParams();
   }, []);
+
+  // Fetch monetization settings from server to control visibility
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/monetization/plans")
+      .then((r) => r.json())
+      .then((json) => {
+        if (!mounted) return;
+        setMonetizationEnabled(Boolean(json?.enabled));
+        // If monetization tab is active but disabled, fallback to profile and inform user
+        if (!json?.enabled && activeTab === "monetization") {
+          setActiveTab("profile");
+          toast({
+            title: "Monetization disabled",
+            description: "This feature is currently unavailable.",
+          });
+        }
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setMonetizationEnabled(false);
+        if (activeTab === "monetization") setActiveTab("profile");
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, toast]);
 
   const checkUrlParams = () => {
     if (typeof window !== "undefined") {
@@ -436,16 +474,14 @@ export default function DashboardPage() {
 
               {/* Enhanced Navigation Tabs */}
               <div className="w-full lg:w-auto">
-                <TabsList className="grid grid-cols-4 gap-0.5 w-full lg:flex lg:w-auto lg:gap-2 overflow-x-auto scrollbar-hide bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg rounded-xl p-0.5 lg:p-2">
+                <TabsList className="grid grid-cols-5 gap-0.5 w-full lg:flex lg:w-auto lg:gap-2 overflow-x-auto scrollbar-hide bg-background/80 backdrop-blur-sm border border-border/30 shadow-lg rounded-xl p-0.5 lg:p-2">
                   <TabsTrigger
                     value="profile"
                     aria-label="Profile"
                     className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[110px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <User className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
-                    <span className="font-medium truncate">
-                      Profile
-                    </span>
+                    <span className="font-medium truncate">Profile</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="listings"
@@ -453,9 +489,7 @@ export default function DashboardPage() {
                     className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[110px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Package className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
-                    <span className="font-medium truncate">
-                      Listings
-                    </span>
+                    <span className="font-medium truncate">Listings</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="favourites"
@@ -463,9 +497,7 @@ export default function DashboardPage() {
                     className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[120px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <Heart className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
-                    <span className="font-medium truncate">
-                      Favourites
-                    </span>
+                    <span className="font-medium truncate">Favourites</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="messages"
@@ -473,10 +505,18 @@ export default function DashboardPage() {
                     className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[120px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
                   >
                     <MessageCircle className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
-                    <span className="font-medium truncate">
-                      Messages
-                    </span>
+                    <span className="font-medium truncate">Messages</span>
                   </TabsTrigger>
+                  {monetizationEnabled && (
+                    <TabsTrigger
+                      value="monetization"
+                      aria-label="Monetization"
+                      className="flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 lg:flex-row lg:gap-2 lg:px-4 lg:py-3 shrink-0 min-w-0 lg:min-w-[130px] text-[10px] leading-tight lg:text-sm data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-v0-dark-blue data-[state=active]:text-white transition-all duration-300"
+                    >
+                      <BadgeDollarSign className="h-3 w-3 lg:h-4 lg:w-4 shrink-0" />
+                      <span className="font-medium truncate">Monetization</span>
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </div>
             </div>
@@ -484,7 +524,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Enhanced Main Content */}
-  <div className="container max-w-screen-xl mx-auto px-4 py-6 md:py-8">
+        <div className="container max-w-screen-xl mx-auto px-4 py-6 md:py-8">
           <TabsContent value="profile" className="space-y-6">
             {user?.id || user?._id ? (
               <div className="relative">
@@ -586,6 +626,29 @@ export default function DashboardPage() {
               </div>
             </div>
           </TabsContent>
+
+          {monetizationEnabled && (
+            <TabsContent value="monetization" className="space-y-6">
+              {user?.id || user?._id ? (
+                <MonetizationTab userId={user?.id || user?._id} />
+              ) : (
+                <div className="text-center py-16">
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-red-500/5 to-red-600/5 rounded-2xl opacity-50" />
+                    <div className="relative bg-background/80 backdrop-blur-sm rounded-2xl border border-border/30 p-8">
+                      <BadgeDollarSign className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
+                      <h3 className="text-2xl font-semibold mb-2">
+                        User ID Not Found
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Unable to load monetization: User ID is missing
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          )}
         </div>
       </Tabs>
     </div>

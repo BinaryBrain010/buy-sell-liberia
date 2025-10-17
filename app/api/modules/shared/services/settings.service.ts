@@ -5,6 +5,9 @@ export interface SystemSettings {
   // Platform Configuration
   platformCurrency: "LRD" | "USD";
   platformLogo?: string;
+  // Currency Conversion Settings
+  usdToLrdRate: number; // how many LRD for 1 USD
+  lrdToUsdRate: number; // how many USD for 1 LRD
 
   // Listing Configuration
   listingExpirationDays: number;
@@ -14,6 +17,12 @@ export interface SystemSettings {
   monetizationEnabled: boolean;
   registrationEnabled: boolean;
   maintenanceMode: boolean;
+  paidCategoriesEnabled?: boolean;
+  // Monetization feature toggles (granular)
+  isFeaturedActive?: boolean;
+  isSubscriptionActive?: boolean;
+  isPaidCategoryActive?: boolean;
+  isBannerAdsActive?: boolean;
 
   // Payment Configuration
   paymentContactInfo: {
@@ -31,6 +40,8 @@ export class SettingsService {
   private static readonly SETTING_KEYS = {
     PLATFORM_CURRENCY: "platform_currency",
     PLATFORM_LOGO: "platform_logo",
+    USD_TO_LRD_RATE: "usd_to_lrd_rate",
+    LRD_TO_USD_RATE: "lrd_to_usd_rate",
     LISTING_EXPIRATION_DAYS: "listing_expiration_days",
     MAX_LISTING_PHOTOS: "max_listing_photos",
     MONETIZATION_ENABLED: "monetization_enabled",
@@ -39,6 +50,11 @@ export class SettingsService {
     PAYMENT_CONTACT_INFO: "payment_contact_info",
     MONETIZATION_PRICES: "monetization_prices",
     MONETIZATION_PAYMENT_DETAILS: "monetization_payment_details",
+    PAID_CATEGORIES_ENABLED: "paid_categories_enabled",
+    FEATURED_ACTIVE: "is_featured_active",
+    SUBSCRIPTIONS_ACTIVE: "is_subscription_active",
+    PAID_CATEGORY_ACTIVE: "is_paid_category_active",
+    BANNER_ADS_ACTIVE: "is_banner_ads_active",
   };
 
   /**
@@ -87,6 +103,12 @@ export class SettingsService {
       platformCurrency:
         settingsMap[this.SETTING_KEYS.PLATFORM_CURRENCY] || "USD",
       platformLogo: settingsMap[this.SETTING_KEYS.PLATFORM_LOGO] || "",
+      usdToLrdRate: Number(
+        settingsMap[this.SETTING_KEYS.USD_TO_LRD_RATE] ?? 200
+      ),
+      lrdToUsdRate: Number(
+        settingsMap[this.SETTING_KEYS.LRD_TO_USD_RATE] ?? 0.005
+      ),
       listingExpirationDays:
         settingsMap[this.SETTING_KEYS.LISTING_EXPIRATION_DAYS] ?? 90,
       maxListingPhotos: settingsMap[this.SETTING_KEYS.MAX_LISTING_PHOTOS] ?? 10,
@@ -96,6 +118,20 @@ export class SettingsService {
       registrationEnabled:
         settingsMap[this.SETTING_KEYS.REGISTRATION_ENABLED] !== false,
       maintenanceMode: Boolean(settingsMap[this.SETTING_KEYS.MAINTENANCE_MODE]),
+      paidCategoriesEnabled: Boolean(
+        settingsMap[this.SETTING_KEYS.PAID_CATEGORIES_ENABLED]
+      ),
+      // granular feature toggles (default false)
+      isFeaturedActive: Boolean(settingsMap[this.SETTING_KEYS.FEATURED_ACTIVE]),
+      isSubscriptionActive: Boolean(
+        settingsMap[this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE]
+      ),
+      isPaidCategoryActive: Boolean(
+        settingsMap[this.SETTING_KEYS.PAID_CATEGORY_ACTIVE]
+      ),
+      isBannerAdsActive: Boolean(
+        settingsMap[this.SETTING_KEYS.BANNER_ADS_ACTIVE]
+      ),
       paymentContactInfo:
         settingsMap[this.SETTING_KEYS.PAYMENT_CONTACT_INFO] || {},
       monetizationPrices:
@@ -221,51 +257,41 @@ export class SettingsService {
     return {
       [this.SETTING_KEYS.PLATFORM_CURRENCY]: "LRD",
       [this.SETTING_KEYS.PLATFORM_LOGO]: "",
+      [this.SETTING_KEYS.USD_TO_LRD_RATE]: 200,
+      [this.SETTING_KEYS.LRD_TO_USD_RATE]: 0.005,
       [this.SETTING_KEYS.LISTING_EXPIRATION_DAYS]: 90,
       [this.SETTING_KEYS.MAX_LISTING_PHOTOS]: 10,
       [this.SETTING_KEYS.MONETIZATION_ENABLED]: false,
       [this.SETTING_KEYS.REGISTRATION_ENABLED]: true,
       [this.SETTING_KEYS.MAINTENANCE_MODE]: false,
+      [this.SETTING_KEYS.PAID_CATEGORIES_ENABLED]: false,
+      // granular feature toggles default: inactive at launch
+      [this.SETTING_KEYS.FEATURED_ACTIVE]: false,
+      [this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE]: false,
+      [this.SETTING_KEYS.PAID_CATEGORY_ACTIVE]: false,
+      [this.SETTING_KEYS.BANNER_ADS_ACTIVE]: false,
       [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
-      [this.SETTING_KEYS.MONETIZATION_PRICES]: {
-        featured_listing: {
-          "3_days": { 
-            price: 150, 
-            duration: 3, 
-            label: "3 Days",
-            description: "Feature your listing for 3 days"
-          },
-          "7_days": { 
-            price: 300, 
-            duration: 7, 
-            label: "7 Days",
-            description: "Feature your listing for 1 week"
-          },
-          "14_days": { 
-            price: 500, 
-            duration: 14, 
-            label: "14 Days",
-            description: "Feature your listing for 2 weeks"
-          }
-        }
-      },
+      [this.SETTING_KEYS.MONETIZATION_PRICES]: {},
       [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {
         mtn: {
           number: "",
           name: "",
-          instructions: "Send payment to the MTN number above and enter your transaction ID"
+          instructions:
+            "Send payment to the MTN number above and enter your transaction ID",
         },
         orange: {
           number: "",
           name: "",
-          instructions: "Send payment to the Orange number above and enter your transaction ID"
+          instructions:
+            "Send payment to the Orange number above and enter your transaction ID",
         },
         bank: {
           accountNumber: "",
           accountName: "",
           bankName: "",
-          instructions: "Transfer to the bank account above and upload your payment receipt"
-        }
+          instructions:
+            "Transfer to the bank account above and upload your payment receipt",
+        },
       },
     };
   }
@@ -315,11 +341,18 @@ export class SettingsService {
     const keyMap: Record<keyof SystemSettings, string> = {
       platformCurrency: this.SETTING_KEYS.PLATFORM_CURRENCY,
       platformLogo: this.SETTING_KEYS.PLATFORM_LOGO,
+      usdToLrdRate: this.SETTING_KEYS.USD_TO_LRD_RATE,
+      lrdToUsdRate: this.SETTING_KEYS.LRD_TO_USD_RATE,
       listingExpirationDays: this.SETTING_KEYS.LISTING_EXPIRATION_DAYS,
       maxListingPhotos: this.SETTING_KEYS.MAX_LISTING_PHOTOS,
       monetizationEnabled: this.SETTING_KEYS.MONETIZATION_ENABLED,
       registrationEnabled: this.SETTING_KEYS.REGISTRATION_ENABLED,
       maintenanceMode: this.SETTING_KEYS.MAINTENANCE_MODE,
+      paidCategoriesEnabled: this.SETTING_KEYS.PAID_CATEGORIES_ENABLED,
+      isFeaturedActive: this.SETTING_KEYS.FEATURED_ACTIVE,
+      isSubscriptionActive: this.SETTING_KEYS.SUBSCRIPTIONS_ACTIVE,
+      isPaidCategoryActive: this.SETTING_KEYS.PAID_CATEGORY_ACTIVE,
+      isBannerAdsActive: this.SETTING_KEYS.BANNER_ADS_ACTIVE,
       paymentContactInfo: this.SETTING_KEYS.PAYMENT_CONTACT_INFO,
       monetizationPrices: this.SETTING_KEYS.MONETIZATION_PRICES,
       monetizationPaymentDetails:

@@ -7,6 +7,9 @@ import {
   validateImageFilesForLocal,
 } from "@/lib/local-file-upload";
 import { SettingsService } from "../modules/shared/services/settings.service";
+import Category from "../../../models/Category";
+import UserSubscription from "../../../models/UserSubscription";
+import Product from "../../../models/Product";
 import mongoose from "mongoose";
 
 // Force dynamic rendering for this route
@@ -87,6 +90,24 @@ export async function POST(request: NextRequest) {
       !category_id ||
       !location?.city
     ) {
+      // Enforce paid category requirements: if active, block publishing until payment
+      if (settings.isPaidCategoryActive) {
+        const cat = await Category.findById(category_id).select(
+          "isPaidCategory pricePerListing"
+        );
+        if (cat && cat.isPaidCategory && (cat.pricePerListing ?? 0) > 0) {
+          return NextResponse.json(
+            {
+              error: "This category requires a payment per listing.",
+              paymentRequired: true,
+              feature: "paid_category",
+              amount: Number(cat.pricePerListing),
+              currency: "USD",
+            },
+            { status: 402 }
+          );
+        }
+      }
       return NextResponse.json(
         {
           error:
@@ -155,6 +176,68 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing user id" }, { status: 400 });
     }
 
+    // Check subscription limits before creating product
+    const userId = authResult.userId;
+    const subscription = await (UserSubscription as any).findActiveByUser(
+      new mongoose.Types.ObjectId(userId)
+    );
+
+    if (subscription) {
+      // User has active subscription - check limits
+      if (!subscription.canPostAd()) {
+        return NextResponse.json(
+          {
+            error: `You have reached your ad limit for the current subscription period. You have used ${
+              subscription.adsUsed
+            } out of ${
+              subscription.planType === "basic"
+                ? 20
+                : subscription.planType === "pro"
+                ? 60
+                : "unlimited"
+            } ads.`,
+            subscriptionInfo: {
+              planType: subscription.planType,
+              adsUsed: subscription.adsUsed,
+              remainingAds: subscription.getRemainingAds(),
+              canUpgrade: subscription.planType !== "vip",
+            },
+          },
+          { status: 403 }
+        );
+      }
+    } else {
+      // User has no subscription - check default limit of 5 ads per month
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+
+      const nextMonth = new Date(currentMonth);
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+      const adsThisMonth = await Product.countDocuments({
+        user_id: userId,
+        created_at: { $gte: currentMonth, $lt: nextMonth },
+        status: { $ne: "removed" },
+      });
+
+      if (adsThisMonth >= 5) {
+        return NextResponse.json(
+          {
+            error:
+              "You have reached the limit of 5 ads per month. Please subscribe to a plan to post more ads.",
+            subscriptionInfo: {
+              adsUsed: adsThisMonth,
+              maxAds: 5,
+              remainingAds: 0,
+              canUpgrade: true,
+            },
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Construct full price object with negotiable inside
     const price = {
       amount,
@@ -194,6 +277,11 @@ export async function POST(request: NextRequest) {
     } as any); // Using 'as any' to bypass TypeScript interface limitations
 
     console.log("[PRODUCTS API] Product created successfully:", product._id);
+
+    // Increment subscription usage if user has active subscription
+    if (subscription) {
+      await subscription.incrementAdUsage();
+    }
 
     // Populate user information for the response
     const populatedProduct = await product.populate(
@@ -362,7 +450,7 @@ export async function GET(request: NextRequest) {
       result.products.map(async (product) => {
         const populatedProduct = await product.populate(
           "user_id",
-          "fullName username email profile.avatar profile.location"
+          "fullName username email profile.avatar profile.location profile.verificationStatus verificationPaidUntil"
         );
         const obj = populatedProduct.toObject();
         return {
@@ -374,13 +462,16 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: "Products retrieved successfully",
       products: productsWithUsers,
       total: result.total,
       page: result.currentPage,
       totalPages: result.pages,
     });
+    // Avoid caching so badges and dynamic states are always current
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
   } catch (error: any) {
     console.error(
       "[PRODUCTS API] Get products error:",

@@ -5,19 +5,36 @@
  * utility functions for the marketplace system.
  */
 
-import User from './User';
-import Product from './Product';
-import ManualPayment from './ManualPayment';
-import Category from './Category';
-import Review from './Review';
-import Chat from './Chat';
-import ActivityLog from './ActivityLog';
-import Employee from './Employee';
-import WithdrawalLog from './WithdrawalLog';
-import NewsletterSubscription from './NewsletterSubscription';
+import User from "./User";
+import Product from "./Product";
+import ManualPayment from "./ManualPayment";
+import Category from "./Category";
+import Review from "./Review";
+import Chat from "./Chat";
+import ActivityLog from "./ActivityLog";
+import Employee from "./Employee";
+import WithdrawalLog from "./WithdrawalLog";
+import RevenueEntry from "./RevenueEntry";
+import NewsletterSubscription from "./NewsletterSubscription";
+import SubscriptionPlan from "./SubscriptionPlan";
+import UserSubscription from "./UserSubscription";
 // Add other models as needed
 
-export { User, Product, ManualPayment, Category, Review, Chat, ActivityLog, Employee, WithdrawalLog, NewsletterSubscription };
+export {
+  User,
+  Product,
+  ManualPayment,
+  Category,
+  Review,
+  Chat,
+  ActivityLog,
+  Employee,
+  WithdrawalLog,
+  NewsletterSubscription,
+  SubscriptionPlan,
+  UserSubscription,
+  RevenueEntry,
+};
 
 export const models = {
   User,
@@ -29,6 +46,9 @@ export const models = {
   ActivityLog,
   Employee,
   WithdrawalLog,
+  RevenueEntry,
+  SubscriptionPlan,
+  UserSubscription,
 };
 
 export const utils = {

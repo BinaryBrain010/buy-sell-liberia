@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MapPin, Clock, Eye, Star } from "lucide-react";
+import { Heart, MapPin, Clock, Eye, Star, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import type { Price } from "@/types/products";
 import Link from "next/link";
 import { FavouriteButton } from "@/components/FavouriteButton";
+import { convertAmount, formatMoney } from "@/lib/currency";
 
 export interface Product {
   _id: string;
@@ -69,23 +70,35 @@ export function ProductCard({
   const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
   const effectiveCurrency = (platformCurrency ?? currency) as "USD" | "LRD";
   const currencySymbol = effectiveCurrency === "LRD" ? "L$" : "$";
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
 
   useEffect(() => {
-    // If parent provided the currency, skip fetching
-    if (platformCurrency) return;
     let cancelled = false;
     const getCurrency = async () => {
       try {
-        const res = await fetch("/api/admin/settings/currency", {
+        const res = await fetch("/api/settings/public", {
           cache: "no-store",
         });
         if (!res.ok) return; // fall back to default USD
         const data = await res.json();
-        if (
-          !cancelled &&
-          (data?.currency === "USD" || data?.currency === "LRD")
-        ) {
-          setCurrency(data.currency);
+        if (!cancelled) {
+          // Only set local currency state if parent didn't supply one
+          if (
+            !platformCurrency &&
+            (data?.currency === "USD" || data?.currency === "LRD")
+          ) {
+            setCurrency(data.currency);
+          }
+          if (data?.rates) {
+            const r = {
+              usdToLrdRate: Number(data.rates.usdToLrdRate ?? 200),
+              lrdToUsdRate: Number(data.rates.lrdToUsdRate ?? 0.005),
+            };
+            setRates(r);
+          }
         }
       } catch {
         // ignore and use default
@@ -219,6 +232,18 @@ export function ProductCard({
     return "Unknown date";
   };
 
+  // compute display price possibly converted to platform currency
+  const displayPrice = (() => {
+    if (!product?.price || typeof product.price !== "object") return "-";
+    const amt = Number(product.price.amount);
+    if (!Number.isFinite(amt)) return "-";
+    const from = String((product.price as any).currency || "USD").toUpperCase();
+    const to = effectiveCurrency;
+    const effectiveRates = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
+    const converted = convertAmount(amt, from, to, effectiveRates);
+    return formatMoney(converted, to);
+  })();
+
   return (
     <Card
       className={`overflow-hidden border-0 transition-all duration-300 ${
@@ -280,6 +305,17 @@ export function ProductCard({
                 <FavouriteButton productId={product._id} />
               )}
             </div>
+            {/* Verified pill under title if seller is verified */}
+            {(product as any)?.user?.profile?.verificationStatus ===
+              "fully_verified" && (
+              <div
+                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                title="Verified seller"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Verified Seller
+              </div>
+            )}
 
             {/* Price + Negotiable */}
             <div className="mt-1 mb-2 flex items-center gap-3">
@@ -288,13 +324,7 @@ export function ProductCard({
                   isDark ? "text-blue-400" : "text-blue-600"
                 }`}
               >
-                {product.price &&
-                typeof product.price === "object" &&
-                product.price.amount != null
-                  ? `${currencySymbol}${Number(
-                      product.price.amount
-                    ).toLocaleString()}`
-                  : "-"}
+                {displayPrice}
               </span>
               {product.price &&
                 typeof product.price === "object" &&
@@ -438,6 +468,16 @@ export function ProductCard({
                 <FavouriteButton productId={product._id} />
               )}
             </div>
+            {(product as any)?.user?.profile?.verificationStatus ===
+              "fully_verified" && (
+              <div
+                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                title="Verified seller"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Verified
+              </div>
+            )}
             {/* Category and Subcategory */}
             <div className="flex flex-wrap gap-2 mb-2">
               {product.category && typeof product.category === "string" && (
@@ -494,13 +534,7 @@ export function ProductCard({
                   isDark ? "text-blue-400" : "text-blue-600"
                 }`}
               >
-                {product.price &&
-                typeof product.price === "object" &&
-                product.price.amount != null
-                  ? `${currencySymbol}${Number(
-                      product.price.amount
-                    ).toLocaleString()}`
-                  : "-"}
+                {displayPrice}
               </span>
               {product.price &&
                 typeof product.price === "object" &&

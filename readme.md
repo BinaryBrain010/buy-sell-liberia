@@ -164,3 +164,9 @@ For support and questions:
 ---
 
 **BuySell Liberia** - Connecting buyers and sellers across Liberia 🇱🇷
+
+---
+
+Additional docs:
+
+- Monetization flows (plans, payments, bumps, featured, verification): see docs/MONETIZATION_INTEGRATION_README.md

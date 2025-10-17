@@ -21,16 +21,22 @@ export async function GET(
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    const prodObj = (product as any).toObject
-      ? (product as any).toObject()
-      : product;
-    return NextResponse.json({
+    const populated = await (product as any).populate(
+      "user_id",
+      "fullName username email profile.avatar profile.location profile.verificationStatus verificationPaidUntil"
+    );
+    const prodObj = populated.toObject ? populated.toObject() : populated;
+    const res = NextResponse.json({
       message: "Product retrieved successfully",
       product: {
         ...prodObj,
         condition: prodObj.details?.condition || undefined,
+        user: populated.user_id,
       },
     });
+    // Ensure fresh data for verification badge and other dynamic attributes
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to get product" },

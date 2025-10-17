@@ -20,12 +20,16 @@ import {
   Eye,
   Calendar,
   MapPin,
+  ArrowUp,
+  Star,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { CategoryService } from "@/app/services/Category.Service";
 import { useAuthLogout } from "@/hooks/use-auth-logout";
 import { ListingCard } from "./ListingCard";
 import { ListingEditModal } from "./ListingEditModal";
+import BumpModal from "./BumpModal";
+import FeaturedPlansModal from "./FeaturedPlansModal";
 
 export interface Listing {
   _id: string;
@@ -69,6 +73,13 @@ export default function UserListings({ userId }: UserListingsProps) {
     }>
   >([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [bumpCount, setBumpCount] = useState(0);
+  const [isBumpModalOpen, setIsBumpModalOpen] = useState(false);
+  const [isFeatureModalOpen, setIsFeatureModalOpen] = useState(false);
+  const [featureTargetId, setFeatureTargetId] = useState<string | null>(null);
+  const [isSubscriptionActive, setIsSubscriptionActive] =
+    useState<boolean>(false);
+  const [isFeaturedActive, setIsFeaturedActive] = useState<boolean>(false);
   const router = useRouter();
 
   useAuthLogout(() => {
@@ -155,6 +166,30 @@ export default function UserListings({ userId }: UserListingsProps) {
     }
     fetchUserListings();
     fetchCategories();
+    // fetch monetization toggles for gating buttons
+    (async () => {
+      try {
+        const res = await fetch("/api/monetization/plans");
+        const json = await res.json();
+        setIsSubscriptionActive(Boolean(json?.isSubscriptionActive));
+        setIsFeaturedActive(Boolean(json?.isFeaturedActive));
+      } catch {
+        setIsSubscriptionActive(false);
+        setIsFeaturedActive(false);
+      }
+    })();
+    // Fetch user bump count from users API
+    (async function fetchBumpCount() {
+      try {
+        const resp = await fetch("/api/users/me");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        // backend may use 'bumps' or 'bumpCount'
+        setBumpCount(Number(data.bumpCount ?? data.bumps ?? 0));
+      } catch (e) {
+        // ignore
+      }
+    })();
   }, [userId]);
 
   const handleUpdateListing = async (
@@ -372,6 +407,30 @@ export default function UserListings({ userId }: UserListingsProps) {
                 <Package className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
+              {isSubscriptionActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsBumpModalOpen(true)}
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  <ArrowUp className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Bump</span>
+                </Button>
+              )}
+              {isFeaturedActive && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // If a listing is selected elsewhere, setFeatureTargetId; otherwise user can pick inside modal via its dependency on selected item
+                    setFeatureTargetId(null);
+                    setIsFeatureModalOpen(true);
+                  }}
+                  className="px-3 sm:px-6 py-2 sm:py-3 text-sm border-2 border-border/30 hover:border-primary/50 transition-colors"
+                >
+                  <Star className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Feature</span>
+                </Button>
+              )}
               <Button
                 onClick={() => router.push("/sell")}
                 className="px-3 sm:px-6 py-2 sm:py-3 text-sm bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -604,6 +663,37 @@ export default function UserListings({ userId }: UserListingsProps) {
         onSave={handleUpdateListing}
         saving={isUpdating}
         imageLoading={isImageLoading}
+      />
+      <BumpModal
+        open={isBumpModalOpen}
+        onOpenChange={setIsBumpModalOpen}
+        bumpCount={bumpCount}
+        listings={listings.map((l) => ({ _id: l._id, title: l.title }))}
+        onConfirm={async (listingId) => {
+          try {
+            // Call backend to bump the listing using available credits
+            const resp = await fetch(`/api/products/${listingId}/bump`, {
+              method: "GET",
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+              console.error("Bump failed:", data?.error || data);
+              alert(data?.error || "Failed to bump listing. Please try again.");
+              return;
+            }
+            // Success: decrement local bump count and optionally update local listing state
+            setBumpCount((c) => Math.max(0, c - 1));
+          } catch (e: any) {
+            console.error("Bump error:", e?.message || e);
+            alert(e?.message || "Failed to bump listing. Please try again.");
+          }
+        }}
+      />
+      <FeaturedPlansModal
+        open={isFeatureModalOpen}
+        onOpenChange={setIsFeatureModalOpen}
+        productId={featureTargetId}
+        listings={listings.map((l) => ({ _id: l._id, title: l.title }))}
       />
     </div>
   );

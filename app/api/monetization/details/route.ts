@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { SettingsService } from '@/app/api/modules/shared/services/settings.service';
+import { NextRequest, NextResponse } from "next/server";
+import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
 
 /**
  * GET /api/monetization/details
@@ -12,38 +12,43 @@ export async function GET(req: NextRequest) {
 
     // Check if monetization is enabled
     if (!settings.monetizationEnabled) {
-      return NextResponse.json({
-        enabled: false,
-        message: 'Monetization features are currently disabled'
-      }, { status: 200 });
+      return NextResponse.json(
+        {
+          enabled: false,
+          message: "Monetization features are currently disabled",
+        },
+        { status: 200 }
+      );
     }
 
-    // Get pricing structure
+    // Get pricing structure strictly from DB settings
     const prices = settings.monetizationPrices || {};
-    const featuredPricing = prices.featured_listing || {
-      "3_days": { price: 150, duration: 3, label: "3 Days" },
-      "7_days": { price: 300, duration: 7, label: "7 Days" },
-      "14_days": { price: 500, duration: 14, label: "14 Days" }
-    };
+    const featuredPricing = prices.featured_listing || {};
 
     // Get payment details (admin accounts)
     const paymentDetails = settings.monetizationPaymentDetails || {};
 
-    return NextResponse.json({
-      enabled: true,
-      paymentDetails: {
-        mtn: paymentDetails.mtn || null,
-        orange: paymentDetails.orange || null,
-        bank: paymentDetails.bank || null
+    return NextResponse.json(
+      {
+        enabled: true,
+        paymentDetails: {
+          mtn: paymentDetails.mtn || null,
+          orange: paymentDetails.orange || null,
+          bank: paymentDetails.bank || null,
+        },
+        plans: featuredPricing,
+        // Align currency with platform settings (same as /api/monetization/plans)
+        currency: settings.platformCurrency || "LRD",
       },
-      plans: featuredPricing,
-      currency: settings.platformCurrency || "LRD"
-    }, { status: 200 });
-
+      { status: 200 }
+    );
   } catch (error: any) {
-    console.error('Error in /api/monetization/details GET:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Failed to fetch monetization details' 
-    }, { status: 500 });
+    console.error("Error in /api/monetization/details GET:", error);
+    return NextResponse.json(
+      {
+        error: error.message || "Failed to fetch monetization details",
+      },
+      { status: 500 }
+    );
   }
 }
