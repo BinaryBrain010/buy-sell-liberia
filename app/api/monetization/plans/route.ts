@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
+import dbConnect from "@/lib/mongoose";
+import { ensureModelsRegistered } from "@/lib/ensure-models";
+import SubscriptionPlan from "@/models/SubscriptionPlan";
+import BumpPlan from "@/models/BumpPlan";
 
 /**
  * GET /api/monetization/plans
@@ -25,20 +29,54 @@ import { SettingsService } from "@/app/api/modules/shared/services/settings.serv
 export async function GET(req: NextRequest) {
   try {
     const settings = await SettingsService.getAllSettings();
+    // Connect only if we need to read plan models
+    await dbConnect();
+    ensureModelsRegistered();
 
     const prices = settings.monetizationPrices || {};
-    const bumpPricing = prices.bump_listing || {
-      "1_bump": { price: 100, credits: 1, label: "1 Bump" },
-      "3_bumps": { price: 250, credits: 3, label: "3 Bumps" },
-      "5_bumps": { price: 400, credits: 5, label: "5 Bumps" },
-      "10_bumps": { price: 750, credits: 10, label: "10 Bumps" },
-    };
+    // Primary source: settings.monetizationPrices
+    let bumpPricing: Record<string, any> = prices.bump_listing || {};
+    let featuredPricing: Record<string, any> = prices.featured_listing || {};
 
-    const featuredPricing = prices.featured_listing || {
-      "3_days": { price: 150, duration: 3, label: "3 Days" },
-      "7_days": { price: 300, duration: 7, label: "7 Days" },
-      "14_days": { price: 500, duration: 14, label: "14 Days" },
-    };
+    // Fallback for bump plans: BumpPlan collection
+    if (!bumpPricing || Object.keys(bumpPricing).length === 0) {
+      try {
+        const bumpPlans = await BumpPlan.findActive();
+        if (bumpPlans && bumpPlans.length > 0) {
+          bumpPricing = bumpPlans.reduce((acc: any, p: any) => {
+            acc[p._id.toString()] = {
+              price: Number(p.price) || 0,
+              credits: Number(p.bumps) || 0,
+              label: p.title,
+              description: p.description || undefined,
+            };
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      } catch (e) {
+        // no-op fallback
+      }
+    }
+
+    // Fallback for featured plans: SubscriptionPlan collection
+    if (!featuredPricing || Object.keys(featuredPricing).length === 0) {
+      try {
+        const subs = await SubscriptionPlan.findActivePlans();
+        if (subs && subs.length > 0) {
+          featuredPricing = subs.reduce((acc: any, p: any) => {
+            acc[p._id.toString()] = {
+              price: Number(p.price) || 0,
+              duration: Number(p.duration) || 0,
+              label: p.name,
+              description: p.description || undefined,
+            };
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      } catch (e) {
+        // no-op fallback
+      }
+    }
 
     const verificationPricing = prices.account_verification || null;
     const bannerAdPricing = prices.banner_ad || null;

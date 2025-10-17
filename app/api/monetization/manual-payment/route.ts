@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/app/api/modules/auth/middlewares/next-auth-middleware";
 import { SettingsService } from "@/app/api/modules/shared/services/settings.service";
 import dbConnect from "@/lib/mongoose";
-import Product from "@/models/Product";
+import { ensureModelsRegistered } from "@/lib/ensure-models";
 import SubscriptionPlan from "@/models/SubscriptionPlan";
+import BumpPlan from "@/models/BumpPlan";
+import Product from "@/models/Product";
 import ManualPayment from "@/models/ManualPayment";
 
 /**
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest) {
     }
 
     await dbConnect();
+    ensureModelsRegistered();
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
@@ -133,52 +136,54 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      const cfg = prices.featured_listing || {};
-      const p = cfg[plan];
-      if (!p)
+      // Validate against settings-based featured plans first
+      let p = (prices.featured_listing as any)?.[plan];
+      // Fallback: accept SubscriptionPlan id
+      if (!p) {
+        const sp = await SubscriptionPlan.findById(plan);
+        if (sp) {
+          amount = Number(sp.price) || 0;
+          featureDuration = Number(sp.duration) || 0;
+        }
+      } else {
+        amount = Number(p.price) || 0;
+        featureDuration = Number(p.duration) || 0;
+      }
+      if (!amount || !featureDuration) {
         return NextResponse.json(
           { error: "Invalid plan for featured listing" },
           { status: 400 }
         );
-      amount = Number(p.price) || 0;
-      featureDuration = Number(p.duration) || 0;
+      }
       if (!listing)
         return NextResponse.json(
           { error: "listing is required for featured listing" },
           { status: 400 }
         );
     } else if (featureType === "bump_listing") {
-      if (!settings.isFeaturedActive && !prices.bump_listing) {
-        // Allow bumps even if featured is off; check explicit bumps config
-      }
-      const defaultBumpPricing: Record<string, any> = {
-        "1_bump": { price: 100, credits: 1, label: "1 Bump" },
-        "3_bumps": { price: 250, credits: 3, label: "3 Bumps" },
-        "5_bumps": { price: 400, credits: 5, label: "5 Bumps" },
-        "10_bumps": { price: 750, credits: 10, label: "10 Bumps" },
-      };
-      // If custom pricing exists, merge over defaults so unspecified default tiers still work.
-      const cfg =
-        prices.bump_listing && Object.keys(prices.bump_listing).length
-          ? { ...defaultBumpPricing, ...prices.bump_listing }
-          : defaultBumpPricing;
-      let p = cfg[plan];
-      // Secondary fallback: if plan not found and custom pricing defined, try raw custom object (handles typos like 10_bump vs 10_bumps)
-      if (!p && prices.bump_listing) {
-        p = (prices.bump_listing as any)[plan];
-      }
+      // Validate against settings-based bump plans first
+      let p = (prices.bump_listing as any)?.[plan];
       if (!p) {
+        // Fallback: accept BumpPlan id
+        const bp = await BumpPlan.findById(plan);
+        if (bp) {
+          amount = Number(bp.price) || 0;
+          bumpCredits = Number(bp.bumps) || 0;
+        }
+      } else {
+        amount = Number(p.price) || 0;
+        bumpCredits = Number(p.credits) || 0;
+      }
+      if (!amount || !bumpCredits) {
         return NextResponse.json(
           {
             error: "Invalid plan for bump listing",
-            available: Object.keys(cfg),
+            available: Object.keys((prices.bump_listing as any) || {}),
             received: plan,
           },
           { status: 400 }
         );
       }
-      amount = Number(p.price) || 0;
-      bumpCredits = Number(p.credits) || 0;
       featureDuration = bumpCredits; // store credits in featureDuration for compatibility; bumpCredits is explicit too
       // listing is optional now; credits are user-level until applied
     } else if (featureType === "account_verification") {

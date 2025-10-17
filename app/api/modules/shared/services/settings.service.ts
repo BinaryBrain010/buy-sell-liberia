@@ -258,31 +258,7 @@ export class SettingsService {
       [this.SETTING_KEYS.PAID_CATEGORY_ACTIVE]: false,
       [this.SETTING_KEYS.BANNER_ADS_ACTIVE]: false,
       [this.SETTING_KEYS.PAYMENT_CONTACT_INFO]: {},
-      [this.SETTING_KEYS.MONETIZATION_PRICES]: {
-        // Prices in USD for featured listings per product
-        featured_listing: {
-          "7_days": {
-            price: 4.99,
-            duration: 7,
-            label: "7 Days",
-            description: "Feature your listing for 7 days",
-          },
-          "30_days": {
-            price: 8.99,
-            duration: 30,
-            label: "30 Days",
-            description: "Feature your listing for 30 days",
-          },
-        },
-        // Optional: banner ad packages (disabled by default via toggle)
-        banner_ad: {
-          "7_days_homepage": {
-            price: 19.99,
-            duration: 7,
-            label: "Homepage 7 Days",
-          },
-        },
-      },
+      [this.SETTING_KEYS.MONETIZATION_PRICES]: {},
       [this.SETTING_KEYS.MONETIZATION_PAYMENT_DETAILS]: {
         mtn: {
           number: "",

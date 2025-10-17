@@ -21,12 +21,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get pricing structure (USD base)
+    // Get pricing structure strictly from DB settings
     const prices = settings.monetizationPrices || {};
-    const featuredPricing = prices.featured_listing || {
-      "7_days": { price: 4.99, duration: 7, label: "7 Days" },
-      "30_days": { price: 8.99, duration: 30, label: "30 Days" },
-    };
+    const featuredPricing = prices.featured_listing || {};
 
     // Get payment details (admin accounts)
     const paymentDetails = settings.monetizationPaymentDetails || {};

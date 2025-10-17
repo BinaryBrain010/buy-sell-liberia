@@ -81,11 +81,12 @@ Updated
 
 ## Data and settings
 
-- Prices and flags come from `SettingsService`:
+- Prices and flags come from `SettingsService` and MUST be configured in the database (no hardcoded defaults in code):
   - `monetizationPrices.bump_listing` → credits per plan + price
   - `monetizationPrices.featured_listing` → duration per plan + price
   - Optional: `monetizationPrices.account_verification`, `banner_ad`, `paid_category_listing`
   - Currency is taken from `settings.platformCurrency` and exposed on the unified plans route.
+  - If a plan group is missing or empty, the corresponding UI/flow will show no options and server validation will reject unknown plan keys.
 - Payment details (`mtn`, `orange`, `bank`) are populated in settings and exposed by `GET /api/monetization/details`.
 
 ## How to use (quick functional walkthrough)
