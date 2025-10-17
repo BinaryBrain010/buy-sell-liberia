@@ -213,6 +213,9 @@ export interface IUser extends Document {
   emailVerified: boolean;
   phoneVerificationToken?: string;
   phoneVerified: boolean;
+  // Time-limited account verification window (set by approved manual payment)
+  verificationPaidAt?: Date;
+  verificationPaidUntil?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   refreshToken?: string;
@@ -335,6 +338,9 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    // Time-limited verification fields
+    verificationPaidAt: { type: Date, default: undefined },
+    verificationPaidUntil: { type: Date, default: undefined },
     // Password reset
     passwordResetToken: String,
     passwordResetExpires: Date,
@@ -382,12 +388,22 @@ userSchema.pre<IUser>("save", async function (next) {
 
 // Pre-save middleware to update verification status
 userSchema.pre<IUser>("save", function (next) {
-  if (this.emailVerified && this.phoneVerified) {
+  // If already fully verified (e.g., via manual verification approval), do not downgrade
+  if (this.profile?.verificationStatus === "fully_verified") {
+    return next();
+  }
+  const now = new Date();
+  const paidActive =
+    !!this.verificationPaidUntil && this.verificationPaidUntil > now;
+  if (paidActive || (this.emailVerified && this.phoneVerified)) {
     this.profile.verificationStatus = "fully_verified";
   } else if (this.emailVerified) {
     this.profile.verificationStatus = "email_verified";
   } else if (this.phoneVerified) {
     this.profile.verificationStatus = "phone_verified";
+  } else {
+    this.profile.verificationStatus =
+      this.profile.verificationStatus || "unverified";
   }
   next();
 });

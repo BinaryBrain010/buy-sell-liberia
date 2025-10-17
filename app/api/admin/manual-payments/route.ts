@@ -223,9 +223,16 @@ export async function PATCH(request: NextRequest) {
     } else if (featureType === "paid_category_listing") {
       // No-op beyond approval today; price already verified. Optionally mark a flag if needed.
     } else if (featureType === "account_verification") {
-      // Elevate user verification status to fully_verified
+      // Elevate user verification status and set time-limited window based on plan duration
+      const now = new Date();
+      const days = Math.max(1, Number(featureDuration) || 1);
+      const paidUntil = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
       await User.findByIdAndUpdate(payment.user, {
-        $set: { "profile.verificationStatus": "fully_verified" },
+        $set: {
+          "profile.verificationStatus": "fully_verified",
+          verificationPaidAt: now,
+          verificationPaidUntil: paidUntil,
+        },
       });
     } else if (featureType === "banner_ad") {
       // No-op placeholder: real implementation would schedule a banner slot

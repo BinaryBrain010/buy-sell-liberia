@@ -450,7 +450,7 @@ export async function GET(request: NextRequest) {
       result.products.map(async (product) => {
         const populatedProduct = await product.populate(
           "user_id",
-          "fullName username email profile.avatar profile.location profile.verificationStatus"
+          "fullName username email profile.avatar profile.location profile.verificationStatus verificationPaidUntil"
         );
         const obj = populatedProduct.toObject();
         return {
@@ -462,13 +462,16 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: "Products retrieved successfully",
       products: productsWithUsers,
       total: result.total,
       page: result.currentPage,
       totalPages: result.pages,
     });
+    // Avoid caching so badges and dynamic states are always current
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
   } catch (error: any) {
     console.error(
       "[PRODUCTS API] Get products error:",

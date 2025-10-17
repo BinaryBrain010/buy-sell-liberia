@@ -8,6 +8,8 @@ export async function GET(req: NextRequest) {
     const paymentDetails = settings.monetizationPaymentDetails || {};
     const contact = (settings as any).paymentContactInfo || {};
     const currency = settings.platformCurrency || "LRD";
+    const usdToLrdRate = (settings as any).usdToLrdRate ?? 200;
+    const lrdToUsdRate = (settings as any).lrdToUsdRate ?? 0.005;
 
     // Normalized paid categories object for consistency
     const paidCategories = {
@@ -44,7 +46,15 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(
-      { currency, paymentDetails: normalizedPaymentDetails, paidCategories },
+      {
+        currency,
+        rates: {
+          usdToLrdRate: Number(usdToLrdRate),
+          lrdToUsdRate: Number(lrdToUsdRate),
+        },
+        paymentDetails: normalizedPaymentDetails,
+        paidCategories,
+      },
       { status: 200 }
     );
   } catch (error: any) {

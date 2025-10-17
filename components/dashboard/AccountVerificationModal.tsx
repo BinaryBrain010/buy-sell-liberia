@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { convertAmount, formatMoney } from "@/lib/currency";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +47,14 @@ export default function AccountVerificationModal({
     () => plans?.plans?.account_verification ?? {},
     [plans]
   );
-  const currency = plans?.currency ?? "L$";
+  const currency = plans?.currency ?? "USD";
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -67,6 +75,15 @@ export default function AccountVerificationModal({
         const pd = s?.paymentDetails;
         const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
         setPaymentDetails(hasAny ? pd : p?.paymentDetails || null);
+        if (s?.currency === "USD" || s?.currency === "LRD") {
+          setPlatformCurrency(s.currency);
+        }
+        if (s?.rates) {
+          setRates({
+            usdToLrdRate: Number(s.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(s.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
         const firstKey =
           Object.keys(p?.plans?.account_verification || {})[0] || null;
         setSelectedPlan(firstKey);
@@ -194,8 +211,34 @@ export default function AccountVerificationModal({
                       <div className="font-medium">{val?.label ?? key}</div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="font-semibold">
-                        {currency} {val?.price ?? 0}
+                      <div className="flex flex-col items-end">
+                        <span className="font-semibold">
+                          {(() => {
+                            const from = String(
+                              currency || "USD"
+                            ).toUpperCase();
+                            const to = platformCurrency;
+                            const r = rates ?? {
+                              usdToLrdRate: 200,
+                              lrdToUsdRate: 0.005,
+                            };
+                            const converted = convertAmount(
+                              Number(val?.price ?? 0),
+                              from,
+                              to,
+                              r
+                            );
+                            return formatMoney(converted, to);
+                          })()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          (
+                          {formatMoney(
+                            Number(val?.price ?? 0),
+                            String(currency || "USD").toUpperCase()
+                          )}
+                          )
+                        </span>
                       </div>
                       <input
                         type="radio"

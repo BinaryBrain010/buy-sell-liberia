@@ -23,7 +23,7 @@ export async function GET(
     // Fetch user (without populating listedProducts)
     const user = await User.findById(userId)
       .select(
-        "fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts bumpCount"
+        "fullName username email phone profile preferences activity emailVerified phoneVerified likedProducts listedProducts bumpCount verificationPaidAt verificationPaidUntil"
       )
       .lean();
     if (!user) {
@@ -51,14 +51,26 @@ export async function GET(
       reviewCount: user.profile?.rating?.count || 0,
     };
     // Prepare response
+    const now = new Date();
+    const paidActive =
+      (user as any).verificationPaidUntil &&
+      (user as any).verificationPaidUntil > now;
+    const isVerified =
+      (user as any).profile?.verificationStatus === "fully_verified" ||
+      paidActive;
     const userObj = {
       ...user,
       bumpCount: (user as any).bumpCount ?? 0,
       listedProducts,
       likedProducts,
       stats,
+      isVerified,
+      verificationPaidAt: (user as any).verificationPaidAt || null,
+      verificationPaidUntil: (user as any).verificationPaidUntil || null,
     };
-    return NextResponse.json(userObj);
+    const res = NextResponse.json(userObj);
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
   } catch (error) {
     console.error("Error fetching user:", error);
     return NextResponse.json(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { convertAmount, formatMoney } from "@/lib/currency";
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,13 @@ export default function BumpPaymentModal({
   const [error, setError] = useState<string | null>(null);
   const [lastCopied, setLastCopied] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
   // Derived readiness state
   const canSend = useMemo(
     () => !!plan && !!transactionId.trim() && !!screenshotFile && !submitting,
@@ -75,6 +83,15 @@ export default function BumpPaymentModal({
         const pd = s?.paymentDetails;
         const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
         setPaymentDetails(hasAny ? pd : p?.paymentDetails || null);
+        if (s?.currency === "USD" || s?.currency === "LRD") {
+          setPlatformCurrency(s.currency);
+        }
+        if (s?.rates) {
+          setRates({
+            usdToLrdRate: Number(s.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(s.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
       })
       .catch(() => {
         if (!mounted) return;
@@ -192,8 +209,36 @@ export default function BumpPaymentModal({
                     {plan.title ??
                       `${plan.bumps} bump${plan.bumps > 1 ? "s" : ""}`}
                   </div>
-                  <div>
-                    {plan.currency ?? "L$"} {plan.price}
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-semibold">
+                      {(() => {
+                        const from = String(
+                          plan.currency || "USD"
+                        ).toUpperCase();
+                        const to = platformCurrency;
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        const converted = convertAmount(
+                          Number(plan.price || 0),
+                          from,
+                          to,
+                          r
+                        );
+                        return formatMoney(converted, to);
+                      })()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {(() => {
+                        const orig = String(
+                          plan.currency || "USD"
+                        ).toUpperCase();
+                        return formatMoney(Number(plan.price || 0), orig);
+                      })()}
+                      )
+                    </span>
                   </div>
                   {plan.description ? <div>{plan.description}</div> : null}
                 </>

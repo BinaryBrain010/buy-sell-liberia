@@ -186,6 +186,27 @@ export async function PATCH(
       }
     }
 
+    // If this manual payment is for account verification, persist verification on the user
+    if (payment.featureType === "account_verification") {
+      try {
+        const now = new Date();
+        const days = Math.max(1, Number(payment.featureDuration) || 1);
+        const paidUntil = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+        await User.updateOne(
+          { _id: payment.user._id },
+          {
+            $set: {
+              "profile.verificationStatus": "fully_verified",
+              verificationPaidAt: now,
+              verificationPaidUntil: paidUntil,
+            },
+          }
+        );
+      } catch (e) {
+        console.error("Failed to persist user verification on approval:", e);
+      }
+    }
+
     // Send message to user via chat
     const userId = payment.user._id;
     let senderId = reviewedById || userId; // Use reviewedById or fallback to userId for system messages

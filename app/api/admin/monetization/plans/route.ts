@@ -58,6 +58,31 @@ export async function POST(req: NextRequest) {
     any
   >;
   const groupObj = { ...(current[group] || {}) };
+  // Validate account_verification requires duration (days)
+  if (group === "account_verification") {
+    if (
+      typeof data !== "object" ||
+      typeof data.price !== "number" ||
+      !isFinite(data.price)
+    ) {
+      return NextResponse.json(
+        { error: "account_verification plan requires numeric price" },
+        { status: 400 }
+      );
+    }
+    if (
+      typeof data.duration !== "number" ||
+      !isFinite(data.duration) ||
+      Math.floor(data.duration) < 1
+    ) {
+      return NextResponse.json(
+        { error: "account_verification plan requires duration (days) >= 1" },
+        { status: 400 }
+      );
+    }
+    // Normalize duration to positive integer days
+    data.duration = Math.max(1, Math.floor(data.duration));
+  }
   groupObj[key] = data;
   current[group] = groupObj;
 
@@ -110,6 +135,43 @@ export async function PATCH(req: NextRequest) {
   }
   const existing = groupObj[key];
   const updated = { ...existing, ...(update || {}) };
+  // Validate duration for account_verification plans
+  if (group === "account_verification") {
+    if (typeof updated.price !== "number" || !isFinite(updated.price)) {
+      return NextResponse.json(
+        { error: "account_verification plan requires numeric price" },
+        { status: 400 }
+      );
+    }
+    if (typeof updated.duration === "undefined") {
+      if (
+        typeof existing.duration !== "number" ||
+        !isFinite(existing.duration)
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "account_verification plan must include duration (days) >= 1",
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (
+        typeof updated.duration !== "number" ||
+        !isFinite(updated.duration) ||
+        Math.floor(updated.duration) < 1
+      ) {
+        return NextResponse.json(
+          {
+            error: "account_verification duration must be a number >= 1 (days)",
+          },
+          { status: 400 }
+        );
+      }
+      updated.duration = Math.max(1, Math.floor(updated.duration));
+    }
+  }
   const finalKey = renameTo || key;
   if (renameTo && renameTo !== key) {
     delete groupObj[key];

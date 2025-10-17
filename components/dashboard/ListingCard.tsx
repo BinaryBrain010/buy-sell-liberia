@@ -9,7 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Calendar, Star, Edit, Trash2 } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
+import { convertAmount, formatMoney } from "@/lib/currency";
 
 export interface ListingCardProps {
   listing: any;
@@ -26,6 +27,57 @@ export function ListingCard({
   onDelete,
   currencySymbol = "$",
 }: ListingCardProps) {
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/settings/public", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!mounted) return;
+        if (data?.currency === "USD" || data?.currency === "LRD") {
+          setPlatformCurrency(data.currency);
+        }
+        if (data?.rates) {
+          setRates({
+            usdToLrdRate: Number(data.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(data.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
+      } catch {}
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const { primaryDisplay, secondaryDisplay } = useMemo(() => {
+    const amt = Number(listing?.price?.amount ?? 0);
+    const orig = String(listing?.price?.currency || "USD").toUpperCase();
+    const to = platformCurrency;
+    const effectiveRates = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
+    const converted = convertAmount(amt, orig, to, effectiveRates);
+    const primary = formatMoney(converted, to);
+
+    // Secondary: if original differs, show original; else show opposite converted
+    let secondary = "";
+    if (orig !== to) {
+      secondary = formatMoney(amt, orig);
+    } else {
+      const opposite = to === "USD" ? "LRD" : "USD";
+      const oppAmt = convertAmount(amt, to, opposite, effectiveRates);
+      secondary = formatMoney(oppAmt, opposite);
+    }
+    return { primaryDisplay: primary, secondaryDisplay: secondary };
+  }, [listing?.price, platformCurrency, rates]);
   const resolveImageUrl = (raw?: string) => {
     if (!raw) return "/placeholder.jpg";
     if (/^(https?:)?\/\//i.test(raw) || raw.startsWith("data:")) return raw;
@@ -103,15 +155,17 @@ export function ListingCard({
       </CardHeader>
       <CardContent className="space-y-3 overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="text-xl font-semibold">
-            {currencySymbol}
-            {listing.price?.amount || 0}
+          <div className="flex flex-col">
+            <span className="text-xl font-semibold">{primaryDisplay}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {secondaryDisplay}
+            </span>
             {listing.price?.negotiable && (
-              <span className="text-xs font-normal text-muted-foreground ml-1">
-                (Negotiable)
+              <span className="text-xs font-normal text-muted-foreground mt-0.5">
+                Negotiable
               </span>
             )}
-          </span>
+          </div>
           <Badge
             className="text-[11px]"
             variant={getStatusColor(listing.status) as any}

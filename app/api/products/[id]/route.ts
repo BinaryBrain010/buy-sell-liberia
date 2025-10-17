@@ -23,10 +23,10 @@ export async function GET(
     }
     const populated = await (product as any).populate(
       "user_id",
-      "fullName username email profile.avatar profile.location profile.verificationStatus"
+      "fullName username email profile.avatar profile.location profile.verificationStatus verificationPaidUntil"
     );
     const prodObj = populated.toObject ? populated.toObject() : populated;
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: "Product retrieved successfully",
       product: {
         ...prodObj,
@@ -34,6 +34,9 @@ export async function GET(
         user: populated.user_id,
       },
     });
+    // Ensure fresh data for verification badge and other dynamic attributes
+    res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res;
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || "Failed to get product" },

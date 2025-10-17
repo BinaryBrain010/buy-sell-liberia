@@ -22,6 +22,7 @@ import { ReportProductButton } from "@/components/report-product-button";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
+import { convertAmount, formatMoney } from "@/lib/currency";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ImageType = string | { url: string; alt?: string; isPrimary?: boolean };
@@ -32,6 +33,10 @@ interface ProductDetailProps {
 
 export default function ProductDetail(productData: ProductDetailProps) {
   const [currency, setCurrency] = useState<"USD" | "LRD">("USD");
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
   const currencySymbol = currency === "LRD" ? "L$" : "$";
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showGallery, setShowGallery] = useState(false);
@@ -42,11 +47,17 @@ export default function ProductDetail(productData: ProductDetailProps) {
   const descRef = useRef<HTMLDivElement | null>(null);
 
   const formatPrice = (price: any): string => {
-    if (typeof price === "number")
-      return `${currencySymbol} ${price.toLocaleString()}`;
-    if (!price || typeof price.amount !== "number")
-      return "Price not available";
-    return `${currencySymbol} ${Number(price.amount).toLocaleString()}`;
+    if (price == null) return "Price not available";
+    const amt =
+      typeof price === "number" ? Number(price) : Number(price.amount);
+    if (!Number.isFinite(amt)) return "Price not available";
+    const from =
+      typeof price === "object" && price?.currency
+        ? String(price.currency)
+        : "USD";
+    const to = currency;
+    const conv = rates ? convertAmount(amt, from, to, rates) : amt;
+    return formatMoney(conv, to);
   };
 
   const formatCondition = (cond?: string) => {
@@ -61,21 +72,26 @@ export default function ProductDetail(productData: ProductDetailProps) {
     return cond;
   };
 
-  // Fetch platform currency (fallback to USD if unauthorized/unavailable)
+  // Fetch platform currency and public rates (fallback to USD if unauthorized/unavailable)
   useEffect(() => {
     let cancelled = false;
     const getCurrency = async () => {
       try {
-        const res = await fetch("/api/admin/settings/currency", {
+        const res = await fetch("/api/settings/public", {
           cache: "no-store",
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (
-          !cancelled &&
-          (data?.currency === "USD" || data?.currency === "LRD")
-        ) {
-          setCurrency(data.currency);
+        if (!cancelled) {
+          if (data?.currency === "USD" || data?.currency === "LRD") {
+            setCurrency(data.currency);
+          }
+          if (data?.rates) {
+            setRates({
+              usdToLrdRate: Number(data.rates.usdToLrdRate ?? 200),
+              lrdToUsdRate: Number(data.rates.lrdToUsdRate ?? 0.005),
+            });
+          }
         }
       } catch {
         // ignore
