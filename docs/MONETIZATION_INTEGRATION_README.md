@@ -11,6 +11,7 @@ This document summarizes the end-to-end changes implemented on the `plans-integr
   - List my manual payments: `GET /api/monetization/manual-payment?page=1&limit=20&status=pending&featureType=bump_listing`
 - Listing bump is executed server-side:
   - `GET /api/products/{id}/bump` (consumes a bump credit and bumps listing)
+  - To reflect approved bump credits in the UI, fetch `GET /api/users/me` after admin approval or on dashboard load to read `bumpCount`.
 - New dashboard tab: Monetization, with quick access to buy/use bumps and feature listings.
 - Profile tab now includes an “Apply for Verification” flow.
 
@@ -67,8 +68,16 @@ Updated
   - Accepts unified manual payment requests for multiple `featureType`s: `featured_listing`, `bump_listing`, `account_verification`, etc.
   - Also supports `GET` for the authenticated user's submissions (pagination + filters: `status`, `featureType`).
   - Admins can list all submissions via `GET /api/admin/manual-payments`.
+  - Admins approve/reject via `PATCH /api/admin/manual-payments` with body `{ paymentId, action: 'approve'|'reject', adminNotes? }`.
+    - On approve:
+      - bump_listing: credits are added to `user.bumpCount`.
+      - featured_listing: listing is marked featured and `featuredExpiresAt` is set to now + plan duration.
+      - account_verification: user's `profile.verificationStatus` is set to `fully_verified`.
+      - paid_category_listing/banner_ad: placeholder no-op unless wired later.
 - `app/api/products/[id]/[action]/route.ts`
   - `GET /api/products/{id}/bump` executes the bump using available credits.
+- `app/api/users/me/route.ts`
+  - `GET /api/users/me` returns the authenticated user's profile including `bumpCount` for displaying approved bump credits in the UI.
 
 ## Data and settings
 
@@ -86,6 +95,7 @@ Updated
   - After admin approves the payment, your product receives bump credits.
 - Using a bump credit
   - Open “Bump” → select a listing → Confirm → client calls `GET /api/products/{id}/bump` and updates bump count on success.
+  - After a bump purchase is approved by an admin, refresh user credits by calling `GET /api/users/me` and reading `bumpCount`.
 - Featuring a listing
   - Open “Feature” → choose featured plan → submit manual payment with evidence.
 - Account verification
@@ -97,7 +107,8 @@ Updated
   - The UI uses `currency` from `GET /api/monetization/plans` for plan displays. Ensure `settings.platformCurrency` is set correctly.
   - If `GET /api/monetization/details` emits a different currency in any text, align it with platform currency (optional small refactor).
 - Admin approvals
-  - Manual payments land in the admin queue. Approval flows should grant bump credits or activate featured status accordingly.
+  - Manual payments land in the admin queue. Approval flows now grant bump credits or activate featured status automatically.
+  - Bumps: credited at the account level (`user.bumpCount`). Bumping a product first consumes product.bumpCredits, then falls back to user.bumpCount.
   - For account verification, confirm the admin approval handler updates the user's verification status, mirroring the pattern for bump/featured when applicable.
 - Feature toggles
   - The unified code respects toggles (e.g., monetizationEnabled). If features are disabled in settings, the UI will show limited or no plans.

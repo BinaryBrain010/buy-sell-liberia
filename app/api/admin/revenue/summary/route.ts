@@ -1,35 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import ManualPayment from '@/models/ManualPayment';
-import Product from '@/models/Product';
-import { AdminAuthService } from '../../../modules/auth/services/admin-auth.service';
-import { connectDB } from '@/lib/mongoose';
+import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import ManualPayment from "@/models/ManualPayment";
+import Product from "@/models/Product";
+import { AdminAuthService } from "../../../modules/auth/services/admin-auth.service";
+import { connectDB } from "@/lib/mongoose";
 
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
     // Admin auth
-    const authHeader = req.headers.get('authorization');
+    const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      return NextResponse.json({ error: 'No token' }, { status: 401 });
+      return NextResponse.json({ error: "No token" }, { status: 401 });
     }
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     const payload = AdminAuthService.verifyAccessToken(token);
-    if (!payload || typeof payload !== 'object') {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (!payload || typeof payload !== "object") {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     // Centralized role authorization (allows any configured admin/employee role)
     if (!AdminAuthService.isAllowedRole((payload as any).role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Parse date range
     const { searchParams } = new URL(req.url);
-    const startDate = searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : null;
-    const endDate = searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : null;
+    const startDate = searchParams.get("startDate")
+      ? new Date(searchParams.get("startDate")!)
+      : null;
+    const endDate = searchParams.get("endDate")
+      ? new Date(searchParams.get("endDate")!)
+      : null;
 
     // Build query
-    const query: any = { status: 'approved' };
+    const query: any = { status: "approved" };
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = startDate;
@@ -37,7 +41,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Aggregate payments
-    const payments = await ManualPayment.find(query).populate('listing');
+    const payments = await ManualPayment.find(query).populate("listing");
 
     // Total revenue
     const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -45,11 +49,16 @@ export async function GET(req: NextRequest) {
     // Breakdown by payment method
     const breakdownByPaymentMethod: Record<string, number> = {};
     payments.forEach((p) => {
-      breakdownByPaymentMethod[p.method] = (breakdownByPaymentMethod[p.method] || 0) + (p.amount || 0);
+      const methodKey = (p.method || "unknown") as string;
+      breakdownByPaymentMethod[methodKey] =
+        (breakdownByPaymentMethod[methodKey] || 0) + (p.amount ?? 0);
     });
 
     // Breakdown by feature type (Boosts = featured listing, Other = not featured)
-    const breakdownByFeatureType: Record<string, number> = { Boosts: 0, Other: 0 };
+    const breakdownByFeatureType: Record<string, number> = {
+      Boosts: 0,
+      Other: 0,
+    };
     payments.forEach((p) => {
       const product = p.listing as any;
       if (product && product.featured) {
@@ -73,7 +82,10 @@ export async function GET(req: NextRequest) {
       })),
     });
   } catch (error: any) {
-    console.error('Error in /api/admin/revenue/summary GET:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    console.error("Error in /api/admin/revenue/summary GET:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }

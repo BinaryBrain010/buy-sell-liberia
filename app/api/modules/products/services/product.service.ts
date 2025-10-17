@@ -1293,12 +1293,25 @@ export class ProductService extends BaseService<IProduct> {
         );
       }
 
-      // Check if product has bump credits
+      // Check if product has bump credits; if not, try consuming from user account-level bumpCount
       if (product.bumpCredits <= 0) {
-        throw new Error("No bump credits available for this product");
+        const user = await User.findById(userId);
+        const available = Number((user as any)?.bumpCount ?? 0);
+        if (!user || available <= 0) {
+          throw new Error(
+            "No bump credits available for this product or account"
+          );
+        }
+        // consume one from user and then proceed with bump
+        await User.findByIdAndUpdate(userId, { $inc: { bumpCount: -1 } });
+        // Ensure the product has a consumable credit in-memory for bumpListing's check
+        // This avoids a throw from model.bumpListing() when bumpCredits === 0
+        product.bumpCredits = (product.bumpCredits || 0) + 1;
+        const bumped = await product.bumpListing(this.createObjectId(userId));
+        return bumped;
       }
 
-      // Use the bump method from the model
+      // Use product's own bump credit path
       const bumpedProduct = await product.bumpListing(
         this.createObjectId(userId)
       );

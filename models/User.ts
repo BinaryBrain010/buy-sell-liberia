@@ -218,6 +218,7 @@ export interface IUser extends Document {
   refreshToken?: string;
   lastLoginAt?: Date;
   loginCount: number;
+  bumpCount?: number;
   stats?: any;
   comparePassword(candidatePassword: string): Promise<boolean>;
   addProductListing(
@@ -343,6 +344,12 @@ const userSchema = new Schema<IUser>(
     loginCount: {
       type: Number,
       default: 0,
+    },
+    // Account-level bump credits
+    bumpCount: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
   },
   {
