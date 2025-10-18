@@ -36,23 +36,43 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
     }));
   };
 
+  // Handle typing into the tag input. If the user types commas, add completed tags
+  // and keep the last partial segment in the input.
   const handleTagChange = (value: string) => {
-    setTagInput(value);
-    const tags = value
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter((tag) => tag !== "");
-    setFormData((prev) => ({ ...prev, tags }));
+    // If there is a comma in the value, process the completed segments
+    if (value.includes(",")) {
+      const parts = value.split(",");
+      // Last part remains in the input as the current (possibly partial) tag
+      const last = parts.pop() ?? "";
+      const newCandidates = parts
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+      if (newCandidates.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          tags: Array.from(new Set([...(prev.tags || []), ...newCandidates])),
+        }));
+      }
+      setTagInput(last);
+    } else {
+      // No comma yet; just keep the input buffer
+      setTagInput(value);
+    }
   };
 
   const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()],
-      }));
+    const candidate = tagInput.trim();
+    if (!candidate) return;
+    if (formData.tags.includes(candidate)) {
+      // Already present; just clear the input for smoother UX
       setTagInput("");
+      return;
     }
+    setFormData((prev) => ({
+      ...prev,
+      tags: [...(prev.tags || []), candidate],
+    }));
+    setTagInput("");
   };
 
   const removeTag = (tagToRemove: string) => {
@@ -62,7 +82,7 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
     }));
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       addTag();
@@ -93,7 +113,7 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
                   <Input
                     value={tagInput}
                     onChange={(e) => handleTagChange(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyDown}
                     placeholder="e.g. laptop, gaming, HP"
                     className="h-8 text-xs flex-1"
                   />
@@ -173,7 +193,6 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
                 </div>
               </div>
             </FadeInStagger>
-
           </CardContent>
         </Card>
       </FadeIn>
