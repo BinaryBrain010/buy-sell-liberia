@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { CategoryService } from "../../services/Category.Service";
 import { motion } from "framer-motion";
@@ -224,6 +224,9 @@ export default function CategoryPage() {
             if (subcat) subCategoryName = subcat.name;
           }
         }
+        // Preserve original timestamps without defaulting to "now"
+        const createdAt = p.createdAt ?? p.created_at ?? p.added_at;
+        const updatedAt = p.updatedAt ?? p.updated_at;
         return {
           _id: p._id || p.id,
           title: p.title,
@@ -245,14 +248,23 @@ export default function CategoryPage() {
           tags: p.tags || [],
           negotiable: p.price?.negotiable ?? false,
           showPhoneNumber: p.showPhoneNumber ?? false,
-          views: p.views ?? 0,
+          views: typeof p.views === "number" ? p.views : 0,
           featured: p.featured ?? false,
-          createdAt: p.createdAt
-            ? new Date(p.createdAt).toISOString()
-            : new Date().toISOString(),
-          updatedAt: p.updatedAt
-            ? new Date(p.updatedAt).toISOString()
-            : new Date().toISOString(),
+          // Forward multiple timestamp fields so ProductCard can choose best label
+          ...(createdAt ? { createdAt } : {}),
+          ...(typeof p.created_at !== "undefined"
+            ? { created_at: p.created_at }
+            : {}),
+          ...(typeof p.added_at !== "undefined"
+            ? { added_at: p.added_at }
+            : {}),
+          ...(updatedAt ? { updatedAt } : {}),
+          ...(typeof p.updated_at !== "undefined"
+            ? { updated_at: p.updated_at }
+            : {}),
+          ...(typeof p.timeAgo === "string" && p.timeAgo.trim().length > 0
+            ? { timeAgo: p.timeAgo }
+            : {}),
         };
       });
       setProducts(mappedProducts);
@@ -346,15 +358,7 @@ export default function CategoryPage() {
     window.history.pushState({}, "", newUrl);
   };
 
-  // Ref for small-screen dropdown (<details>) so we can close it after selection
-  const dropdownRef = useRef<HTMLDetailsElement | null>(null);
-
-  const selectAndClose = (subcategory: any) => {
-    handleSubcategorySelect(subcategory);
-    try {
-      if (dropdownRef.current) dropdownRef.current.open = false;
-    } catch (e) {}
-  };
+  // Small-screen subcategory select handled inline via <select>
 
   if (loading) {
     return (
@@ -457,56 +461,45 @@ export default function CategoryPage() {
                         Filter by subcategory:
                       </p>
 
-                      {/* Small screens: compact dropdown */}
+                      {/* Small screens: native select dropdown */}
                       <div className="block md:hidden">
-                        <div className="relative inline-block text-left">
-                          <details ref={dropdownRef} className="relative">
-                            <summary className="list-none">
-                              <div
-                                role="button"
-                                tabIndex={0}
-                                className="inline-flex items-center rounded-md px-3 py-1.5 text-sm h-8 bg-transparent border border-border/20 cursor-pointer"
-                              >
-                                <span className="truncate">
-                                  {selectedSubcategory
-                                    ? selectedSubcategory.name
-                                    : `All ${currentCategory.name}`}
-                                </span>
-                                <ChevronDown className="w-4 h-4 ml-2" />
-                              </div>
-                            </summary>
-                            <div className="absolute mt-2 w-56 bg-background border border-border/30 rounded-lg shadow-lg z-30">
-                              <div className="p-2">
-                                <button
-                                  className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                                    !selectedSubcategory &&
-                                    !subcategoryIdFromUrl
-                                      ? "bg-muted/10"
-                                      : "hover:bg-muted/10"
-                                  }`}
-                                  onClick={() => selectAndClose(null)}
+                        <label className="text-xs text-muted-foreground mb-2 block">
+                          Subcategory
+                        </label>
+                        <div className="relative">
+                          <select
+                            aria-label="Select subcategory"
+                            className="w-full h-10 rounded-md border border-border/30 bg-background pl-3 pr-9 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+                            value={String(
+                              selectedSubcategory?._id ??
+                                subcategoryIdFromUrl ??
+                                ""
+                            )}
+                            onChange={(e) => {
+                              const id = e.target.value;
+                              if (!id) {
+                                handleSubcategorySelect(null);
+                                return;
+                              }
+                              const sub = (
+                                currentCategory.subcategories || []
+                              ).find((s: any) => String(s._id) === String(id));
+                              handleSubcategorySelect(sub || null);
+                            }}
+                          >
+                            <option value="">{`All ${currentCategory.name}`}</option>
+                            {(currentCategory.subcategories || []).map(
+                              (sub: any) => (
+                                <option
+                                  key={String(sub._id)}
+                                  value={String(sub._id)}
                                 >
-                                  All {currentCategory.name}
-                                </button>
-                                {currentCategory.subcategories.map(
-                                  (sub: any) => (
-                                    <button
-                                      key={sub._id}
-                                      className={`w-full text-left px-3 py-2 rounded-md text-sm ${
-                                        selectedSubcategory?._id === sub._id ||
-                                        subcategoryIdFromUrl === sub._id
-                                          ? "bg-muted/10"
-                                          : "hover:bg-muted/10"
-                                      }`}
-                                      onClick={() => selectAndClose(sub)}
-                                    >
-                                      {sub.name}
-                                    </button>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          </details>
+                                  {sub.name}
+                                </option>
+                              )
+                            )}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
 
@@ -632,17 +625,31 @@ export default function CategoryPage() {
             </FadeIn>
           ) : (
             <>
-              <FadeInStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product._id}
-                    product={product}
-                    variant="compact"
-                    platformCurrency={platformCurrency}
-                    onLike={handleLike}
-                  />
-                ))}
-              </FadeInStagger>
+              {viewMode === "list" ? (
+                <div className="flex flex-col gap-4">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      variant="list"
+                      platformCurrency={platformCurrency}
+                      onLike={handleLike}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <FadeInStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      variant="compact"
+                      platformCurrency={platformCurrency}
+                      onLike={handleLike}
+                    />
+                  ))}
+                </FadeInStagger>
+              )}
 
               {/* Pagination */}
               {totalPages > 1 && (

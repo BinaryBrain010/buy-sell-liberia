@@ -5,6 +5,7 @@ import User from "../../../../models/User";
 import Product from "../../../../models/Product";
 import RevenueEntry from "../../../../models/RevenueEntry";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
+import { EmailService } from "../../modules/auth/services/email.service";
 import "../../../../models";
 import {
   createAdminAuditLogger,
@@ -180,6 +181,33 @@ export async function PATCH(request: NextRequest) {
       } catch (e) {
         console.error("Audit log (reject) failed:", e);
       }
+      // Email notify user (if email exists)
+      try {
+        const u = await User.findById(payment.user).lean();
+        if (u && (u as any).email) {
+          const emailService = new EmailService();
+          let listingTitle: string | null = null;
+          if (payment.listing) {
+            const prod = await Product.findById(payment.listing)
+              .select("title")
+              .lean();
+            listingTitle = prod ? (prod as any).title : null;
+          }
+          await emailService.sendManualPaymentStatusEmail({
+            to: String((u as any).email),
+            status: "rejected",
+            amount: Number(payment.amount || 0),
+            currency: (payment as any).currency || "LRD",
+            transactionId: payment.transactionId,
+            featureType: (payment as any).featureType,
+            featurePlan: (payment as any).featurePlan,
+            listingTitle,
+            adminNotes: adminNotes || null,
+          });
+        }
+      } catch (mailErr) {
+        console.error("Manual payment reject email failed:", mailErr);
+      }
       return NextResponse.json({ success: true, status: payment.status });
     }
 
@@ -347,6 +375,34 @@ export async function PATCH(request: NextRequest) {
       }
     } catch (e) {
       console.error("Audit log (approve) failed:", e);
+    }
+
+    // Email notify user on approval
+    try {
+      const u = await User.findById(payment.user).lean();
+      if (u && (u as any).email) {
+        const emailService = new EmailService();
+        let listingTitle: string | null = null;
+        if (payment.listing) {
+          const prod = await Product.findById(payment.listing)
+            .select("title")
+            .lean();
+          listingTitle = prod ? (prod as any).title : null;
+        }
+        await emailService.sendManualPaymentStatusEmail({
+          to: String((u as any).email),
+          status: "approved",
+          amount: Number(payment.amount || 0),
+          currency: (payment as any).currency || "LRD",
+          transactionId: payment.transactionId,
+          featureType,
+          featurePlan: (payment as any).featurePlan,
+          listingTitle,
+          adminNotes: adminNotes || null,
+        });
+      }
+    } catch (mailErr) {
+      console.error("Manual payment approval email failed:", mailErr);
     }
 
     return NextResponse.json({

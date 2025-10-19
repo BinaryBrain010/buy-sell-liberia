@@ -493,7 +493,8 @@ export class AuthService {
   }
 
   private generateAccessToken(userId: string): string {
-    return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "15m" });
+    // Increase access token lifespan to 1 day
+    return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1d" });
   }
 
   private generateRefreshToken(userId: string): string {

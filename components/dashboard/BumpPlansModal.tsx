@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import BumpPaymentModal, {
   BumpPlanSummary,
 } from "@/components/dashboard/BumpPaymentModal";
+import { convertAmount, formatMoney } from "@/lib/currency";
 
 interface Plan {
   id: string;
@@ -37,30 +38,51 @@ export default function BumpPlansModal({
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     setLoading(true);
-    fetch("/api/monetization/plans")
-      .then((r) => r.json())
-      .then((json) => {
+    Promise.all([
+      fetch("/api/monetization/plans")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/settings/public")
+        .then((r) => r.json())
+        .catch(() => ({})),
+    ])
+      .then(([p, s]) => {
         if (!mounted) return;
         // Unified response: json.plans.bump_listing is an object keyed by plan id
-        const bumpGroup = (json as any)?.plans?.bump_listing || {};
-        const currency = (json as any)?.currency || "L$";
+        const bumpGroup = (p as any)?.plans?.bump_listing || {};
         const mapped: Plan[] = Object.entries(bumpGroup).map(
           ([key, val]: [string, any]) => ({
             id: key,
             title: val?.label,
             bumps: Number(val?.credits ?? 0),
             price: Number(val?.price ?? 0),
-            currency,
+            currency: String(val?.currency || "USD").toUpperCase() as any,
             description: val?.description || "",
           })
         );
         setPlans(mapped);
         if (mapped.length > 0) setSelected(mapped[0].id);
+        if (s?.currency === "USD" || s?.currency === "LRD") {
+          setPlatformCurrency(s.currency);
+        }
+        if (s?.rates) {
+          setRates({
+            usdToLrdRate: Number(s.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(s.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
       })
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
@@ -116,8 +138,34 @@ export default function BumpPlansModal({
                       <div className="text-sm text-muted-foreground">
                         {p.bumps} bump{p.bumps > 1 ? "s" : ""}
                       </div>
-                      <div className="font-semibold">
-                        {p.currency} {p.price}
+                      <div className="font-semibold flex items-baseline gap-2">
+                        <span>
+                          {(() => {
+                            const from = String(
+                              p.currency || "USD"
+                            ).toUpperCase();
+                            const to = platformCurrency;
+                            const r = rates ?? {
+                              usdToLrdRate: 200,
+                              lrdToUsdRate: 0.005,
+                            };
+                            const converted = convertAmount(
+                              Number(p.price || 0),
+                              from,
+                              to,
+                              r
+                            );
+                            return formatMoney(converted, to);
+                          })()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          (
+                          {formatMoney(
+                            Number(p.price || 0),
+                            String(p.currency || "USD").toUpperCase()
+                          )}
+                          )
+                        </span>
                       </div>
                       <input
                         type="radio"
