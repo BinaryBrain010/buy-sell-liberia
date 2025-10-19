@@ -56,7 +56,7 @@ export default function MonetizationTab({ userId }: { userId: string }) {
         ]);
         const listJson = await listResp.json().catch(() => ({}));
         const pJson = await plansResp.json().catch(() => ({}));
-  const sJson = await publicSettingsResp.json().catch(() => ({}));
+        const sJson = await publicSettingsResp.json().catch(() => ({}));
         if (!mounted) return;
         const ls: ListingShort[] = (listJson.products || []).map((p: any) => ({
           _id: p._id,
@@ -219,10 +219,20 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                   <div className="mt-1 font-semibold flex items-baseline gap-2">
                     <span>
                       {(() => {
-                        const from = String(val?.currency || "USD").toUpperCase();
+                        const from = String(
+                          val?.currency || "USD"
+                        ).toUpperCase();
                         const to = currencyCode;
-                        const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
-                        const converted = convertAmount(Number(val?.price || 0), from, to, r);
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        const converted = convertAmount(
+                          Number(val?.price || 0),
+                          from,
+                          to,
+                          r
+                        );
                         return formatMoney(converted, to);
                       })()}
                     </span>
@@ -278,10 +288,20 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                   <div className="mt-1 font-semibold flex items-baseline gap-2">
                     <span>
                       {(() => {
-                        const from = String(val?.currency || "USD").toUpperCase();
+                        const from = String(
+                          val?.currency || "USD"
+                        ).toUpperCase();
                         const to = currencyCode;
-                        const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
-                        const converted = convertAmount(Number(val?.price || 0), from, to, r);
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        const converted = convertAmount(
+                          Number(val?.price || 0),
+                          from,
+                          to,
+                          r
+                        );
                         return formatMoney(converted, to);
                       })()}
                     </span>

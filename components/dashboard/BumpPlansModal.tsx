@@ -51,8 +51,12 @@ export default function BumpPlansModal({
     let mounted = true;
     setLoading(true);
     Promise.all([
-      fetch("/api/monetization/plans").then((r) => r.json()).catch(() => ({})),
-      fetch("/api/settings/public").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/monetization/plans")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/settings/public")
+        .then((r) => r.json())
+        .catch(() => ({})),
     ])
       .then(([p, s]) => {
         if (!mounted) return;
@@ -64,7 +68,7 @@ export default function BumpPlansModal({
             title: val?.label,
             bumps: Number(val?.credits ?? 0),
             price: Number(val?.price ?? 0),
-            currency: (String(val?.currency || "USD").toUpperCase() as any),
+            currency: String(val?.currency || "USD").toUpperCase() as any,
             description: val?.description || "",
           })
         );
@@ -137,16 +141,31 @@ export default function BumpPlansModal({
                       <div className="font-semibold flex items-baseline gap-2">
                         <span>
                           {(() => {
-                            const from = String(p.currency || "USD").toUpperCase();
+                            const from = String(
+                              p.currency || "USD"
+                            ).toUpperCase();
                             const to = platformCurrency;
-                            const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
-                            const converted = convertAmount(Number(p.price || 0), from, to, r);
+                            const r = rates ?? {
+                              usdToLrdRate: 200,
+                              lrdToUsdRate: 0.005,
+                            };
+                            const converted = convertAmount(
+                              Number(p.price || 0),
+                              from,
+                              to,
+                              r
+                            );
                             return formatMoney(converted, to);
                           })()}
                         </span>
-                        <span className="text-xs text-muted-foreground">(
-                          {formatMoney(Number(p.price || 0), String(p.currency || "USD").toUpperCase())}
-                        )</span>
+                        <span className="text-xs text-muted-foreground">
+                          (
+                          {formatMoney(
+                            Number(p.price || 0),
+                            String(p.currency || "USD").toUpperCase()
+                          )}
+                          )
+                        </span>
                       </div>
                       <input
                         type="radio"

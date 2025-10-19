@@ -188,7 +188,9 @@ export async function PATCH(request: NextRequest) {
           const emailService = new EmailService();
           let listingTitle: string | null = null;
           if (payment.listing) {
-            const prod = await Product.findById(payment.listing).select("title").lean();
+            const prod = await Product.findById(payment.listing)
+              .select("title")
+              .lean();
             listingTitle = prod ? (prod as any).title : null;
           }
           await emailService.sendManualPaymentStatusEmail({
@@ -382,7 +384,9 @@ export async function PATCH(request: NextRequest) {
         const emailService = new EmailService();
         let listingTitle: string | null = null;
         if (payment.listing) {
-          const prod = await Product.findById(payment.listing).select("title").lean();
+          const prod = await Product.findById(payment.listing)
+            .select("title")
+            .lean();
           listingTitle = prod ? (prod as any).title : null;
         }
         await emailService.sendManualPaymentStatusEmail({

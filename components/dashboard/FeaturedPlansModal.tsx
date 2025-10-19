@@ -60,8 +60,12 @@ export default function FeaturedPlansModal({
     let mounted = true;
     setLoading(true);
     Promise.all([
-      fetch("/api/monetization/plans").then((r) => r.json()).catch(() => ({})),
-      fetch("/api/settings/public").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/monetization/plans")
+        .then((r) => r.json())
+        .catch(() => ({})),
+      fetch("/api/settings/public")
+        .then((r) => r.json())
+        .catch(() => ({})),
     ])
       .then(([p, s]) => {
         if (!mounted) return;
@@ -73,7 +77,7 @@ export default function FeaturedPlansModal({
             days: Number(val?.duration ?? 0),
             price: Number(val?.price ?? 0),
             // Backend plans are USD by default unless specified
-            currency: (String(val?.currency || "USD").toUpperCase() as any),
+            currency: String(val?.currency || "USD").toUpperCase() as any,
             description: val?.description || "",
           })
         );
@@ -179,16 +183,31 @@ export default function FeaturedPlansModal({
                       <div className="font-semibold flex items-baseline gap-2">
                         <span>
                           {(() => {
-                            const from = String(p.currency || "USD").toUpperCase();
+                            const from = String(
+                              p.currency || "USD"
+                            ).toUpperCase();
                             const to = platformCurrency;
-                            const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
-                            const converted = convertAmount(Number(p.price || 0), from, to, r);
+                            const r = rates ?? {
+                              usdToLrdRate: 200,
+                              lrdToUsdRate: 0.005,
+                            };
+                            const converted = convertAmount(
+                              Number(p.price || 0),
+                              from,
+                              to,
+                              r
+                            );
                             return formatMoney(converted, to);
                           })()}
                         </span>
-                        <span className="text-xs text-muted-foreground">(
-                          {formatMoney(Number(p.price || 0), String(p.currency || "USD").toUpperCase())}
-                        )</span>
+                        <span className="text-xs text-muted-foreground">
+                          (
+                          {formatMoney(
+                            Number(p.price || 0),
+                            String(p.currency || "USD").toUpperCase()
+                          )}
+                          )
+                        </span>
                       </div>
                       <input
                         type="radio"
@@ -234,7 +253,7 @@ export default function FeaturedPlansModal({
             title: p.title,
             days: p.days,
             price: p.price,
-            currency: (String(p.currency || "USD").toUpperCase() as any),
+            currency: String(p.currency || "USD").toUpperCase() as any,
             description: p.description,
           };
           return planSummary;
