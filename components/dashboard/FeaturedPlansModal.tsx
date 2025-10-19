@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import FeaturedPaymentModal, {
   FeaturedPlanSummary,
 } from "./FeaturedPaymentModal";
+import { convertAmount, formatMoney } from "@/lib/currency";
 
 interface Plan {
   id: string; // plan key like "3_days"
@@ -46,29 +47,47 @@ export default function FeaturedPlansModal({
   const [selectedListingId, setSelectedListingId] = useState<string | null>(
     null
   );
+  const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
+    "USD"
+  );
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let mounted = true;
     setLoading(true);
-    fetch("/api/monetization/plans")
-      .then((r) => r.json())
-      .then((json) => {
+    Promise.all([
+      fetch("/api/monetization/plans").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/settings/public").then((r) => r.json()).catch(() => ({})),
+    ])
+      .then(([p, s]) => {
         if (!mounted) return;
-        const featuredGroup = (json as any)?.plans?.featured_listing || {};
-        const currency = (json as any)?.currency || "L$";
+        const featuredGroup = (p as any)?.plans?.featured_listing || {};
         const mapped: Plan[] = Object.entries(featuredGroup).map(
           ([key, val]: [string, any]) => ({
             id: key,
             title: val?.label,
             days: Number(val?.duration ?? 0),
             price: Number(val?.price ?? 0),
-            currency,
+            // Backend plans are USD by default unless specified
+            currency: (String(val?.currency || "USD").toUpperCase() as any),
             description: val?.description || "",
           })
         );
         setPlans(mapped);
         if (mapped.length > 0) setSelected(mapped[0].id);
+        if (s?.currency === "USD" || s?.currency === "LRD") {
+          setPlatformCurrency(s.currency);
+        }
+        if (s?.rates) {
+          setRates({
+            usdToLrdRate: Number(s.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(s.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
       })
       .catch(() => setPlans([]))
       .finally(() => setLoading(false));
@@ -157,8 +176,19 @@ export default function FeaturedPlansModal({
                       <div className="text-sm text-muted-foreground">
                         {p.days} day{p.days > 1 ? "s" : ""}
                       </div>
-                      <div className="font-semibold">
-                        {p.currency} {p.price}
+                      <div className="font-semibold flex items-baseline gap-2">
+                        <span>
+                          {(() => {
+                            const from = String(p.currency || "USD").toUpperCase();
+                            const to = platformCurrency;
+                            const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
+                            const converted = convertAmount(Number(p.price || 0), from, to, r);
+                            return formatMoney(converted, to);
+                          })()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">(
+                          {formatMoney(Number(p.price || 0), String(p.currency || "USD").toUpperCase())}
+                        )</span>
                       </div>
                       <input
                         type="radio"
@@ -204,7 +234,7 @@ export default function FeaturedPlansModal({
             title: p.title,
             days: p.days,
             price: p.price,
-            currency: p.currency,
+            currency: (String(p.currency || "USD").toUpperCase() as any),
             description: p.description,
           };
           return planSummary;

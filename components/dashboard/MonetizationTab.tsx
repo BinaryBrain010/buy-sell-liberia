@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { convertAmount, formatMoney } from "@/lib/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,10 @@ export default function MonetizationTab({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -51,7 +56,7 @@ export default function MonetizationTab({ userId }: { userId: string }) {
         ]);
         const listJson = await listResp.json().catch(() => ({}));
         const pJson = await plansResp.json().catch(() => ({}));
-        const sJson = await publicSettingsResp.json().catch(() => ({}));
+  const sJson = await publicSettingsResp.json().catch(() => ({}));
         if (!mounted) return;
         const ls: ListingShort[] = (listJson.products || []).map((p: any) => ({
           _id: p._id,
@@ -61,6 +66,12 @@ export default function MonetizationTab({ userId }: { userId: string }) {
         setSelectedListingId((prev) => prev || (ls[0]?._id ?? null));
         // currency can be taken from plans; but we also read settings public as fallback
         setPlans({ ...pJson, currency: pJson?.currency ?? sJson?.currency });
+        if (sJson?.rates) {
+          setRates({
+            usdToLrdRate: Number(sJson.rates.usdToLrdRate ?? 200),
+            lrdToUsdRate: Number(sJson.rates.lrdToUsdRate ?? 0.005),
+          });
+        }
         const pd = sJson?.paymentDetails;
         const hasAny = Boolean(pd?.mtn || pd?.orange || pd?.bank);
         setPaymentDetails(hasAny ? pd : pJson?.paymentDetails || null);
@@ -205,8 +216,24 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                   <div className="text-xs text-muted-foreground">
                     {val.credits} bump{val.credits > 1 ? "s" : ""}
                   </div>
-                  <div className="mt-1 font-semibold">
-                    {currencySymbol} {val.price}
+                  <div className="mt-1 font-semibold flex items-baseline gap-2">
+                    <span>
+                      {(() => {
+                        const from = String(val?.currency || "USD").toUpperCase();
+                        const to = currencyCode;
+                        const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
+                        const converted = convertAmount(Number(val?.price || 0), from, to, r);
+                        return formatMoney(converted, to);
+                      })()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {formatMoney(
+                        Number(val?.price || 0),
+                        String(val?.currency || "USD").toUpperCase()
+                      )}
+                      )
+                    </span>
                   </div>
                 </div>
               ))}
@@ -248,8 +275,24 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                   <div className="text-xs text-muted-foreground">
                     {val.duration} day{val.duration > 1 ? "s" : ""}
                   </div>
-                  <div className="mt-1 font-semibold">
-                    {currencySymbol} {val.price}
+                  <div className="mt-1 font-semibold flex items-baseline gap-2">
+                    <span>
+                      {(() => {
+                        const from = String(val?.currency || "USD").toUpperCase();
+                        const to = currencyCode;
+                        const r = rates ?? { usdToLrdRate: 200, lrdToUsdRate: 0.005 };
+                        const converted = convertAmount(Number(val?.price || 0), from, to, r);
+                        return formatMoney(converted, to);
+                      })()}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      (
+                      {formatMoney(
+                        Number(val?.price || 0),
+                        String(val?.currency || "USD").toUpperCase()
+                      )}
+                      )
+                    </span>
                   </div>
                 </div>
               ))}
