@@ -1,13 +1,37 @@
-export async function GET(req: NextRequest) {
+import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
+import VerificationApplication from "@/models/VerificationApplication";
+import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
+import dbConnect from "@/lib/mongoose";
+import { verifyToken } from "@/app/api/modules/auth/middlewares/next-auth-middleware";
+export async function GET(request: NextRequest) {
   try {
-    const auth = await verifyToken(req);
-    if (!auth.success || !auth.userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Admin token check
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader)
+      return NextResponse.json({ error: "No token" }, { status: 401 });
+    const token = authHeader.split(" ")[1];
+    const payload = AdminAuthService.verifyAccessToken(token);
+    if (
+      !payload ||
+      typeof payload !== "object" ||
+      !AdminAuthService.isAllowedRole((payload as any).role)
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    await dbConnect();
-    const apps = await VerificationApplication.find({ user: auth.userId }).sort(
-      { createdAt: -1 }
-    );
+
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(process.env.MONGODB_URI!);
+    }
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+    let query = {};
+    if (userId) {
+      query = { user: userId };
+    }
+    const apps = await VerificationApplication.find(query).sort({
+      createdAt: -1,
+    });
     return NextResponse.json({ success: true, applications: apps });
   } catch (error: any) {
     return NextResponse.json(
@@ -16,11 +40,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongoose";
-import VerificationApplication from "@/models/VerificationApplication";
-import { verifyToken } from "@/app/api/modules/auth/middlewares/next-auth-middleware";
-
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifyToken(req);
