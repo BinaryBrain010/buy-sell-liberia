@@ -309,7 +309,7 @@ export function ProductCard({
             {(product as any)?.user?.profile?.verificationStatus ===
               "fully_verified" && (
               <div
-                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-500 text-black border border-yellow-600 text-[10px] font-semibold w-max shadow-sm"
                 title="Verified seller"
               >
                 <ShieldCheck className="h-3 w-3" />
@@ -471,7 +471,7 @@ export function ProductCard({
             {(product as any)?.user?.profile?.verificationStatus ===
               "fully_verified" && (
               <div
-                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800 text-[10px] w-max"
+                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-500 text-black border border-yellow-600 text-[10px] font-semibold w-max shadow-sm"
                 title="Verified seller"
               >
                 <ShieldCheck className="h-3 w-3" />
