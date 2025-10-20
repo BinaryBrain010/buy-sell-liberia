@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import VerificationDetailsForm from "@/components/verification-details-form";
 import { convertAmount, formatMoney } from "@/lib/currency";
 import {
   Dialog,
@@ -32,6 +33,10 @@ export default function AccountVerificationModal({
   onOpenChange,
 }: Props) {
   const [plans, setPlans] = useState<any>(null);
+  const [detailsSubmitted, setDetailsSubmitted] = useState(false);
+  const [verifType, setVerifType] = useState<"individual" | "business">(
+    "individual"
+  );
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(
     null
   );
@@ -190,235 +195,300 @@ export default function AccountVerificationModal({
         </DialogHeader>
 
         <div className="space-y-6">
-          {!hasPlans ? (
-            <div className="text-sm text-muted-foreground">
-              Account verification plans are not available at the moment.
+          {/* Step 1: Choose verification type */}
+          <div>
+            <label className="font-medium">Verification Type</label>
+            <div className="flex gap-4 mt-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="verifType"
+                  value="individual"
+                  checked={verifType === "individual"}
+                  onChange={() => setVerifType("individual")}
+                />
+                Individual
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="verifType"
+                  value="business"
+                  checked={verifType === "business"}
+                  onChange={() => setVerifType("business")}
+                />
+                Business
+              </label>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="font-medium">Select Plan</div>
-              <div className="space-y-2">
-                {Object.entries(accountPlans).map(([key, val]: any) => (
-                  <label
-                    key={key}
-                    className={`flex items-center justify-between p-3 rounded border cursor-pointer hover:bg-muted/50 ${
-                      selectedPlan === key
-                        ? "border-primary/50 bg-muted/50"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex flex-col">
-                      <div className="font-medium">{val?.label ?? key}</div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-end">
-                        <span className="font-semibold">
-                          {(() => {
-                            const from = String(
-                              currency || "USD"
-                            ).toUpperCase();
-                            const to = platformCurrency;
-                            const r = rates ?? {
-                              usdToLrdRate: 200,
-                              lrdToUsdRate: 0.005,
-                            };
-                            const converted = convertAmount(
-                              Number(val?.price ?? 0),
-                              from,
-                              to,
-                              r
-                            );
-                            return formatMoney(converted, to);
-                          })()}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          (
-                          {formatMoney(
-                            Number(val?.price ?? 0),
-                            String(currency || "USD").toUpperCase()
-                          )}
-                          )
-                        </span>
-                      </div>
-                      <input
-                        type="radio"
-                        name="verif-plan"
-                        checked={selectedPlan === key}
-                        onChange={() => setSelectedPlan(key)}
-                        className="h-4 w-4"
-                      />
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
+          </div>
+          {/* Step 2: Details form */}
+          {!detailsSubmitted && (
+            <VerificationDetailsForm
+              type={verifType}
+              loading={submitting}
+              onSubmit={async (data) => {
+                setSubmitting(true);
+                try {
+                  const resp = await fetch("/api/verification/application", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: verifType, ...data }),
+                  });
+                  const result = await resp.json();
+                  if (!resp.ok)
+                    throw new Error(
+                      result?.error || "Failed to submit details"
+                    );
+                  setDetailsSubmitted(true);
+                  toast({
+                    title: "Details submitted",
+                    description: "Proceed to payment.",
+                  });
+                } catch (e: any) {
+                  toast({
+                    title: "Error",
+                    description: e?.message || "Failed to submit details",
+                  });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            />
           )}
-
-          <div className="space-y-3">
-            <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
-              Pay To
-            </div>
-            {!paymentDetails ? (
-              <div className="text-sm text-muted-foreground">
-                Loading payment details…
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                {paymentDetails.mtn && (
-                  <div className="rounded border p-3 bg-background/50">
-                    <div className="font-medium">MTN Mobile Money</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="font-mono">
-                        {paymentDetails.mtn.number ?? "-"}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleCopy("mtn", paymentDetails.mtn?.number)
-                        }
-                      >
-                        {lastCopied === "mtn" ? "Copied" : "Copy"}
-                      </Button>
-                    </div>
+          {/* Step 3: Payment modal (only after details submitted) */}
+          {detailsSubmitted && (
+            <>
+              {!hasPlans ? (
+                <div className="text-sm text-muted-foreground">
+                  Account verification plans are not available at the moment.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="font-medium">Select Plan</div>
+                  <div className="space-y-2">
+                    {Object.entries(accountPlans).map(([key, val]: any) => {
+                      return (
+                        <label
+                          key={key}
+                          className={`flex items-center justify-between p-3 rounded border cursor-pointer hover:bg-muted/50 ${
+                            selectedPlan === key
+                              ? "border-primary/50 bg-muted/50"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex flex-col">
+                            <div className="font-medium">
+                              {val?.label ?? key}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-end">
+                              <span className="font-semibold">
+                                {(() => {
+                                  const from = String(
+                                    currency || "USD"
+                                  ).toUpperCase();
+                                  const to = platformCurrency;
+                                  const r = rates ?? {
+                                    usdToLrdRate: 200,
+                                    lrdToUsdRate: 0.005,
+                                  };
+                                  const converted = convertAmount(
+                                    Number(val?.price ?? 0),
+                                    from,
+                                    to,
+                                    r
+                                  );
+                                  return formatMoney(converted, to);
+                                })()}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                (
+                                {formatMoney(
+                                  Number(val?.price ?? 0),
+                                  String(currency || "USD").toUpperCase()
+                                )}
+                                )
+                              </span>
+                            </div>
+                            <input
+                              type="radio"
+                              name="verif-plan"
+                              checked={selectedPlan === key}
+                              onChange={() => setSelectedPlan(key)}
+                              className="h-4 w-4"
+                            />
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
-                )}
-                {paymentDetails.orange && (
-                  <div className="rounded border p-3 bg-background/50">
-                    <div className="font-medium">Orange Money</div>
-                    <div className="mt-1 flex items-center justify-between">
-                      <span className="font-mono">
-                        {paymentDetails.orange.number ?? "-"}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleCopy("orange", paymentDetails.orange?.number)
-                        }
-                      >
-                        {lastCopied === "orange" ? "Copied" : "Copy"}
-                      </Button>
-                    </div>
+                </div>
+              )}
+              <div className="space-y-3">
+                <div className="font-medium text-sm tracking-wide uppercase text-muted-foreground">
+                  Pay To
+                </div>
+                {!paymentDetails ? (
+                  <div className="text-sm text-muted-foreground">
+                    Loading payment details…
                   </div>
-                )}
-                {paymentDetails.bank && (
-                  <div className="rounded border p-3 sm:col-span-2 bg-background/50">
-                    <div className="font-medium">Bank Transfer</div>
-                    <div className="text-xs text-muted-foreground">
-                      {paymentDetails.bank.bankName ?? "-"}
-                    </div>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span>Account Name</span>
-                        <span className="font-mono">
-                          {paymentDetails.bank.accountName ?? "-"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Account Number</span>
-                        <div className="flex items-center gap-2">
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    {paymentDetails.mtn && (
+                      <div className="rounded border p-3 bg-background/50">
+                        <div className="font-medium">MTN Mobile Money</div>
+                        <div className="mt-1 flex items-center justify-between">
                           <span className="font-mono">
-                            {paymentDetails.bank.accountNumber ?? "-"}
+                            {paymentDetails.mtn.number ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy("mtn", paymentDetails.mtn?.number)
+                            }
+                          >
+                            {lastCopied === "mtn" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {paymentDetails.orange && (
+                      <div className="rounded border p-3 bg-background/50">
+                        <div className="font-medium">Orange Money</div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="font-mono">
+                            {paymentDetails.orange.number ?? "-"}
                           </span>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() =>
                               handleCopy(
-                                "bank",
-                                paymentDetails.bank?.accountNumber
+                                "orange",
+                                paymentDetails.orange?.number
                               )
                             }
                           >
-                            {lastCopied === "bank" ? "Copied" : "Copy"}
+                            {lastCopied === "orange" ? "Copied" : "Copy"}
                           </Button>
                         </div>
                       </div>
-                    </div>
+                    )}
+                    {paymentDetails.bank && (
+                      <div className="rounded border p-3 sm:col-span-2 bg-background/50">
+                        <div className="font-medium">Bank Transfer</div>
+                        <div className="text-xs text-muted-foreground">
+                          {paymentDetails.bank.bankName ?? "-"}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span>Account Name</span>
+                            <span className="font-mono">
+                              {paymentDetails.bank.accountName ?? "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Account Number</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono">
+                                {paymentDetails.bank.accountNumber ?? "-"}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleCopy(
+                                    "bank",
+                                    paymentDetails.bank?.accountNumber
+                                  )
+                                }
+                              >
+                                {lastCopied === "bank" ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="flex flex-col">
-              <div className="text-sm font-medium flex items-center justify-between">
-                <span>Transaction ID</span>
-                {!transactionId.trim() && (
-                  <span className="text-xs text-muted-foreground">
-                    Required
-                  </span>
-                )}
-              </div>
-              <input
-                className="mt-1 w-full border rounded px-3 h-9 text-sm"
-                placeholder="e.g., MM230914XYZ"
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-              />
-              <div className="text-sm font-medium mt-3 flex items-center justify-between">
-                <span>Screenshot</span>
-                {!screenshotFile && (
-                  <span className="text-xs text-muted-foreground">
-                    Required
-                  </span>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                className="mt-1 w-full text-sm"
-                onChange={(e) =>
-                  handleScreenshotChange(e.target.files?.[0] || null)
-                }
-              />
-              {preview && (
-                <div className="mt-2 relative group">
-                  <img
-                    src={preview}
-                    alt="Screenshot preview"
-                    className="h-28 w-full object-cover rounded border"
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div className="flex flex-col">
+                  <div className="text-sm font-medium flex items-center justify-between">
+                    <span>Transaction ID</span>
+                    {!transactionId.trim() && (
+                      <span className="text-xs text-muted-foreground">
+                        Required
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    className="mt-1 w-full border rounded px-3 h-9 text-sm"
+                    placeholder="e.g., MM230914XYZ"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleScreenshotChange(null)}
-                    className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"
-                  >
-                    Remove
-                  </button>
+                  <div className="text-sm font-medium mt-3 flex items-center justify-between">
+                    <span>Screenshot</span>
+                    {!screenshotFile && (
+                      <span className="text-xs text-muted-foreground">
+                        Required
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="mt-1 w-full text-sm"
+                    onChange={(e) =>
+                      handleScreenshotChange(e.target.files?.[0] || null)
+                    }
+                  />
+                  {preview && (
+                    <div className="mt-2 relative group">
+                      <img
+                        src={preview}
+                        alt="Screenshot preview"
+                        className="h-28 w-full object-cover rounded border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleScreenshotChange(null)}
+                        className="absolute top-1 right-1 text-xs px-2 py-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 transition"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="text-xs text-muted-foreground self-end">
-              Tip: After sending your payment, add the transaction ID and a
-              screenshot here, then submit. We’ll review your request shortly.
-            </div>
-          </div>
-
-          {error && <div className="text-sm text-destructive">{error}</div>}
+                <div className="text-xs text-muted-foreground self-end">
+                  Tip: After sending your payment, add the transaction ID and a
+                  screenshot here, then submit. We’ll review your request
+                  shortly.
+                </div>
+              </div>
+              {error && <div className="text-sm text-destructive">{error}</div>}
+              <DialogFooter>
+                <div className="flex w-full justify-end gap-2">
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  {detailsSubmitted && (
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={submitting || !selectedPlan}
+                    >
+                      Submit
+                    </Button>
+                  )}
+                </div>
+              </DialogFooter>
+            </>
+          )}
         </div>
-
-        <DialogFooter>
-          <div className="flex w-full justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                submitting || !selectedPlan || !transactionId || !screenshotFile
-              }
-            >
-              Send
-            </Button>
-          </div>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

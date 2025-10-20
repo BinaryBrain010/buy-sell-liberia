@@ -309,10 +309,15 @@ export function ProductCard({
             {(product as any)?.user?.profile?.verificationStatus ===
               "fully_verified" && (
               <div
-                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-500 text-black border border-yellow-600 text-[10px] font-semibold w-max shadow-sm"
+                className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-black border border-yellow-500/50 text-[10px] font-semibold w-max shadow-md"
                 title="Verified seller"
+                style={{
+                  textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+                }}
               >
-                <ShieldCheck className="h-3 w-3" />
+                <ShieldCheck className="h-3 w-3 drop-shadow-sm" />
                 Verified Seller
               </div>
             )}
@@ -471,10 +476,15 @@ export function ProductCard({
             {(product as any)?.user?.profile?.verificationStatus ===
               "fully_verified" && (
               <div
-                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-400 to-yellow-500 text-black border border-yellow-600 text-[10px] font-semibold w-max shadow-sm"
+                className="mb-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-black border border-yellow-500/50 text-[10px] font-semibold w-max shadow-md"
                 title="Verified seller"
+                style={{
+                  textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.2)",
+                }}
               >
-                <ShieldCheck className="h-3 w-3" />
+                <ShieldCheck className="h-3 w-3 drop-shadow-sm" />
                 Verified
               </div>
             )}
