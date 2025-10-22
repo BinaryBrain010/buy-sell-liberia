@@ -61,6 +61,7 @@ export default function ProfileForm({
   const isVerified = Boolean(
     (profile as any)?.profile?.verificationStatus === "fully_verified"
   );
+  // Usage strip removed per policy: all users unlimited postings
 
   // Form state
   const [formData, setFormData] = useState({
@@ -131,6 +132,8 @@ export default function ProfileForm({
       fetchProfile();
     }
   }, [userId]);
+
+  // Removed usage fetch
 
   // Fetch monetization toggles for gating buttons
   useEffect(() => {
@@ -371,6 +374,8 @@ export default function ProfileForm({
           </div>
         </div>
       </div>
+
+      {/* Posting usage removed per request */}
 
       {/* Enhanced Form Fields */}
       <div className="space-y-8">

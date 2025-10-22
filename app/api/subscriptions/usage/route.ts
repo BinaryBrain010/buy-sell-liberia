@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import UserSubscription from "../../../../models/UserSubscription";
+import User from "../../../../models/User";
 import { verifyToken } from "../../modules/auth/middlewares/next-auth-middleware";
 import dbConnect from "../../../../lib/mongoose";
 import { ensureModelsRegistered } from "../../../../lib/ensure-models";
@@ -18,8 +19,36 @@ export async function GET(request: NextRequest) {
     await dbConnect();
     ensureModelsRegistered();
 
+    // All users have unlimited postings now (policy update)
+    return NextResponse.json({
+      success: true,
+      hasSubscription: false,
+      unlimited: true,
+      message: "All users have unlimited postings",
+      limits: {
+        maxAds: Number.MAX_SAFE_INTEGER,
+        maxFeaturedAds: 0,
+        homepageBanner: false,
+      },
+      usage: {
+        adsUsed: 0,
+        featuredAdsUsed: 0,
+        homepageBannerUsed: false,
+      },
+      remaining: {
+        ads: Number.MAX_SAFE_INTEGER,
+        featuredAds: 0,
+        homepageBanner: false,
+      },
+      canPostAd: true,
+      canUseFeaturedAd: false,
+      canUseHomepageBanner: false,
+    });
+
     // Get active subscription
-    const subscription = await (UserSubscription as any).findActiveByUser(userId);
+    const subscription = await (UserSubscription as any).findActiveByUser(
+      userId
+    );
 
     if (!subscription) {
       return NextResponse.json({
@@ -59,12 +88,18 @@ export async function GET(request: NextRequest) {
         autoRenew: subscription.autoRenew,
       },
       limits: {
-        maxAds: subscription.planType === "basic" ? 20 : 
-                subscription.planType === "pro" ? 60 : 
-                Number.MAX_SAFE_INTEGER, // VIP unlimited
-        maxFeaturedAds: subscription.planType === "basic" ? 0 : 
-                       subscription.planType === "pro" ? 5 : 
-                       Number.MAX_SAFE_INTEGER, // VIP unlimited
+        maxAds:
+          subscription.planType === "basic"
+            ? 20
+            : subscription.planType === "pro"
+            ? 60
+            : Number.MAX_SAFE_INTEGER, // VIP unlimited
+        maxFeaturedAds:
+          subscription.planType === "basic"
+            ? 0
+            : subscription.planType === "pro"
+            ? 5
+            : Number.MAX_SAFE_INTEGER, // VIP unlimited
         homepageBanner: subscription.planType === "vip",
       },
       usage: {
@@ -103,16 +138,21 @@ export async function POST(request: NextRequest) {
     const { action, type } = await request.json();
 
     if (!action || !type) {
-      return NextResponse.json({ 
-        error: "Action and type are required" 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Action and type are required",
+        },
+        { status: 400 }
+      );
     }
 
     await dbConnect();
     ensureModelsRegistered();
 
     // Get active subscription
-    const subscription = await (UserSubscription as any).findActiveByUser(userId);
+    const subscription = await (UserSubscription as any).findActiveByUser(
+      userId
+    );
 
     if (!subscription) {
       // For non-subscribed users, check if they can still post ads (limit of 5)
@@ -125,9 +165,12 @@ export async function POST(request: NextRequest) {
           canPostAd: true,
         });
       }
-      return NextResponse.json({ 
-        error: "No active subscription found" 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "No active subscription found",
+        },
+        { status: 404 }
+      );
     }
 
     let updatedSubscription;
@@ -138,41 +181,56 @@ export async function POST(request: NextRequest) {
         switch (type) {
           case "ad":
             if (!subscription.canPostAd()) {
-              return NextResponse.json({ 
-                error: "Ad limit reached for current subscription" 
-              }, { status: 403 });
+              return NextResponse.json(
+                {
+                  error: "Ad limit reached for current subscription",
+                },
+                { status: 403 }
+              );
             }
             updatedSubscription = await subscription.incrementAdUsage();
             message = "Ad usage incremented";
             break;
           case "featured_ad":
             if (!subscription.canUseFeaturedAd()) {
-              return NextResponse.json({ 
-                error: "Featured ad limit reached for current subscription" 
-              }, { status: 403 });
+              return NextResponse.json(
+                {
+                  error: "Featured ad limit reached for current subscription",
+                },
+                { status: 403 }
+              );
             }
             updatedSubscription = await subscription.incrementFeaturedAdUsage();
             message = "Featured ad usage incremented";
             break;
           case "homepage_banner":
             if (!subscription.canUseHomepageBanner()) {
-              return NextResponse.json({ 
-                error: "Homepage banner not available or already used" 
-              }, { status: 403 });
+              return NextResponse.json(
+                {
+                  error: "Homepage banner not available or already used",
+                },
+                { status: 403 }
+              );
             }
             updatedSubscription = await subscription.useHomepageBanner();
             message = "Homepage banner used";
             break;
           default:
-            return NextResponse.json({ 
-              error: "Invalid type" 
-            }, { status: 400 });
+            return NextResponse.json(
+              {
+                error: "Invalid type",
+              },
+              { status: 400 }
+            );
         }
         break;
       default:
-        return NextResponse.json({ 
-          error: "Invalid action" 
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: "Invalid action",
+          },
+          { status: 400 }
+        );
     }
 
     return NextResponse.json({

@@ -147,11 +147,35 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ formData, categories }) => {
 
         {/* Additional Info */}
         <div className="space-y-3">
-          {formData.specifications.delivery && (
+          {formData.specifications.deliveryAvailable === "true" && (
             <div className="flex items-center gap-3">
               <Truck className="w-5 h-5 text-orange-600" />
               <div>
                 <span className="font-medium text-sm">Delivery</span>
+                <p className="text-sm text-muted-foreground">
+                  Delivery available
+                </p>
+              </div>
+            </div>
+          )}
+
+          {formData.specifications.pickupAvailable === "true" && (
+            <div className="flex items-center gap-3">
+              <Package className="w-5 h-5 text-orange-600" />
+              <div>
+                <span className="font-medium text-sm">Pickup</span>
+                <p className="text-sm text-muted-foreground">
+                  Pickup available
+                </p>
+              </div>
+            </div>
+          )}
+
+          {formData.specifications.delivery && (
+            <div className="flex items-center gap-3">
+              <Truck className="w-5 h-5 text-orange-600" />
+              <div>
+                <span className="font-medium text-sm">Delivery details</span>
                 <p className="text-sm text-muted-foreground">
                   {formData.specifications.delivery}
                 </p>

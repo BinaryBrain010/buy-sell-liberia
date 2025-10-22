@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Package, DollarSign } from "lucide-react";
 import { Step1BasicInfoProps, CONDITIONS, ProductFormData } from "./types";
 import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
@@ -64,7 +65,10 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-semibold flex items-center gap-2">
+                <Label
+                  htmlFor="title"
+                  className="text-sm font-semibold flex items-center gap-2"
+                >
                   <span className="text-red-500">*</span>
                   Product Title
                 </Label>
@@ -91,7 +95,10 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category" className="text-sm font-semibold flex items-center gap-2">
+                <Label
+                  htmlFor="category"
+                  className="text-sm font-semibold flex items-center gap-2"
+                >
                   <span className="text-red-500">*</span>
                   Category
                 </Label>
@@ -303,20 +310,38 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 pb-1">
-                <Checkbox
-                  id="negotiable"
-                  checked={formData.negotiable}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      negotiable: checked as boolean,
-                    }))
-                  }
-                />
-                <Label htmlFor="negotiable" className="text-[10px]">
+              <div className="flex items-center gap-3 pb-1">
+                <Label htmlFor="negotiable" className="text-xs">
                   Negotiable
                 </Label>
+                <ToggleGroup
+                  type="single"
+                  size="sm"
+                  value={formData.negotiable ? "yes" : "no"}
+                  onValueChange={(val) => {
+                    if (!val) return; // avoid deselect to empty
+                    setFormData((prev) => ({
+                      ...prev,
+                      negotiable: val === "yes",
+                    }));
+                  }}
+                  className="bg-muted/30 rounded-md p-0.5"
+                >
+                  <ToggleGroupItem
+                    value="yes"
+                    aria-label="Negotiable yes"
+                    className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    Yes
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="no"
+                    aria-label="Negotiable no"
+                    className="data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+                  >
+                    No
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </FadeInStagger>
           </CardContent>
