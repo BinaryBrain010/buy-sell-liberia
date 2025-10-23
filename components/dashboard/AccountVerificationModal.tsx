@@ -303,12 +303,26 @@ export default function AccountVerificationModal({
                                 })()}
                               </span>
                               <span className="text-xs text-muted-foreground">
-                                (
-                                {formatMoney(
-                                  Number(val?.price ?? 0),
-                                  String(currency || "USD").toUpperCase()
-                                )}
-                                )
+                                {(() => {
+                                  const baseAmount = Number(val?.price ?? 0);
+                                  const from = String(
+                                    currency || "USD"
+                                  ).toUpperCase();
+                                  const r = rates ?? {
+                                    usdToLrdRate: 200,
+                                    lrdToUsdRate: 0.005,
+                                  };
+                                  if (platformCurrency === "USD") {
+                                    const alt = convertAmount(
+                                      baseAmount,
+                                      from,
+                                      "LRD",
+                                      r
+                                    );
+                                    return `(${formatMoney(alt, "LRD")})`;
+                                  }
+                                  return `(${formatMoney(baseAmount, from)})`;
+                                })()}
                               </span>
                             </div>
                             <input

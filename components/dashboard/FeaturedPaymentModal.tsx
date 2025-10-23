@@ -227,14 +227,21 @@ export default function FeaturedPaymentModal({
                       })()}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      (
                       {(() => {
-                        const orig = String(
-                          plan.currency || "USD"
+                        const baseAmount = Number(plan?.price || 0);
+                        const from = String(
+                          plan?.currency || "USD"
                         ).toUpperCase();
-                        return formatMoney(Number(plan.price || 0), orig);
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        if (platformCurrency === "USD") {
+                          const alt = convertAmount(baseAmount, from, "LRD", r);
+                          return `(${formatMoney(alt, "LRD")})`;
+                        }
+                        return `(${formatMoney(baseAmount, from)})`;
                       })()}
-                      )
                     </span>
                   </div>
                   {plan.description ? <div>{plan.description}</div> : null}

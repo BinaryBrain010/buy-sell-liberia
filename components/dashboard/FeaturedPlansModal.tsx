@@ -201,12 +201,26 @@ export default function FeaturedPlansModal({
                           })()}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          (
-                          {formatMoney(
-                            Number(p.price || 0),
-                            String(p.currency || "USD").toUpperCase()
-                          )}
-                          )
+                          {(() => {
+                            const baseAmount = Number(p.price || 0);
+                            const from = String(
+                              p.currency || "USD"
+                            ).toUpperCase();
+                            const r = rates ?? {
+                              usdToLrdRate: 200,
+                              lrdToUsdRate: 0.005,
+                            };
+                            if (platformCurrency === "USD") {
+                              const alt = convertAmount(
+                                baseAmount,
+                                from,
+                                "LRD",
+                                r
+                              );
+                              return `(${formatMoney(alt, "LRD")})`;
+                            }
+                            return `(${formatMoney(baseAmount, from)})`;
+                          })()}
                         </span>
                       </div>
                       <input
