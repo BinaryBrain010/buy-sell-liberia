@@ -237,12 +237,23 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                       })()}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      (
-                      {formatMoney(
-                        Number(val?.price || 0),
-                        String(val?.currency || "USD").toUpperCase()
-                      )}
-                      )
+                      {(() => {
+                        const baseAmount = Number(val?.price || 0);
+                        const from = String(
+                          val?.currency || "USD"
+                        ).toUpperCase();
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        // If system currency is USD, show the LRD equivalent in parentheses
+                        if (currencyCode === "USD") {
+                          const alt = convertAmount(baseAmount, from, "LRD", r);
+                          return `(${formatMoney(alt, "LRD")})`;
+                        }
+                        // Otherwise show the plan's native currency as before
+                        return `(${formatMoney(baseAmount, from)})`;
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -306,12 +317,21 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                       })()}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      (
-                      {formatMoney(
-                        Number(val?.price || 0),
-                        String(val?.currency || "USD").toUpperCase()
-                      )}
-                      )
+                      {(() => {
+                        const baseAmount = Number(val?.price || 0);
+                        const from = String(
+                          val?.currency || "USD"
+                        ).toUpperCase();
+                        const r = rates ?? {
+                          usdToLrdRate: 200,
+                          lrdToUsdRate: 0.005,
+                        };
+                        if (currencyCode === "USD") {
+                          const alt = convertAmount(baseAmount, from, "LRD", r);
+                          return `(${formatMoney(alt, "LRD")})`;
+                        }
+                        return `(${formatMoney(baseAmount, from)})`;
+                      })()}
                     </span>
                   </div>
                 </div>
