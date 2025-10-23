@@ -246,12 +246,13 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                           usdToLrdRate: 200,
                           lrdToUsdRate: 0.005,
                         };
-                        // If system currency is USD, show the LRD equivalent in parentheses
                         if (currencyCode === "USD") {
                           const alt = convertAmount(baseAmount, from, "LRD", r);
                           return `(${formatMoney(alt, "LRD")})`;
+                        } else if (currencyCode === "LRD") {
+                          const alt = convertAmount(baseAmount, from, "USD", r);
+                          return `(${formatMoney(alt, "USD")})`;
                         }
-                        // Otherwise show the plan's native currency as before
                         return `(${formatMoney(baseAmount, from)})`;
                       })()}
                     </span>
@@ -329,6 +330,9 @@ export default function MonetizationTab({ userId }: { userId: string }) {
                         if (currencyCode === "USD") {
                           const alt = convertAmount(baseAmount, from, "LRD", r);
                           return `(${formatMoney(alt, "LRD")})`;
+                        } else if (currencyCode === "LRD") {
+                          const alt = convertAmount(baseAmount, from, "USD", r);
+                          return `(${formatMoney(alt, "USD")})`;
                         }
                         return `(${formatMoney(baseAmount, from)})`;
                       })()}
