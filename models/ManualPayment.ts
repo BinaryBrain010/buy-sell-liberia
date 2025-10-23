@@ -41,10 +41,8 @@ const manualPaymentSchema = new Schema<IManualPayment>(
       type: Schema.Types.ObjectId,
       ref: "Product",
       required: function (this: any) {
-        // Required only for features bound to a specific listing
-        return ["featured_listing", "paid_category_listing"].includes(
-          this.featureType
-        );
+        // Required only for featured listings; paid category payment can be filed before creating a listing
+        return ["featured_listing"].includes(this.featureType);
       },
     },
     amount: { type: Number, required: true },

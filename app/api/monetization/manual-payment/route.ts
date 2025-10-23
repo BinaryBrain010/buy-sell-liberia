@@ -6,6 +6,7 @@ import { ensureModelsRegistered } from "@/lib/ensure-models";
 import SubscriptionPlan from "@/models/SubscriptionPlan";
 import BumpPlan from "@/models/BumpPlan";
 import Product from "@/models/Product";
+import Category from "@/models/Category";
 import ManualPayment from "@/models/ManualPayment";
 // Revenue is recorded ONLY on approval; no revenue logging here
 
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
       featureType,
       plan,
       listing,
+      category_id,
       method,
       transactionId,
       screenshot,
@@ -127,7 +129,7 @@ export async function POST(req: NextRequest) {
 
     // Determine plan details by feature type
     let amount = 0;
-    let featureDuration = 0; // days for featured/subscription or number of bumps for bump_listing
+    let featureDuration = 0; // days for featured/subscription or number of bumps for bump_listing; set to 1 for paid_category_listing
     let bumpCredits: number | undefined;
 
     if (featureType === "featured_listing") {
@@ -236,30 +238,75 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-      // For paid category per listing, amount should come from the category settings (USD)
-      // We rely on frontend to pass listing ID; verify and compute price from listing.category
-      if (!listing)
-        return NextResponse.json(
-          { error: "listing is required for paid category listing" },
-          { status: 400 }
-        );
-      const product = await Product.findOne({
-        _id: listing,
-        user_id: auth.userId,
-      }).populate("category_id");
-      if (!product)
-        return NextResponse.json(
-          { error: "Listing not found or you don't own it" },
-          { status: 404 }
-        );
-      const category: any = product.category_id;
-      if (!category || !category.isPaidCategory || !category.pricePerListing) {
+      // For paid category per listing, allow creating a payment BEFORE listing exists.
+      // Compute price either from the product's category (if listing provided) or from a provided category_id or settings fallback.
+      let category: any = null;
+      if (listing) {
+        const product = await Product.findOne({
+          _id: listing,
+          user_id: auth.userId,
+        }).populate("category_id");
+        if (!product)
+          return NextResponse.json(
+            { error: "Listing not found or you don't own it" },
+            { status: 404 }
+          );
+        category = product.category_id;
+      } else if (category_id) {
+        category = await Category.findById(category_id).lean();
+      }
+
+      // Fallback logic: treat Vehicles/Real Estate as paid if flags aren't set; derive amount from settings if category doesn't carry price
+      let isPaid = false;
+      let derivedAmount = 0;
+      if (category) {
+        const name = String(category.name || "").toLowerCase();
+        const hasFlag = Boolean(category.isPaidCategory);
+        const catPrice = Number(category.pricePerListing || 0);
+        const looksPaidByName = /^(vehicles|real\s*estate)$/.test(name);
+        const paidCfg =
+          (settings.monetizationPrices as any)?.paid_category_listing ||
+          (settings.monetizationPrices as any)?.paid_category ||
+          {};
+        const planPaid =
+          paidCfg?.["paid"] || (Object.values(paidCfg || {})[0] as any);
+        const settingsPrice = Number(planPaid?.price || 0);
+        if (hasFlag && catPrice > 0) {
+          isPaid = true;
+          derivedAmount = catPrice;
+        } else if (looksPaidByName && (catPrice > 0 || settingsPrice > 0)) {
+          isPaid = true;
+          derivedAmount = catPrice > 0 ? catPrice : settingsPrice;
+        }
+      } else {
+        // If no category resolved, fall back to settings-only price (single paid plan)
+        const paidCfg =
+          (settings.monetizationPrices as any)?.paid_category_listing ||
+          (settings.monetizationPrices as any)?.paid_category ||
+          {};
+        const planPaid =
+          paidCfg?.["paid"] || (Object.values(paidCfg || {})[0] as any);
+        const settingsPrice = Number(planPaid?.price || 0);
+        if (settingsPrice > 0) {
+          isPaid = true;
+          derivedAmount = settingsPrice;
+        }
+      }
+
+      if (!isPaid) {
         return NextResponse.json(
           { error: "This listing is not in a paid category" },
           { status: 400 }
         );
       }
-      amount = Number(category.pricePerListing) || 0;
+      amount = Number(derivedAmount) || 0;
+      if (!amount) {
+        return NextResponse.json(
+          { error: "No price configured for paid category listing" },
+          { status: 400 }
+        );
+      }
+      featureDuration = 1; // Minimal unit for one-time per-listing payment
     } else {
       return NextResponse.json(
         { error: "Unsupported featureType" },
