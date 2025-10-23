@@ -201,6 +201,10 @@ export async function POST(request: NextRequest) {
           "name slug isPaidCategory pricePerListing"
         );
         if (catDoc) {
+          const featureEnabled = Boolean(
+            (settings as any)?.isPaidCategoryActive ||
+              (settings as any)?.paidCategoriesEnabled
+          );
           const isFlaggedPaid =
             Boolean(catDoc.isPaidCategory) &&
             Number(catDoc.pricePerListing || 0) > 0;
@@ -218,7 +222,10 @@ export async function POST(request: NextRequest) {
           const hasAnyPrice =
             Number(catDoc.pricePerListing || 0) > 0 || settingsPrice > 0;
 
-          if (isFlaggedPaid || (looksPaidByName && hasAnyPrice)) {
+          if (
+            featureEnabled &&
+            (isFlaggedPaid || (looksPaidByName && hasAnyPrice))
+          ) {
             initialStatus = "pending";
           }
         }

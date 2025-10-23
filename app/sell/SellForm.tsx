@@ -40,6 +40,10 @@ export default function SellForm() {
   >(null);
   const [paymentDetails, setPaymentDetails] = useState<any>({});
   const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [paidCategoriesEnabled, setPaidCategoriesEnabled] =
+    useState<boolean>(false);
+  const [isPaidCategoryActive, setIsPaidCategoryActive] =
+    useState<boolean>(false);
   // Method selection removed per request; backend treats method as optional
   const [paidTxId, setPaidTxId] = useState("");
   const [paidScreenshot, setPaidScreenshot] = useState<string>("");
@@ -115,6 +119,13 @@ export default function SellForm() {
         if (pub?.rates) setRates(pub.rates);
         // Prefer payment details from public settings (as used in MonetizationTab)
         if (pub?.paymentDetails) setPaymentDetails(pub.paymentDetails);
+        // Feature toggles
+        if (typeof pub?.paidCategoriesEnabled === "boolean") {
+          setPaidCategoriesEnabled(!!pub.paidCategoriesEnabled);
+        }
+        if (typeof pub?.isPaidCategoryActive === "boolean") {
+          setIsPaidCategoryActive(!!pub.isPaidCategoryActive);
+        }
         // Paid category price (USD) from plans if available
         const paidCfg =
           plans?.plans?.paid_category_listing ||
@@ -122,6 +133,15 @@ export default function SellForm() {
           {};
         const paidPlan = paidCfg["paid"] || Object.values(paidCfg || {})[0];
         if (paidPlan?.price) setPaidCategoryPriceUSD(Number(paidPlan.price));
+        // Plans fallback flags
+        if (
+          plans?.paidCategories?.enabled !== undefined &&
+          plans?.paidCategories?.enabled !== null
+        ) {
+          setPaidCategoriesEnabled(Boolean(plans.paidCategories.enabled));
+        } else if (typeof plans?.paidCategoriesEnabled === "boolean") {
+          setPaidCategoriesEnabled(Boolean(plans.paidCategoriesEnabled));
+        }
       } catch (e) {
         console.warn("Failed to fetch settings/plans:", (e as any)?.message);
       }
@@ -140,17 +160,23 @@ export default function SellForm() {
     }
   };
 
-  // Determine if paid step is required (Vehicles or Real Estate and paid categories enabled)
+  // Determine if paid step is required (Vehicles or Real Estate and paid categories feature enabled)
   useEffect(() => {
     const selected = categories.find((c) => c._id === formData.category);
     const name = (selected?.name || "").toLowerCase();
     const isPaidCategoryName =
       name === "vehicles" || name === "real estate" || name === "realestate";
-    // We assume paid categories feature toggled on if price is configured
     const hasPrice =
       typeof paidCategoryPriceUSD === "number" && paidCategoryPriceUSD > 0;
-    setNeedPaidStep(isPaidCategoryName && hasPrice);
-  }, [formData.category, categories, paidCategoryPriceUSD]);
+    const featureEnabled = paidCategoriesEnabled || isPaidCategoryActive; // if both false, disable paid flow
+    setNeedPaidStep(Boolean(featureEnabled && isPaidCategoryName && hasPrice));
+  }, [
+    formData.category,
+    categories,
+    paidCategoryPriceUSD,
+    paidCategoriesEnabled,
+    isPaidCategoryActive,
+  ]);
 
   const validateStep = (step: number): boolean => {
     const newErrors: FormErrors = {};
