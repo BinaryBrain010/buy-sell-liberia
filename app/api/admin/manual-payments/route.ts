@@ -5,13 +5,7 @@ import User from "../../../../models/User";
 import Product from "../../../../models/Product";
 import RevenueEntry from "../../../../models/RevenueEntry";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
-import { EmailService } from "../../modules/auth/services/email.service";
-import "../../../../models";
-import {
-  createAdminAuditLogger,
-  ModuleType,
-  OperationType,
-} from "../../../../lib/admin-audit-middleware";
+import { connectDB } from "../../../../lib/mongoose";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,11 +28,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Connect to DB if needed
+    // Connect to DB (cached)
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(
-        process.env.MONGODB_URI || process.env.MONGODB_URI!
-      );
+      await connectDB();
     }
 
     // Pagination and filtering
@@ -50,14 +42,33 @@ export async function GET(request: NextRequest) {
     const filter: any = {};
     if (status) filter.status = status;
 
-    const total = await ManualPayment.countDocuments(filter);
-    const payments = await ManualPayment.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .populate("user", "fullName username email")
-      .populate("listing", "title featured")
-      .lean();
+    const [total, payments] = await Promise.all([
+      ManualPayment.countDocuments(filter),
+      ManualPayment.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .select([
+          "user",
+          "listing",
+          "amount",
+          "method",
+          "transactionId",
+          "screenshot",
+          "status",
+          "adminNotes",
+          "userNotes",
+          "createdAt",
+          "reviewedBy",
+          "reviewedAt",
+          "featureType",
+          "featurePlan",
+          "featureDuration",
+        ])
+        .populate({ path: "user", select: "fullName username email" })
+        .populate({ path: "listing", select: "title featured" })
+        .lean(),
+    ]);
 
     // Add all required details for the panel
     const result = payments.map((payment) => ({
@@ -125,9 +136,7 @@ export async function PATCH(request: NextRequest) {
 
     // Connect DB
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(
-        process.env.MONGODB_URI || process.env.MONGODB_URI!
-      );
+      await connectDB();
     }
 
     // Load payment
@@ -155,6 +164,9 @@ export async function PATCH(request: NextRequest) {
 
       // Audit log: payment reject
       try {
+        const { createAdminAuditLogger, OperationType } = await import(
+          "../../../../lib/admin-audit-middleware"
+        );
         const logger = createAdminAuditLogger(
           request,
           (payload as any)._id ||
@@ -183,6 +195,9 @@ export async function PATCH(request: NextRequest) {
       }
       // Email notify user (if email exists)
       try {
+        const { EmailService } = await import(
+          "../../modules/auth/services/email.service"
+        );
         const u = await User.findById(payment.user).lean();
         if (u && (u as any).email) {
           const emailService = new EmailService();
@@ -334,6 +349,9 @@ export async function PATCH(request: NextRequest) {
 
     // Audit logs for approval and any listing change
     try {
+      const { createAdminAuditLogger, OperationType } = await import(
+        "../../../../lib/admin-audit-middleware"
+      );
       const logger = createAdminAuditLogger(
         request,
         (payload as any)._id ||
@@ -379,6 +397,9 @@ export async function PATCH(request: NextRequest) {
 
     // Email notify user on approval
     try {
+      const { EmailService } = await import(
+        "../../modules/auth/services/email.service"
+      );
       const u = await User.findById(payment.user).lean();
       if (u && (u as any).email) {
         const emailService = new EmailService();
