@@ -52,6 +52,7 @@ export default function SellForm() {
   const [showCreateButton, setShowCreateButton] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [countdown, setCountdown] = useState<number>(8);
+  // Posting limits disabled; no limit modal/pre-check
 
   // Auto-redirect countdown when success dialog is open
   useEffect(() => {
@@ -185,6 +186,9 @@ export default function SellForm() {
     }
   };
 
+  // Enable submit without pre-checks (limits disabled)
+  const handleReadyToCreate = () => setShowCreateButton(true);
+
   return (
     <div className="w-full mx-auto">
       <StepIndicator currentStep={currentStep} />
@@ -239,7 +243,7 @@ export default function SellForm() {
                   <Button
                     type="button"
                     size="lg"
-                    onClick={() => setShowCreateButton(true)}
+                    onClick={handleReadyToCreate}
                     className="px-6 py-3 bg-gradient-to-r from-primary to-v0-dark-blue hover:from-primary/90 hover:to-v0-dark-blue/90 transition-all duration-300"
                   >
                     Ready to Create Listing
@@ -372,6 +376,8 @@ export default function SellForm() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Posting limit modal removed */}
     </div>
   );
 }

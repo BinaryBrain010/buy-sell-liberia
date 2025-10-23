@@ -3,8 +3,15 @@ import { AdminAuthService } from "../../modules/auth/services/admin-auth.service
 import mongoose from "mongoose";
 import Report from "../../../../models/Report";
 import Product from "../../../../models/Product";
-import User from "../../../../models/User";
-import { createAdminAuditLogger, extractUserInfoFromPayload } from '../../../../lib/admin-audit-middleware';
+import User, { type IUser } from "../../../../models/User";
+import Chat from "../../../../models/Chat";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { EmailService } from "@/app/api/modules/auth/services/email.service";
+import {
+  createAdminAuditLogger,
+  extractUserInfoFromPayload,
+} from "../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../lib/audit-logger";
 
 // GET: View all reports, filter by reason, status, product, user
@@ -91,14 +98,25 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { userId: adminUserId, role: adminRole, email: adminEmail, name: adminName } = extractUserInfoFromPayload(payload);
-    
+    const {
+      userId: adminUserId,
+      role: adminRole,
+      email: adminEmail,
+      name: adminName,
+    } = extractUserInfoFromPayload(payload);
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
 
     // Create audit logger
-    const logger = createAdminAuditLogger(request, adminUserId, adminRole, adminEmail, adminName);
+    const logger = createAdminAuditLogger(
+      request,
+      adminUserId,
+      adminRole,
+      adminEmail,
+      adminName
+    );
 
     const { reportId, action, adminNotes } = await request.json();
     if (!reportId || !action) {
@@ -113,7 +131,52 @@ export async function PATCH(request: NextRequest) {
 
     const previousStatus = report.status;
     let product, user;
-    
+
+    // Helper: ensure a system sender user exists for chat messages
+    async function ensureSystemSender(): Promise<IUser> {
+      const SYSTEM_EMAIL = (
+        process.env.SYSTEM_ANNOUNCEMENT_USER_EMAIL ||
+        process.env.ADMIN_SUPER_EMAIL ||
+        process.env.SMTP_USER ||
+        "announcements@buysellliberia.com"
+      ).toLowerCase();
+      const SYSTEM_NAME =
+        process.env.SYSTEM_ANNOUNCEMENT_USER_NAME || "BuySellLiberia";
+
+      let sender = (await User.findOne({
+        email: SYSTEM_EMAIL,
+      })) as IUser | null;
+      if (sender) {
+        if (!sender.isActive || sender.isBlocked || sender.isBanned) {
+          sender.isActive = true;
+          sender.isBlocked = false;
+          sender.isBanned = false;
+          await sender.save();
+        }
+        return sender;
+      }
+
+      const passwordSeed =
+        process.env.SYSTEM_ANNOUNCEMENT_USER_PASSWORD ||
+        crypto.randomBytes(32).toString("hex");
+      const hashedPassword = await bcrypt.hash(passwordSeed, 10);
+      sender = (await User.create({
+        fullName: SYSTEM_NAME,
+        username: `system_${Math.random().toString(36).slice(2, 8)}`,
+        email: SYSTEM_EMAIL,
+        password: hashedPassword,
+        isActive: true,
+        isBlocked: false,
+        isBanned: false,
+        emailVerified: true,
+        profile: {
+          verificationStatus: "email_verified",
+          rating: { average: 0, count: 0 },
+        },
+      } as Partial<IUser>)) as IUser;
+      return sender;
+    }
+
     switch (action) {
       case "approve":
         report.status = "approved";
@@ -127,7 +190,7 @@ export async function PATCH(request: NextRequest) {
           previousStatus,
           newStatus: "approved",
           action: "approve",
-          adminNotes
+          adminNotes,
         });
         break;
       case "remove":
@@ -148,16 +211,154 @@ export async function PATCH(request: NextRequest) {
           newStatus: "removed",
           action: "remove",
           productRemoved: true,
-          adminNotes
+          adminNotes,
         });
         break;
       case "warn":
         report.status = "resolved";
         report.adminAction = "warn";
         user = await User.findById(report.reported_by);
+        // Also load product for email/chat context
+        product = report.product_id
+          ? await Product.findById(report.product_id).lean()
+          : null;
         if (user) {
           user.isBlocked = true;
           await user.save();
+        }
+        // Send warning email and a system chat message to the user
+        if (user) {
+          try {
+            const emailService = new EmailService();
+            const subject = "Account Warning - BuySell Liberia";
+            const reasonLine = report.reason
+              ? `<div><strong>Reason:</strong> ${report.reason}</div>`
+              : "";
+            const notesLine = adminNotes
+              ? `<div><strong>Admin notes:</strong> ${adminNotes}</div>`
+              : "";
+            const baseUrl =
+              process.env.NEXT_PUBLIC_BASE_URL || "https://buysellliberia.com";
+            const productTitle = product?.title ? String(product.title) : null;
+            const productPrice =
+              product?.price?.amount != null
+                ? `${Number(product.price.amount).toLocaleString()} ${
+                    product?.price?.currency || ""
+                  }`.trim()
+                : null;
+            const productLocation = product?.location
+              ? [
+                  product.location.city,
+                  product.location.state,
+                  product.location.country,
+                ]
+                  .filter(Boolean)
+                  .join(", ")
+              : null;
+            const productDesc = product?.description
+              ? String(product.description).slice(0, 240)
+              : null;
+            const productUrl = product
+              ? `${baseUrl}/products/${
+                  (product as any).slug || (product as any)._id
+                }`
+              : null;
+            const productLine = productTitle
+              ? `
+              <div style="margin-top:12px;padding:12px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa">
+                <div style="font-weight:600;margin-bottom:6px;">Reported Listing</div>
+                <div><strong>Title:</strong> ${productTitle}</div>
+                ${
+                  productPrice
+                    ? `<div><strong>Price:</strong> ${productPrice}</div>`
+                    : ""
+                }
+                ${
+                  productLocation
+                    ? `<div><strong>Location:</strong> ${productLocation}</div>`
+                    : ""
+                }
+                ${
+                  productDesc
+                    ? `<div style="margin-top:6px;"><strong>Details:</strong> ${productDesc}${
+                        product &&
+                        product.description &&
+                        product.description.length > 240
+                          ? "…"
+                          : ""
+                      }</div>`
+                    : ""
+                }
+                ${
+                  productUrl
+                    ? `<div style="margin-top:6px;"><a href="${productUrl}" target="_blank" rel="noopener" style="color:#2563eb;">View listing</a></div>`
+                    : ""
+                }
+              </div>
+            `
+              : "";
+            const html = `
+              <!doctype html>
+              <html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+              <style>body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:0;background:#f7f7f8}.container{max-width:640px;margin:0 auto;padding:24px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden}.header{background:#dc2626;color:#fff;padding:16px 20px}.content{padding:20px}.muted{color:#6b7280;font-size:12px}</style>
+              </head><body>
+                <div class="container">
+                  <div class="card">
+                    <div class="header"><h2 style="margin:0;font-size:18px;">Account Warning</h2></div>
+                    <div class="content">
+                      <p>Hi ${user.fullName || user.username || "there"},</p>
+                      <p>Your account has been flagged by our moderation team. Please review the details below and ensure future activity complies with our Terms of Use.</p>
+                      ${reasonLine}
+                      ${notesLine}
+                      ${productLine}
+                      <p class="muted">If you believe this is a mistake, reply to this email and we will review your case.</p>
+                      <p>— BuySell Liberia Team</p>
+                    </div>
+                  </div>
+                </div>
+              </body></html>`;
+            await emailService.sendHtml(user.email, subject, html);
+          } catch (mailErr) {
+            console.error(
+              "[WARN] Failed sending warning email:",
+              (mailErr as any)?.message || mailErr
+            );
+          }
+          try {
+            const senderUser = await ensureSystemSender();
+            let chat = await Chat.findOne({
+              user1: senderUser._id,
+              user2: user._id,
+              product: null,
+            });
+            if (!chat) {
+              chat = new Chat({
+                user1: senderUser._id,
+                user2: user._id,
+                product: null,
+                messages: [],
+              });
+            }
+            const parts: string[] = ["Account Warning from BuySell Liberia"];
+            if (report.reason) parts.push(`Reason: ${report.reason}`);
+            if (adminNotes) parts.push(`Notes: ${adminNotes}`);
+            if (product && product.title)
+              parts.push(`Product: ${String(product.title)}`);
+            const messageContent = parts.join(" | ");
+            chat.messages.push({
+              sender: senderUser._id,
+              content: messageContent,
+              sentAt: new Date(),
+              readBy: [],
+            });
+            chat.lastMessageAt = new Date();
+            await chat.save();
+          } catch (chatErr) {
+            console.error(
+              "[WARN] Failed sending warning chat:",
+              (chatErr as any)?.message || chatErr
+            );
+          }
         }
         // Log report warn action
         await logger.logReportOperation(OperationType.REPORT_ACTION, reportId, {
@@ -169,7 +370,7 @@ export async function PATCH(request: NextRequest) {
           newStatus: "resolved",
           action: "warn",
           userBlocked: true,
-          adminNotes
+          adminNotes,
         });
         break;
       case "ban":
@@ -200,7 +401,7 @@ export async function PATCH(request: NextRequest) {
           action: "ban",
           userBanned: true,
           banReason: "Flagged by admin via report",
-          adminNotes
+          adminNotes,
         });
         break;
       default:

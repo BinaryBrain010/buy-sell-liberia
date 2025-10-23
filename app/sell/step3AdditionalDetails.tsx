@@ -3,9 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Truck, Tag, Phone, X } from "lucide-react";
+import { Truck, Tag, Phone, X, Package } from "lucide-react";
 import { ProductFormData, FormErrors } from "./types";
 import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
 import { motion } from "framer-motion";
@@ -154,12 +155,12 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
               </div>
             </FadeIn>
 
-            {/* Delivery and Show Phone */}
+            {/* Delivery options and Show Phone */}
             <FadeInStagger
               as="div"
               className="grid grid-cols-1 md:grid-cols-2 gap-2"
             >
-              <div>
+              {/* <div>
                 <Label className="text-xs flex items-center gap-1">
                   <Truck className="h-2 w-2" />
                   Delivery Details
@@ -170,26 +171,128 @@ const Step3AdditionalDetails: React.FC<Step3AdditionalDetailsProps> = ({
                   onChange={(e) => handleSpecChange("delivery", e.target.value)}
                   className="h-8 text-xs mt-1"
                 />
-              </div>
+              </div> */}
 
-              <div className="flex items-center md:items-end justify-between md:justify-start gap-2">
-                <div className="flex items-center gap-2 mt-4 md:mt-6">
-                  <Checkbox
-                    id="showPhoneNumber"
-                    checked={formData.showPhoneNumber}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        showPhoneNumber: checked as boolean,
-                      }))
-                    }
-                  />
-                  <Label
-                    htmlFor="showPhoneNumber"
-                    className="text-[11px] flex items-center gap-1"
-                  >
-                    <Phone className="h-3 w-3" /> Show phone number on listing
-                  </Label>
+              <div className="flex md:items-end justify-between md:justify-start gap-2">
+                <div className="flex flex-col gap-2 mt-2 md:mt-6">
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="deliveryAvailable"
+                      className="text-[11px] flex items-center gap-1"
+                    >
+                      <Truck className="h-3 w-3" /> Delivery available
+                    </Label>
+                    <ToggleGroup
+                      type="single"
+                      size="sm"
+                      value={
+                        formData.specifications.deliveryAvailable === "true"
+                          ? "yes"
+                          : "no"
+                      }
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        handleSpecChange(
+                          "deliveryAvailable",
+                          val === "yes" ? "true" : "false"
+                        );
+                      }}
+                      className="bg-muted/30 rounded-md p-0.5"
+                    >
+                      <ToggleGroupItem
+                        value="yes"
+                        aria-label="Delivery available yes"
+                        className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                      >
+                        Yes
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        value="no"
+                        aria-label="Delivery available no"
+                        className="data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+                      >
+                        No
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="pickupAvailable"
+                      className="text-[11px] flex items-center gap-1"
+                    >
+                      <Package className="h-3 w-3" /> Pickup available
+                    </Label>
+                    <ToggleGroup
+                      type="single"
+                      size="sm"
+                      value={
+                        formData.specifications.pickupAvailable === "true"
+                          ? "yes"
+                          : "no"
+                      }
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        handleSpecChange(
+                          "pickupAvailable",
+                          val === "yes" ? "true" : "false"
+                        );
+                      }}
+                      className="bg-muted/30 rounded-md p-0.5"
+                    >
+                      <ToggleGroupItem
+                        value="yes"
+                        aria-label="Pickup available yes"
+                        className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                      >
+                        Yes
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        value="no"
+                        aria-label="Pickup available no"
+                        className="data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+                      >
+                        No
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="showPhoneNumber"
+                      className="text-[11px] flex items-center gap-1"
+                    >
+                      <Phone className="h-3 w-3" /> Show phone number on listing
+                    </Label>
+                    <ToggleGroup
+                      type="single"
+                      size="sm"
+                      value={formData.showPhoneNumber ? "yes" : "no"}
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        setFormData((prev) => ({
+                          ...prev,
+                          showPhoneNumber: val === "yes",
+                        }));
+                      }}
+                      className="bg-muted/30 rounded-md p-0.5"
+                    >
+                      <ToggleGroupItem
+                        value="yes"
+                        aria-label="Show phone yes"
+                        className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                      >
+                        Yes
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        value="no"
+                        aria-label="Show phone no"
+                        className="data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+                      >
+                        No
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
                 </div>
               </div>
             </FadeInStagger>
