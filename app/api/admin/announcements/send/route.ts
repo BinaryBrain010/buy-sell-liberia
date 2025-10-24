@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import Announcement from "@/models/Announcement";
 import { AdminAuthService } from "@/app/api/modules/auth/services/admin-auth.service";
 import User, { type IUser } from "@/models/User";
 import Chat from "@/models/Chat";
+import {
+  ensureSystemAnnouncementUser,
+  sendChatMessageToUsers,
+} from "@/app/api/modules/notifications/services/chat-notification.service";
 import NewsletterSubscription from "@/models/NewsletterSubscription";
 import { EmailService } from "@/app/api/modules/auth/services/email.service";
 import {
@@ -44,111 +46,19 @@ const SYSTEM_USERNAME_SOURCE =
   SYSTEM_ANNOUNCEMENT_EMAIL.split("@")[0] ||
   "buysell_announcements";
 
-const SYSTEM_ANNOUNCEMENT_USERNAME = SYSTEM_USERNAME_SOURCE
-  .replace(/[^a-zA-Z0-9_]/g, "_")
-  .toLowerCase();
+const SYSTEM_ANNOUNCEMENT_USERNAME = SYSTEM_USERNAME_SOURCE.replace(
+  /[^a-zA-Z0-9_]/g,
+  "_"
+).toLowerCase();
 
 const SYSTEM_ANNOUNCEMENT_ROLE = "system";
 
-const BROADCAST_ENDPOINT = (process.env.ANNOUNCEMENT_BROADCAST_URL || "http://localhost:3001/broadcast-announcement").replace(/\/$/, "");
+const BROADCAST_ENDPOINT = (
+  process.env.ANNOUNCEMENT_BROADCAST_URL ||
+  "http://localhost:3001/broadcast-announcement"
+).replace(/\/$/, "");
 
-async function ensureSystemAnnouncementUser(): Promise<IUser> {
-  const email = SYSTEM_ANNOUNCEMENT_EMAIL;
-  let user = (await User.findOne({ email })) as IUser | null;
-  if (user) {
-    let shouldSave = false;
-
-    if (user.fullName !== SYSTEM_ANNOUNCEMENT_NAME) {
-      user.fullName = SYSTEM_ANNOUNCEMENT_NAME;
-      shouldSave = true;
-    }
-
-    const targetDisplayName = SYSTEM_ANNOUNCEMENT_NAME;
-    if (user.profile?.displayName !== targetDisplayName) {
-      user.profile = {
-        ...user.profile,
-        displayName: targetDisplayName,
-        verificationStatus: user.profile?.verificationStatus || "email_verified",
-        rating: user.profile?.rating || { average: 0, count: 0 },
-      };
-      shouldSave = true;
-    }
-
-    if (!user.isActive || user.isBlocked || user.isBanned) {
-      user.isActive = true;
-      user.isBlocked = false;
-      user.isBanned = false;
-      shouldSave = true;
-    }
-
-    if (!user.emailVerified) {
-      user.emailVerified = true;
-      shouldSave = true;
-    }
-
-    if (shouldSave) {
-      await user.save();
-    }
-    return user;
-  }
-
-  let usernameBase = SYSTEM_ANNOUNCEMENT_USERNAME || "buysell_announcements";
-  if (!usernameBase.trim()) {
-    usernameBase = "buysell_announcements";
-  }
-
-  let usernameCandidate = usernameBase;
-  let suffix = 1;
-  while (await User.exists({ username: usernameCandidate })) {
-    usernameCandidate = `${usernameBase}${suffix}`;
-    suffix += 1;
-  }
-
-  const passwordSeed =
-    process.env.SYSTEM_ANNOUNCEMENT_USER_PASSWORD ||
-    crypto.randomBytes(32).toString("hex");
-  const hashedPassword = await bcrypt.hash(passwordSeed, 10);
-
-  user = (await User.create({
-    fullName: SYSTEM_ANNOUNCEMENT_NAME,
-    username: usernameCandidate,
-    email,
-    password: hashedPassword,
-    isActive: true,
-    isBlocked: false,
-    isBanned: false,
-    emailVerified: true,
-    profile: {
-      verificationStatus: "email_verified",
-      rating: { average: 0, count: 0 },
-    },
-  } as Partial<IUser>)) as IUser;
-
-  return user;
-}
-
-async function resolveAnnouncementSender(
-  adminUserId?: string,
-  adminEmail?: string
-): Promise<IUser> {
-  if (adminUserId && mongoose.Types.ObjectId.isValid(adminUserId)) {
-    const userById = (await User.findById(adminUserId)) as IUser | null;
-    if (userById) {
-      return userById;
-    }
-  }
-
-  if (adminEmail) {
-    const userByEmail = (await User.findOne({
-      email: adminEmail.toLowerCase(),
-    })) as IUser | null;
-    if (userByEmail) {
-      return userByEmail;
-    }
-  }
-
-  return ensureSystemAnnouncementUser();
-}
+// moved ensureSystemAnnouncementUser and resolveAnnouncementSender to shared service
 
 export async function POST(request: NextRequest) {
   try {
@@ -251,31 +161,42 @@ export async function POST(request: NextRequest) {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">${announcement.title}</h2>
           <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #666; line-height: 1.6;">${announcement.content}</p>
+            <p style="color: #666; line-height: 1.6;">${
+              announcement.content
+            }</p>
           </div>
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           <p style="color: #999; font-size: 12px; text-align: center;">
             This email was sent to you because you subscribed to our newsletter.<br>
-            <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://buysellliberia.com'}/unsubscribe?email={{email}}" style="color: #999;">Unsubscribe</a>
+            <a href="${
+              process.env.NEXT_PUBLIC_BASE_URL || "https://buysellliberia.com"
+            }/unsubscribe?email={{email}}" style="color: #999;">Unsubscribe</a>
           </p>
         </div>
       `;
-      
+
       let successCount = 0;
       let failureCount = 0;
-      
+
       for (const subscriber of subscribers) {
         try {
           // Replace {{email}} placeholder with actual email
-          const personalizedHtml = html.replace(/\{\{email\}\}/g, subscriber.email);
-          
-          await sendGenericEmail(emailService, subscriber.email, subject, personalizedHtml);
-          
+          const personalizedHtml = html.replace(
+            /\{\{email\}\}/g,
+            subscriber.email
+          );
+
+          await sendGenericEmail(
+            emailService,
+            subscriber.email,
+            subject,
+            personalizedHtml
+          );
+
           // Update last email sent timestamp
           subscriber.lastEmailSent = new Date();
           await subscriber.save();
           successCount++;
-          
         } catch (e) {
           const errMsg = (e as Error)?.message || e;
           console.error(
@@ -283,29 +204,31 @@ export async function POST(request: NextRequest) {
             subscriber.email,
             errMsg
           );
-          
+
           // Record bounce if it's a delivery failure
           const errorMessage = String(errMsg).toLowerCase();
-          if (errorMessage.includes('bounce') || errorMessage.includes('invalid') || errorMessage.includes('not found')) {
+          if (
+            errorMessage.includes("bounce") ||
+            errorMessage.includes("invalid") ||
+            errorMessage.includes("not found")
+          ) {
             subscriber.bounceCount += 1;
             if (subscriber.bounceCount >= 3) {
-              subscriber.status = 'bounced';
+              subscriber.status = "bounced";
             }
             await subscriber.save();
           }
           failureCount++;
         }
       }
-      
-      console.log(`Email announcement sent: ${successCount} successful, ${failureCount} failed`);
+
+      console.log(
+        `Email announcement sent: ${successCount} successful, ${failureCount} failed`
+      );
     }
     // Chat delivery: use the platform system sender so messages appear from BuySellLiberia
     if (type.includes("chat")) {
       const senderUser = await ensureSystemAnnouncementUser();
-  adminUserId = (senderUser._id as mongoose.Types.ObjectId).toString();
-      adminEmail = senderUser.email?.toLowerCase() || SYSTEM_ANNOUNCEMENT_EMAIL;
-      adminName = senderUser.fullName || SYSTEM_ANNOUNCEMENT_NAME;
-      adminRole = SYSTEM_ANNOUNCEMENT_ROLE;
       const users = await User.find(
         {
           isActive: true,
@@ -315,33 +238,24 @@ export async function POST(request: NextRequest) {
         },
         "_id"
       ).lean();
-      for (const user of users) {
-        // Find or create chat between admin and user (no product context)
-        let chat = await Chat.findOne({
-          user1: senderUser._id,
-          user2: user._id,
-          product: null,
-        });
-        if (!chat) {
-          chat = new Chat({
-            user1: senderUser._id,
-            user2: user._id,
-            product: null,
-            messages: [],
-          });
-        }
-  const title = (announcement.title ?? "").trim();
-  const body = (announcement.content ?? "").trim();
-  const messageContent = title && body ? `${title}: ${body}` : title || body;
 
-        chat.messages.push({
-          sender: senderUser._id,
-          content: messageContent,
-          sentAt: new Date(),
-          readBy: [],
+      const titleStr = (announcement.title ?? "").trim();
+      const bodyStr = (announcement.content ?? "").trim();
+      const messageContent =
+        (titleStr && bodyStr
+          ? `${titleStr}: ${bodyStr}`
+          : titleStr || bodyStr) || "";
+
+      const recipientIds = users.map((u) => u._id.toString());
+      if (recipientIds.length > 0 && messageContent) {
+        await sendChatMessageToUsers({
+          recipients: recipientIds,
+          message: messageContent,
+          productId: null,
+          useSystemSender: true,
+          adminUserId,
+          adminEmail,
         });
-        chat.lastMessageAt = new Date();
-        await chat.save();
       }
     }
 

@@ -27,6 +27,26 @@ export default function SellForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [needPaidStep, setNeedPaidStep] = useState(false);
+  const [settingsCurrency, setSettingsCurrency] = useState<
+    "USD" | "LRD" | string
+  >("LRD");
+  const [rates, setRates] = useState<{
+    usdToLrdRate: number;
+    lrdToUsdRate: number;
+  }>({ usdToLrdRate: 200, lrdToUsdRate: 0.005 });
+  const [paidCategoryPriceUSD, setPaidCategoryPriceUSD] = useState<
+    number | null
+  >(null);
+  const [paymentDetails, setPaymentDetails] = useState<any>({});
+  const [lastCopied, setLastCopied] = useState<string | null>(null);
+  const [paidCategoriesEnabled, setPaidCategoriesEnabled] =
+    useState<boolean>(false);
+  const [isPaidCategoryActive, setIsPaidCategoryActive] =
+    useState<boolean>(false);
+  // Method selection removed per request; backend treats method as optional
+  const [paidTxId, setPaidTxId] = useState("");
+  const [paidScreenshot, setPaidScreenshot] = useState<string>("");
 
   const [formData, setFormData] = useState<ProductFormData>({
     title: "",
@@ -85,6 +105,79 @@ export default function SellForm() {
     fetchCategories();
   }, []);
 
+  // Fetch public settings (currency, rates, payment details) and monetization plans (prices)
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const [pubRes, plansRes] = await Promise.all([
+          fetch("/api/settings/public", { cache: "no-store" }),
+          fetch("/api/monetization/plans", { cache: "no-store" }),
+        ]);
+        const pub = await pubRes.json();
+        const plans = await plansRes.json();
+        if (pub?.currency) setSettingsCurrency(pub.currency);
+        if (pub?.rates) setRates(pub.rates);
+        // Prefer payment details from public settings (as used in MonetizationTab)
+        if (pub?.paymentDetails) setPaymentDetails(pub.paymentDetails);
+        // Feature toggles
+        if (typeof pub?.paidCategoriesEnabled === "boolean") {
+          setPaidCategoriesEnabled(!!pub.paidCategoriesEnabled);
+        }
+        if (typeof pub?.isPaidCategoryActive === "boolean") {
+          setIsPaidCategoryActive(!!pub.isPaidCategoryActive);
+        }
+        // Paid category price (USD) from plans if available
+        const paidCfg =
+          plans?.plans?.paid_category_listing ||
+          plans?.plans?.paid_category ||
+          {};
+        const paidPlan = paidCfg["paid"] || Object.values(paidCfg || {})[0];
+        if (paidPlan?.price) setPaidCategoryPriceUSD(Number(paidPlan.price));
+        // Plans fallback flags
+        if (
+          plans?.paidCategories?.enabled !== undefined &&
+          plans?.paidCategories?.enabled !== null
+        ) {
+          setPaidCategoriesEnabled(Boolean(plans.paidCategories.enabled));
+        } else if (typeof plans?.paidCategoriesEnabled === "boolean") {
+          setPaidCategoriesEnabled(Boolean(plans.paidCategoriesEnabled));
+        }
+      } catch (e) {
+        console.warn("Failed to fetch settings/plans:", (e as any)?.message);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const handleCopy = async (label: string, text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setLastCopied(label);
+      setTimeout(() => setLastCopied(null), 1500);
+    } catch {
+      // noop
+    }
+  };
+
+  // Determine if paid step is required (Vehicles or Real Estate and paid categories feature enabled)
+  useEffect(() => {
+    const selected = categories.find((c) => c._id === formData.category);
+    const name = (selected?.name || "").toLowerCase();
+    const isPaidCategoryName =
+      name === "vehicles" || name === "real estate" || name === "realestate";
+    const hasPrice =
+      typeof paidCategoryPriceUSD === "number" && paidCategoryPriceUSD > 0;
+    const featureEnabled = paidCategoriesEnabled || isPaidCategoryActive; // if both false, disable paid flow
+    setNeedPaidStep(Boolean(featureEnabled && isPaidCategoryName && hasPrice));
+  }, [
+    formData.category,
+    categories,
+    paidCategoryPriceUSD,
+    paidCategoriesEnabled,
+    isPaidCategoryActive,
+  ]);
+
   const validateStep = (step: number): boolean => {
     const newErrors: FormErrors = {};
 
@@ -125,8 +218,9 @@ export default function SellForm() {
   };
 
   const nextStep = () => {
+    const maxStep = needPaidStep ? 4 : 3;
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 3));
+      setCurrentStep((prev) => Math.min(prev + 1, maxStep));
     }
   };
 
@@ -142,6 +236,17 @@ export default function SellForm() {
     setLoading(true);
 
     try {
+      // For paid categories, ensure payment info is provided; we'll create product first, then attach payment to that listing
+      if (needPaidStep && (!paidTxId || !paidScreenshot)) {
+        toast.error(
+          "Please provide a transaction ID and upload a screenshot before continuing."
+        );
+        // Jump back to payment step
+        setCurrentStep(3);
+        setLoading(false);
+        return;
+      }
+
       const payload = new FormData();
 
       formData.images.forEach((file) => {
@@ -176,8 +281,40 @@ export default function SellForm() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to create listing");
       }
+      const data = await res.json();
+      const productId = data?.product?.id;
 
-      toast.success("Product listed successfully!");
+      // If paid flow, submit manual payment NOW with the created listing id
+      if (needPaidStep && productId) {
+        const paymentRes = await fetch("/api/monetization/manual-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            featureType: "paid_category_listing",
+            plan: "paid",
+            listing: productId,
+            transactionId: paidTxId,
+            screenshot: paidScreenshot,
+            userNotes: `Paid category listing for ${
+              data?.product?.title || "listing"
+            }`,
+          }),
+        });
+        if (paymentRes.ok) {
+          toast.success(
+            "Payment request submitted. We'll notify you after review."
+          );
+        } else {
+          const errJ = await paymentRes.json().catch(() => ({}));
+          console.warn("Manual payment create failed:", errJ);
+          toast.warning?.(
+            "Listing created as pending, but payment request couldn't be submitted. You can resubmit from Dashboard > Monetization."
+          );
+        }
+      }
+
+      // Success toast for listing creation (note: product may be pending in paid categories)
+      toast.success("Product created successfully.");
       setSuccessOpen(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to create product");
@@ -191,7 +328,10 @@ export default function SellForm() {
 
   return (
     <div className="w-full mx-auto">
-      <StepIndicator currentStep={currentStep} />
+      <StepIndicator
+        currentStep={currentStep}
+        totalSteps={needPaidStep ? 4 : 3}
+      />
 
       <Card className="relative bg-gradient-to-br from-background/90 via-background/80 to-background/90 border-2 border-border/30 shadow-2xl overflow-hidden">
         {/* Decorative Elements */}
@@ -221,7 +361,167 @@ export default function SellForm() {
                 setErrors={setErrors}
               />
             )}
-            {currentStep === 3 && (
+            {currentStep === 3 && needPaidStep && (
+              <div className="space-y-5">
+                <h3 className="text-lg font-semibold">Paid Category Payment</h3>
+                <p className="text-sm text-muted-foreground">
+                  This category requires a one-time payment per listing. Please
+                  send your payment using one of the following methods, then
+                  provide your transaction details below.
+                </p>
+
+                {/* Payment details (from /api/settings/public), similar to MonetizationTab */}
+                {paymentDetails &&
+                (paymentDetails.mtn ||
+                  paymentDetails.orange ||
+                  paymentDetails.bank) ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {paymentDetails.mtn && (
+                      <div className="rounded border p-3">
+                        <div className="font-medium">MTN Mobile Money</div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="font-mono">
+                            {paymentDetails.mtn.number ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy("mtn", paymentDetails.mtn?.number)
+                            }
+                          >
+                            {lastCopied === "mtn" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {paymentDetails.orange && (
+                      <div className="rounded border p-3">
+                        <div className="font-medium">Orange Money</div>
+                        <div className="mt-1 flex items-center justify-between">
+                          <span className="font-mono">
+                            {paymentDetails.orange.number ?? "-"}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleCopy(
+                                "orange",
+                                paymentDetails.orange?.number
+                              )
+                            }
+                          >
+                            {lastCopied === "orange" ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {paymentDetails.bank && (
+                      <div className="rounded border p-3">
+                        <div className="font-medium">Bank Transfer</div>
+                        <div className="text-xs text-muted-foreground">
+                          {paymentDetails.bank.bankName ?? "-"}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span>Account Name</span>
+                            <span className="font-mono">
+                              {paymentDetails.bank.accountName ?? "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Account Number</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono">
+                                {paymentDetails.bank.accountNumber ?? "-"}
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleCopy(
+                                    "bank",
+                                    paymentDetails.bank?.accountNumber
+                                  )
+                                }
+                              >
+                                {lastCopied === "bank" ? "Copied" : "Copy"}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Payment details not available at the moment.
+                  </div>
+                )}
+
+                {/* Method selection removed by request; backend treats method as optional */}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Transaction ID
+                    </label>
+                    <input
+                      type="text"
+                      className="border rounded-md p-2 w-full"
+                      value={paidTxId}
+                      onChange={(e) => setPaidTxId(e.target.value)}
+                      placeholder="Enter the transaction/reference ID"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Payment Screenshot
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          setPaidScreenshot(String(reader.result || ""));
+                        };
+                        reader.readAsDataURL(f);
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {typeof paidCategoryPriceUSD === "number" && (
+                  <div className="text-sm text-muted-foreground">
+                    Fee:{" "}
+                    {(() => {
+                      const from = "USD";
+                      const to = (settingsCurrency || "LRD").toUpperCase();
+                      const {
+                        convertAmount,
+                        formatMoney,
+                      } = require("@/lib/currency");
+                      const inSys = convertAmount(
+                        paidCategoryPriceUSD,
+                        from,
+                        to,
+                        rates
+                      );
+                      return `${formatMoney(inSys, to)} (${formatMoney(
+                        paidCategoryPriceUSD,
+                        from
+                      )})`;
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+            {(!needPaidStep && currentStep === 3) ||
+            (needPaidStep && currentStep === 4) ? (
               <>
                 <Step3AdditionalDetails
                   formData={formData}
@@ -250,7 +550,7 @@ export default function SellForm() {
                   </Button>
                 </div>
               </>
-            )}
+            ) : null}
 
             {/* Enhanced Navigation Section */}
             <div className="flex flex-col sm:flex-row items-center justify-between pt-6 md:pt-8 border-t-2 border-border/30 gap-4">
@@ -269,7 +569,7 @@ export default function SellForm() {
               {/* Progress Indicator */}
               <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/10 to-v0-green/10 border border-primary/20">
                 <div className="flex items-center gap-2">
-                  {[1, 2, 3].map((step) => (
+                  {(needPaidStep ? [1, 2, 3, 4] : [1, 2, 3]).map((step) => (
                     <div
                       key={step}
                       className={`w-3 h-3 rounded-full transition-all duration-300 ${
@@ -281,11 +581,11 @@ export default function SellForm() {
                   ))}
                 </div>
                 <span className="text-sm font-medium text-primary">
-                  {currentStep} of 3
+                  {currentStep} of {needPaidStep ? 4 : 3}
                 </span>
               </div>
 
-              {currentStep < 3 ? (
+              {currentStep < (needPaidStep ? 4 : 3) ? (
                 <Button
                   type="button"
                   size="lg"
@@ -344,11 +644,20 @@ export default function SellForm() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
-              Listing Created
+              {needPaidStep ? "Listing Pending Approval" : "Listing Created"}
             </DialogTitle>
             <DialogDescription>
-              Your listing has been successfully created. Where would you like
-              to go next?
+              {needPaidStep ? (
+                <>
+                  Your payment request has been submitted. Your listing is
+                  currently pending and will be posted soon after confirmation.
+                </>
+              ) : (
+                <>
+                  Your listing has been successfully created. Where would you
+                  like to go next?
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">

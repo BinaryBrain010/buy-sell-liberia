@@ -1,40 +1,76 @@
 import React from "react";
-import { Check, Package, Camera, Settings } from "lucide-react";
+import { Check, Package, Camera, Settings, DollarSign } from "lucide-react";
 
 interface StepIndicatorProps {
   currentStep: number;
+  totalSteps?: number;
 }
 
-const steps = [
-  { 
-    id: 1, 
-    label: "Basic Info", 
+const baseSteps = [
+  {
+    id: 1,
+    label: "Basic Info",
     description: "Product details & pricing",
-    icon: Package 
+    icon: Package,
   },
-  { 
-    id: 2, 
-    label: "Images & Location", 
+  {
+    id: 2,
+    label: "Images & Location",
     description: "Photos & location info",
-    icon: Camera 
+    icon: Camera,
   },
-  { 
-    id: 3, 
-    label: "Details & Delivery", 
+  // The third label may be Payment when paid step is enabled
+  {
+    id: 3,
+    label: "Details & Delivery",
     description: "Additional details & review",
-    icon: Settings 
+    icon: Settings,
   },
 ];
 
-const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
+const StepIndicator: React.FC<StepIndicatorProps> = ({
+  currentStep,
+  totalSteps,
+}) => {
+  const steps =
+    totalSteps === 4
+      ? [
+          {
+            id: 1,
+            label: "Basic Info",
+            description: "Product details & pricing",
+            icon: Package,
+          },
+          {
+            id: 2,
+            label: "Images & Location",
+            description: "Photos & location info",
+            icon: Camera,
+          },
+          {
+            id: 3,
+            label: "Payment",
+            description: "Pay & verify",
+            icon: DollarSign,
+          },
+          {
+            id: 4,
+            label: "Details & Delivery",
+            description: "Additional details & review",
+            icon: Settings,
+          },
+        ]
+      : baseSteps;
   return (
     <div className="mb-6 w-full">
       <div className="relative">
         {/* Progress Line */}
         <div className="absolute top-6 left-0 right-0 h-1 bg-gradient-to-r from-primary via-v0-green to-v0-orange rounded-full">
-          <div 
+          <div
             className="h-full bg-gradient-to-r from-primary to-v0-green rounded-full transition-all duration-500"
-            style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+            style={{
+              width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+            }}
           />
         </div>
 
@@ -70,14 +106,22 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
 
               {/* Step Info - Compact */}
               <div className="space-y-1">
-                <h3 className={`text-xs md:text-sm font-bold transition-colors ${
-                  currentStep >= step.id ? "text-foreground" : "text-muted-foreground"
-                }`}>
+                <h3
+                  className={`text-xs md:text-sm font-bold transition-colors ${
+                    currentStep >= step.id
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
                   {step.label}
                 </h3>
-                <p className={`text-[10px] md:text-xs transition-colors hidden md:block ${
-                  currentStep >= step.id ? "text-muted-foreground" : "text-muted-foreground/60"
-                }`}>
+                <p
+                  className={`text-[10px] md:text-xs transition-colors hidden md:block ${
+                    currentStep >= step.id
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground/60"
+                  }`}
+                >
                   {step.description}
                 </p>
               </div>

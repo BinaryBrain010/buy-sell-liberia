@@ -41,10 +41,8 @@ const manualPaymentSchema = new Schema<IManualPayment>(
       type: Schema.Types.ObjectId,
       ref: "Product",
       required: function (this: any) {
-        // Required only for features bound to a specific listing
-        return ["featured_listing", "paid_category_listing"].includes(
-          this.featureType
-        );
+        // Required only for featured listings; paid category payment can be filed before creating a listing
+        return ["featured_listing"].includes(this.featureType);
       },
     },
     amount: { type: Number, required: true },
@@ -83,6 +81,12 @@ const manualPaymentSchema = new Schema<IManualPayment>(
     timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
   }
 );
+
+// Performance indexes for common admin queries
+manualPaymentSchema.index({ status: 1, createdAt: -1 });
+manualPaymentSchema.index({ createdAt: -1 });
+manualPaymentSchema.index({ user: 1, createdAt: -1 });
+manualPaymentSchema.index({ listing: 1, createdAt: -1 });
 
 // If the model was previously compiled with an older schema (e.g., method/listing required),
 // delete it so we can recompile with the relaxed constraints during hot reload in Next.js.

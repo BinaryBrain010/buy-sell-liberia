@@ -300,6 +300,27 @@ export async function PATCH(request: NextRequest) {
           }
         );
         break;
+      case "unhide":
+        // If a listing was previously hidden (removed), allow admin to make it active again
+        product.status = "active";
+        await logger.logCustomOperation(
+          ModuleType.LISTING_MANAGEMENT,
+          OperationType.LISTING_APPROVE,
+          productId,
+          "Product",
+          {
+            adminUserId,
+            productTitle: product.title,
+            productOwner: productOwner,
+            previousStatus,
+            newStatus: "active",
+            action: "unhide",
+            productCategory: productCategory,
+            productSubcategory: productSubcategory,
+            ...(reason ? { reason } : {}),
+          }
+        );
+        break;
       case "markAsSold":
         product.status = "sold";
         // Log mark as sold action

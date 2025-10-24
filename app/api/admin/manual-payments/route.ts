@@ -5,13 +5,7 @@ import User from "../../../../models/User";
 import Product from "../../../../models/Product";
 import RevenueEntry from "../../../../models/RevenueEntry";
 import { AdminAuthService } from "../../modules/auth/services/admin-auth.service";
-import { EmailService } from "../../modules/auth/services/email.service";
-import "../../../../models";
-import {
-  createAdminAuditLogger,
-  ModuleType,
-  OperationType,
-} from "../../../../lib/admin-audit-middleware";
+import { connectDB } from "../../../../lib/mongoose";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,11 +28,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Connect to DB if needed
+    // Connect to DB (cached)
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(
-        process.env.MONGODB_URI || process.env.MONGODB_URI!
-      );
+      await connectDB();
     }
 
     // Pagination and filtering
@@ -50,14 +42,33 @@ export async function GET(request: NextRequest) {
     const filter: any = {};
     if (status) filter.status = status;
 
-    const total = await ManualPayment.countDocuments(filter);
-    const payments = await ManualPayment.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 })
-      .populate("user", "fullName username email")
-      .populate("listing", "title featured")
-      .lean();
+    const [total, payments] = await Promise.all([
+      ManualPayment.countDocuments(filter),
+      ManualPayment.find(filter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .select([
+          "user",
+          "listing",
+          "amount",
+          "method",
+          "transactionId",
+          "screenshot",
+          "status",
+          "adminNotes",
+          "userNotes",
+          "createdAt",
+          "reviewedBy",
+          "reviewedAt",
+          "featureType",
+          "featurePlan",
+          "featureDuration",
+        ])
+        .populate({ path: "user", select: "fullName username email" })
+        .populate({ path: "listing", select: "title featured" })
+        .lean(),
+    ]);
 
     // Add all required details for the panel
     const result = payments.map((payment) => ({
@@ -125,9 +136,7 @@ export async function PATCH(request: NextRequest) {
 
     // Connect DB
     if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(
-        process.env.MONGODB_URI || process.env.MONGODB_URI!
-      );
+      await connectDB();
     }
 
     // Load payment
@@ -153,8 +162,37 @@ export async function PATCH(request: NextRequest) {
       payment.reviewedAt = new Date();
       await payment.save();
 
+      // Chat notify user about rejection (system sender)
+      try {
+        const { sendChatMessageToUsers } = await import(
+          "@/app/api/modules/notifications/services/chat-notification.service"
+        );
+        const message = `Your manual payment has been rejected.${
+          adminNotes ? ` Reason: ${adminNotes}` : ""
+        }`;
+        const productId =
+          (payment as any).featureType === "account_verification"
+            ? null
+            : payment.listing
+            ? String(payment.listing)
+            : null;
+        await sendChatMessageToUsers({
+          recipients: [String(payment.user)],
+          message,
+          productId,
+          useSystemSender: true,
+          adminUserId: (payload as any)._id || (payload as any).id,
+          adminEmail: (payload as any).email,
+        });
+      } catch (chatErr) {
+        console.error("Manual payment reject chat notify failed:", chatErr);
+      }
+
       // Audit log: payment reject
       try {
+        const { createAdminAuditLogger, OperationType } = await import(
+          "../../../../lib/admin-audit-middleware"
+        );
         const logger = createAdminAuditLogger(
           request,
           (payload as any)._id ||
@@ -183,6 +221,9 @@ export async function PATCH(request: NextRequest) {
       }
       // Email notify user (if email exists)
       try {
+        const { EmailService } = await import(
+          "../../modules/auth/services/email.service"
+        );
         const u = await User.findById(payment.user).lean();
         if (u && (u as any).email) {
           const emailService = new EmailService();
@@ -332,8 +373,48 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Chat notify user about approval (system sender)
+    try {
+      const { sendChatMessageToUsers } = await import(
+        "@/app/api/modules/notifications/services/chat-notification.service"
+      );
+      let message = "Your manual payment has been approved.";
+      if (featureType === "featured_listing") {
+        const days = Math.max(1, Number(featureDuration) || 1);
+        message = `Your manual payment for featuring your listing has been approved. Your listing is now featured for ${days} day${
+          days === 1 ? "" : "s"
+        }.`;
+      } else if (featureType === "bump_listing") {
+        const credits = Number(bumpCredits) || 1;
+        message = `Your manual payment for bump credits has been approved. You now have ${credits} bump credit${
+          credits === 1 ? "" : "s"
+        }.`;
+      } else if (featureType === "account_verification") {
+        message = `Your manual payment for account verification has been approved. Your account is now fully verified.`;
+      }
+      const productId =
+        featureType === "account_verification"
+          ? null
+          : payment.listing
+          ? String(payment.listing)
+          : null;
+      await sendChatMessageToUsers({
+        recipients: [String(payment.user)],
+        message,
+        productId,
+        useSystemSender: true,
+        adminUserId: (payload as any)._id || (payload as any).id,
+        adminEmail: (payload as any).email,
+      });
+    } catch (chatErr) {
+      console.error("Manual payment approval chat notify failed:", chatErr);
+    }
+
     // Audit logs for approval and any listing change
     try {
+      const { createAdminAuditLogger, OperationType } = await import(
+        "../../../../lib/admin-audit-middleware"
+      );
       const logger = createAdminAuditLogger(
         request,
         (payload as any)._id ||
@@ -379,6 +460,9 @@ export async function PATCH(request: NextRequest) {
 
     // Email notify user on approval
     try {
+      const { EmailService } = await import(
+        "../../modules/auth/services/email.service"
+      );
       const u = await User.findById(payment.user).lean();
       if (u && (u as any).email) {
         const emailService = new EmailService();

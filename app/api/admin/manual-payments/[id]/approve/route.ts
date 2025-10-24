@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import ManualPayment from "../../../../../../models/ManualPayment";
 import Product from "../../../../../../models/Product";
 import User from "../../../../../../models/User";
-import Chat from "../../../../../../models/Chat";
+import { sendChatMessageToUsers } from "@/app/api/modules/notifications/services/chat-notification.service";
 import { AdminAuthService } from "../../../../modules/auth/services/admin-auth.service";
 import { createAdminAuditLogger } from "../../../../../../lib/admin-audit-middleware";
 import { OperationType, ModuleType } from "../../../../../../lib/audit-logger";
@@ -29,6 +29,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const adminId = payload._id || payload.id;
+    const adminEmail =
+      typeof payload.email === "string" ? payload.email : undefined;
 
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI!);
@@ -207,34 +209,24 @@ export async function PATCH(
       }
     }
 
-    // Send message to user via chat
-    const userId = payment.user._id;
-    let senderId = reviewedById || userId; // Use reviewedById or fallback to userId for system messages
+    // Send message to user via chat using centralized notification service
+    const userId = payment.user._id?.toString();
     const productTitle =
       productDoc &&
       typeof productDoc === "object" &&
       productDoc !== null &&
       "title" in productDoc
-        ? productDoc.title
+        ? (productDoc as any).title
         : "";
     const productId = (
       productDoc &&
       typeof productDoc === "object" &&
       productDoc !== null &&
       "_id" in productDoc
-        ? productDoc._id
-        : payment.listing
-    ) as string | mongoose.Types.ObjectId;
-    let chat = await Chat.findOne({ product: productId, user2: userId });
-    if (!chat) {
-      chat = await Chat.create({
-        product: productId,
-        user1: senderId,
-        user2: userId,
-        messages: [],
-      });
-      console.log("Created new chat:", chat._id);
-    }
+        ? (productDoc as any)._id?.toString()
+        : payment.listing?.toString()
+    ) as string | undefined;
+
     // Create appropriate message based on feature type
     let message = "";
     if (payment.featureType === "featured_listing") {
@@ -249,25 +241,33 @@ export async function PATCH(
       const bumpCredits = payment.bumpCredits || payment.featureDuration || 1;
       const bumpText =
         bumpCredits === 1 ? "1 bump credit" : `${bumpCredits} bump credits`;
-      message = `Your manual payment for bump credits has been approved. You now have ${bumpText} for the product "${productTitle}". You can use these credits to bump your listing to the top of search results.`;
+      message = `Your manual payment for bump credits has been approved. You now have ${bumpText} for the product "${productTitle}".`;
+    } else if (payment.featureType === "account_verification") {
+      message = `Your manual payment for account verification has been approved. Your account is now fully verified.`;
     } else {
-      message = `Your manual payment for the product "${productTitle}" has been approved.`;
+      message = `Your manual payment has been approved.`;
     }
 
-    chat.messages.push({
-      sender: senderId,
-      content: message,
-      sentAt: new Date(),
-      readBy: [],
-    });
-    chat.lastMessageAt = new Date();
-    console.log("Pushed message to chat:", chat._id, "Sender:", senderId);
-    await chat.save();
+    if (userId) {
+      await sendChatMessageToUsers({
+        recipients: [userId],
+        message,
+        productId:
+          payment.featureType === "account_verification"
+            ? null
+            : productId ?? null,
+        useSystemSender: true,
+        adminUserId: adminId,
+        adminEmail,
+      });
+    }
 
     // Log the payment approval operation
     await logger.logPaymentOperation(OperationType.PAYMENT_APPROVE, params.id, {
       adminNotes,
-      productId: productId.toString(),
+      productId: (
+        productId ?? (payment.listing ? String(payment.listing) : "")
+      ).toString(),
       productTitle,
       userId: userId.toString(),
       userEmail: (payment.user as any)?.email || "unknown@email.com",

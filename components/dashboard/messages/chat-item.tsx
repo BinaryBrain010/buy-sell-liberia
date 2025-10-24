@@ -24,6 +24,15 @@ export const ChatItem = ({
   lastMessage,
   onClick,
 }: ChatItemProps) => {
+  const showLogo = (() => {
+    const nameHit =
+      typeof otherUserName === "string" &&
+      otherUserName.toLowerCase().includes("buyselliberia");
+    const manualPaymentHit =
+      typeof lastMessage?.content === "string" &&
+      lastMessage.content.toLowerCase().includes("manual payment");
+    return nameHit || manualPaymentHit;
+  })();
   return (
     <div
       className={`p-2 md:p-2.5 lg:p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow ${
@@ -34,7 +43,11 @@ export const ChatItem = ({
       onClick={onClick}
     >
       <div className="flex items-start gap-2 md:gap-2.5">
-        <ProductThumbnail product={chat.product} size="sm" />
+        <ProductThumbnail
+          product={chat.product}
+          size="sm"
+          forceLogo={showLogo}
+        />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">

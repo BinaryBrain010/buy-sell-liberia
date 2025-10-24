@@ -45,6 +45,7 @@ export interface CreateProductData {
     value: any;
   }>;
   featured?: boolean;
+  status?: "active" | "sold" | "expired" | "removed" | "pending";
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
@@ -126,7 +127,7 @@ export class ProductService extends BaseService<IProduct> {
           : undefined,
         slug,
         user_id: this.createObjectId(sellerId),
-        status: "active",
+        status: productData.status || "active",
         views: 0,
         featured: productData.featured ?? false,
         details: detailsPayload,
@@ -139,17 +140,18 @@ export class ProductService extends BaseService<IProduct> {
 
       // Update seller: push listing entry and update statistics in one atomic op
       try {
+        const isActive = product.status === "active";
         await User.findByIdAndUpdate(sellerId, {
           $push: {
             listedProducts: {
               product_id: product._id,
               listed_at: new Date(),
-              status: "active",
+              status: product.status,
             },
           },
           $inc: {
             "activity.totalListings": 1,
-            "activity.activeListings": 1,
+            ...(isActive ? { "activity.activeListings": 1 } : {}),
           },
         });
       } catch (uErr) {

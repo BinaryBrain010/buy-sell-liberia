@@ -17,10 +17,26 @@ export const ChatHeader = ({
   isOtherUserOnline,
   messageCount,
 }: ChatHeaderProps) => {
+  const lastMsg = Array.isArray(chat?.messages)
+    ? chat.messages[chat.messages.length - 1]
+    : null;
+  const showLogo = (() => {
+    const nameHit =
+      typeof otherUserName === "string" &&
+      otherUserName.toLowerCase().includes("buyselliberia");
+    const manualPaymentHit =
+      typeof lastMsg?.content === "string" &&
+      lastMsg.content.toLowerCase().includes("manual payment");
+    return nameHit || manualPaymentHit;
+  })();
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 p-3 sm:p-4 rounded-xl mb-3 sm:mb-4 border border-blue-100 dark:border-gray-700">
       <div className="flex items-center gap-3">
-        <ProductThumbnail product={chat.product} size="sm" />
+        <ProductThumbnail
+          product={chat.product}
+          size="sm"
+          forceLogo={showLogo}
+        />
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">

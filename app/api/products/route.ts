@@ -193,6 +193,50 @@ export async function POST(request: NextRequest) {
       order: index,
     }));
 
+    // Determine initial status based on paid category rules (independent of global toggle)
+    let initialStatus: "active" | "pending" = "active";
+    try {
+      if (category_id) {
+        const catDoc = await Category.findById(category_id).select(
+          "name slug isPaidCategory pricePerListing"
+        );
+        if (catDoc) {
+          const featureEnabled = Boolean(
+            (settings as any)?.isPaidCategoryActive ||
+              (settings as any)?.paidCategoriesEnabled
+          );
+          const isFlaggedPaid =
+            Boolean(catDoc.isPaidCategory) &&
+            Number(catDoc.pricePerListing || 0) > 0;
+          const looksPaidByName = Boolean(
+            (catDoc.name || "").match(/^(vehicles|real\s*estate)$/i)
+          );
+          // Settings fallback price (when category doesn't carry it)
+          const paidCfg: any =
+            (settings as any)?.monetizationPrices?.paid_category_listing ||
+            (settings as any)?.monetizationPrices?.paid_category ||
+            {};
+          const planPaid: any =
+            paidCfg?.["paid"] || (Object.values(paidCfg || {})[0] as any);
+          const settingsPrice = Number(planPaid?.price || 0);
+          const hasAnyPrice =
+            Number(catDoc.pricePerListing || 0) > 0 || settingsPrice > 0;
+
+          if (
+            featureEnabled &&
+            (isFlaggedPaid || (looksPaidByName && hasAnyPrice))
+          ) {
+            initialStatus = "pending";
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(
+        "[PRODUCTS API] Paid category check failed:",
+        (e as any)?.message
+      );
+    }
+
     // Create product
     const product = await productService.createProduct(authResult.userId, {
       title,
@@ -214,6 +258,7 @@ export async function POST(request: NextRequest) {
             value,
           }))
         : undefined,
+      status: initialStatus,
     } as any); // Using 'as any' to bypass TypeScript interface limitations
 
     console.log("[PRODUCTS API] Product created successfully:", product._id);

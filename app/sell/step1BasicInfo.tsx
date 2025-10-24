@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { Package, DollarSign } from "lucide-react";
 import { Step1BasicInfoProps, CONDITIONS, ProductFormData } from "./types";
 import { FadeIn, FadeInStagger } from "@/components/static-pages/Animated";
 import { cn } from "@/lib/utils";
+import { convertAmount, formatMoney } from "@/lib/currency";
 
 const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
   formData,
@@ -28,6 +29,44 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
     (cat) => cat._id === formData.category
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [paidInfo, setPaidInfo] = useState<{
+    enabled: boolean;
+    priceUSD?: number;
+    currency?: string;
+    rates?: any;
+  } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchPaidInfo = async () => {
+      try {
+        const [pubRes, plansRes] = await Promise.all([
+          fetch("/api/settings/public", { cache: "no-store" }),
+          fetch("/api/monetization/plans", { cache: "no-store" }),
+        ]);
+        const pub = await pubRes.json();
+        const plans = await plansRes.json();
+        const paidCfg =
+          plans?.plans?.paid_category_listing ||
+          plans?.plans?.paid_category ||
+          {};
+        const paidPlan = paidCfg["paid"] || Object.values(paidCfg || {})[0];
+        if (!mounted) return;
+        setPaidInfo({
+          enabled: !!plans?.paidCategories?.enabled,
+          priceUSD: paidPlan?.price ? Number(paidPlan.price) : undefined,
+          currency: pub?.currency || "LRD",
+          rates: pub?.rates,
+        });
+      } catch {
+        // ignore
+      }
+    };
+    fetchPaidInfo();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -36,6 +75,25 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
       textarea.style.height = `${textarea.scrollHeight}px`;
     }
   }, [formData.description]);
+
+  const paidCategoryBanner = useMemo(() => {
+    if (!selectedCategory || !paidInfo?.enabled) return null;
+    const name = (selectedCategory.name || "").toLowerCase();
+    const isTarget =
+      name === "vehicles" || name === "real estate" || name === "realestate";
+    if (!isTarget) return null;
+    const usd = Number(paidInfo.priceUSD || 0);
+    if (!usd) return null;
+    const sys = (paidInfo.currency || "LRD").toUpperCase();
+    const converted = convertAmount(usd, "USD", sys, paidInfo.rates);
+    return (
+      <div className="mt-2 p-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
+        This is a paid category. A one-time listing fee applies:{" "}
+        {formatMoney(converted, sys)} ({formatMoney(usd, "USD")}). You will be
+        asked to provide payment details before submission.
+      </div>
+    );
+  }, [selectedCategory, paidInfo]);
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-6">
@@ -137,6 +195,7 @@ const CompactStep1BasicInfo: React.FC<Step1BasicInfoProps> = ({
                     {errors.category}
                   </p>
                 )}
+                {paidCategoryBanner}
               </div>
             </FadeInStagger>
 
