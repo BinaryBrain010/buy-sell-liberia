@@ -53,10 +53,50 @@ export function HeroSection() {
     setShowAuthModal(true);
   };
 
+  // Banner ads state
+  const [banners, setBanners] = useState<
+    Array<{ id: string; imageUrl: string }>
+  >([]);
+  const [idx, setIdx] = useState(0);
+  const [loadingBanners, setLoadingBanners] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/banner-ad", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to load banners");
+        const json = await res.json();
+        const items = Array.isArray(json?.items) ? json.items : [];
+        if (isMounted) setBanners(items);
+      } catch {
+        if (isMounted) setBanners([]);
+      } finally {
+        if (isMounted) setLoadingBanners(false);
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Auto-advance the banner every 6 seconds (only when there's more than one)
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const t = setInterval(() => {
+      setIdx((i) => (i + 1) % banners.length);
+    }, 6000);
+    return () => clearInterval(t);
+  }, [banners.length]);
+
   return (
     <section className="relative box-border min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/30 py-8 md:py-10 lg:py-18 overflow-hidden">
       {/* Enhanced Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
+        {/* Half radial gradients on top corners in logo (primary) color */}
+        <div className="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-gradient-to-br from-primary/25 to-transparent blur-3xl" />
+        <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-gradient-to-bl from-primary/25 to-transparent blur-3xl" />
+        {/* Existing decorative accents */}
         <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-gradient-to-br from-primary/20 to-transparent blur-3xl" />
         <div className="absolute top-1/3 -left-40 h-60 w-60 rounded-full bg-gradient-to-br from-v0-green/20 to-transparent blur-3xl" />
         <div className="absolute bottom-0 right-1/4 h-40 w-40 rounded-full bg-gradient-to-br from-v0-orange/20 to-transparent blur-3xl" />
@@ -65,6 +105,34 @@ export function HeroSection() {
       <div className="container mx-auto px-4 md:px-8 lg:px-16 max-w-6xl flex flex-col items-center justify-center min-h-[70vh] w-full relative z-10">
         {/* Content Column */}
         <div className="flex flex-col items-center text-center w-full gap-8">
+          {/* Optional Banner Carousel (320x100). Hidden if none. */}
+          {!loadingBanners && banners.length > 0 ? (
+            <div className="mb-6 flex w-full justify-center">
+              <div className="relative w-[320px] h-[100px] md:w-full md:h-auto overflow-hidden rounded-xl border border-border bg-background/70 backdrop-blur">
+                <img
+                  key={banners[idx]?.id || idx}
+                  src={banners[idx]?.imageUrl}
+                  alt="Banner ad"
+                  className="w-full h-full md:h-auto object-contain"
+                  width={320}
+                  height={100}
+                  loading={idx === 0 ? "eager" : "lazy"}
+                />
+                {/* Dots */}
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {banners.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        i === idx ? "bg-primary" : "bg-muted-foreground/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {/* Main Heading */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-balance">
             Your Ultimate Buy & Sell{" "}
