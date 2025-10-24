@@ -105,10 +105,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/sell"
+                  href="/marketing"
                   className="text-muted-foreground hover:text-primary"
                 >
-                  Sell Item
+                  Marketing
                 </Link>
               </li>
               <li>

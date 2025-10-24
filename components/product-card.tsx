@@ -1,9 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, MapPin, Clock, Eye, Star, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, Eye, Star, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { useTheme } from "next-themes";
