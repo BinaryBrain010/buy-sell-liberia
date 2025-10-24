@@ -1,172 +1,185 @@
 # BuySell Liberia
 
-A comprehensive online marketplace for buying and selling goods in Liberia.
+A modern marketplace for buying and selling in Liberia, built with Next.js (App Router), an Express + Socket.IO realtime server, and MongoDB via Mongoose.
 
-## 🚀 Getting Started
+## Overview
+
+- Frontend/API: Next.js 14 (app directory) on port 3000
+- Realtime server: Express + Socket.IO on port 3001 (`server/index.js`)
+- Database: MongoDB (local or Atlas) via Mongoose (`lib/mongoose.ts`)
+- Storage helpers: Local uploads under `/uploads` with a Next.js file-serving route at `/uploads/*`, optional Firebase helpers
+
+Key features:
+
+- Listings with categories, pagination, featured listings, and product detail views
+- Client-side auth via JWT stored locally with fast UI state and background profile fetching
+- Realtime presence, announcements, and messaging through Socket.IO
+- Monetization plans (including banner ads), subscription/featured/bump flows
+- Admin tools for banner images with auto-expiry and cleanup
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- MongoDB Atlas account or local MongoDB installation
-- Git
+- Node.js 18+
+- MongoDB (local or Atlas)
 
-### Installation
+### Install
 
-1. **Clone the repository:**
+```bash
+git clone https://github.com/BinaryBrain010/buy-sell-liberia.git
+cd buy-sell-liberia
+npm install
+```
 
-   ```bash
-   git clone https://github.com/BinaryBrain010/buy-sell-liberia.git
-   cd buy-sell-liberia
-   ```
+### Environment variables
 
-2. **Install dependencies:**
+Create a `.env` in the project root and set at least:
 
-   ```bash
-   npm install
-   ```
+```env
+MONGODB_URI=mongodb://localhost:27017/buysell
+# Optional: Firebase client vars if you use Firebase storage
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
 
-3. **Set up environment variables:**
+# Optional: protect cron cleanup endpoint
+CRON_SECRET=your-strong-random-secret
+```
 
-   - Copy `.env.example` to `.env` (if available) or create a `.env` file
-   - Update the following variables:
+### Run (development)
 
-   ```env
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   NEXTAUTH_SECRET=your_nextauth_secret
-   ```
+- Frontend/API only:
 
-4. **Seed the database with categories:**
+```bash
+npm run dev
+```
 
-   ```bash
-   node seeders/categories-seeder.js
-   ```
+- Socket server only:
 
-5. **Run the development server:**
+```bash
+npm run dev:socket
+```
 
-   ```bash
-   npm run dev
-   ```
+- Both together:
 
-6. **Open your browser:**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+```bash
+npm run dev:all
+```
 
-## 📊 Database Setup
+Visit http://localhost:3000 (Next.js) and the socket server at http://localhost:3001.
 
-### Categories Seeder
+### Build and start (production)
 
-The application includes a comprehensive categories seeder that populates your database with 17 main categories and their subcategories, specifically tailored for the Liberian marketplace.
+```bash
+npm run build
+npm run start
+```
 
-#### Running the Categories Seeder
+## Seeding data
+
+Categories and other seeds are provided.
+
+- Seed categories (TS/JS variants available):
 
 ```bash
 node seeders/categories-seeder.js
+# or
+node scripts/seed-categories.js
 ```
 
-#### What Gets Seeded
-
-The seeder creates **17 categories** with a total of **68 subcategories**:
-
-1. **📱 Electronics** (5 subcategories) - Mobile phones, tablets, laptops, TVs, accessories
-2. **🚗 Vehicles** (3 subcategories) - Cars, motorcycles, auto parts
-3. **👗 Fashion & Beauty** (4 subcategories) - Men's, women's, children's fashion, beauty products
-4. **🏠 Home & Garden** (4 subcategories) - Furniture, appliances, decor, garden items
-5. **🏘️ Real Estate** (5 subcategories) - Houses for sale/rent, apartments, commercial property, land
-6. **💼 Jobs** (4 subcategories) - Full-time, part-time, freelance, internships
-7. **🔧 Services** (6 subcategories) - Construction, transportation, cleaning, IT, education, beauty services
-8. **🌾 Food & Agriculture** (4 subcategories) - Fresh produce, livestock, farm equipment, seeds
-9. **⚽ Sports & Recreation** (3 subcategories) - Fitness equipment, team sports, outdoor activities
-10. **📚 Books & Education** (3 subcategories) - Academic books, general books, educational supplies
-11. **👶 Baby & Kids** (3 subcategories) - Baby care, baby gear, toys & games
-12. **🐕 Pets & Animals** (4 subcategories) - Dogs, cats, other pets, pet services
-13. **⚕️ Health & Medical** (3 subcategories) - Medical equipment, wellness products, personal care
-14. **🎨 Arts & Entertainment** (4 subcategories) - Musical instruments, art supplies, games, movies
-15. **🏭 Business & Industrial** (4 subcategories) - Office supplies, industrial equipment, restaurant equipment, security
-16. **✈️ Travel & Tourism** (4 subcategories) - Tour packages, accommodation, transportation services, travel accessories
-17. **🎪 Community & Events** (5 subcategories) - Event planning, venue rentals, photography, music & entertainment, community services
-
-#### Features of the Seeder
-
-- **✅ Custom Fields**: Each subcategory includes relevant custom form fields for detailed product listings
-- **📱 Mobile-First**: Includes popular brands like Tecno, Infinix, and Itel (popular in Liberia)
-- **🏘️ Local Context**: Categories tailored for Liberian market needs
-- **🖼️ Placeholder Support**: Uses `/placeholder.jpg` for all subcategory images
-- **🔧 Validation**: Includes proper field validation and required field specifications
-
-#### Verifying the Seeder
-
-To check if categories were successfully seeded:
+- Verify categories:
 
 ```bash
 node scripts/check-categories.js
 ```
 
-This will display:
+## Notable APIs and routes
 
-- Total number of categories
-- List of all categories with subcategory counts
-- Database connection information
-- Confirmation that data is in the correct database
+- Monetization plans (used by marketing page):
 
-## 🛠️ Available Scripts
+  - GET `/api/monetization/plans` → returns currency, enabled flags, and plans including `plans.banner_ad`
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `node seeders/categories-seeder.js` - Seed database with categories
-- `node scripts/check-categories.js` - Verify seeded categories
+- Banner image management (admin upload, public list):
 
-## 🏗️ Project Structure
+  - GET `/api/admin/banner-ad` → public; returns minimal array of `{ id, imageUrl }`
+  - POST `/api/admin/banner-ad` → admin; upload images (supports `days` to auto-expire)
+  - DELETE `/api/admin/banner-ad` → admin; remove by `id` or `ids[]`
+
+- Static uploads (serving files):
+
+  - GET `/uploads/*` → serves files from the local `uploads/` folder with correct content type and caching
+
+- Cron cleanup for expired banner ads:
+  - GET/POST `/api/cron/cleanup-banner-ads` → deletes expired banners and local files
+  - Set `CRON_SECRET` and include `x-cron-secret` header if you want to protect the endpoint
+  - See `docs/CRON_SETUP.md`
+
+## Frontend highlights
+
+- Featured Listings carousel (Embla-based)
+
+  - Responsive slidesToScroll (1 mobile, 2–4 larger screens)
+  - Mobile swipe fixes to prevent accidental taps during drag
+  - Optional arrows on larger screens
+
+- Hero banner strip
+  - Auto-rotating banner images (320×100 on mobile; full width with auto height on larger screens)
+  - Falls back gracefully when no banner images are available
+
+## Scripts
+
+- `npm run dev` → Next.js dev server
+- `npm run dev:socket` → Socket.IO server
+- `npm run dev:all` → Start both
+- `npm run build` → Build Next.js
+- `npm run start` → Start Next.js production server
+- `npm run lint` → ESLint
+- Seeders and utility scripts: see `seeders/` and `scripts/`
+
+## Project structure
 
 ```
-├── app/                    # Next.js 13+ app directory
-├── components/            # React components
-├── lib/                   # Utility libraries
-├── models/               # MongoDB/Mongoose models
-├── public/               # Static assets
-├── seeders/              # Database seeders
-├── scripts/              # Utility scripts
-├── styles/               # CSS styles
-└── types/                # TypeScript type definitions
+app/                # Next.js app router (routes, pages, API)
+components/         # UI and feature components
+docs/               # Feature- and API-level documentation
+hooks/              # React hooks
+lib/                # Shared libraries (db, storage, socket helpers, jwt)
+models/             # Mongoose models
+public/             # Static assets
+scripts/            # Dev and data scripts
+seeders/            # Seed data scripts
+server/             # Express + Socket.IO server
+test/               # Tests (if added)
 ```
 
-## 🌍 Liberian Marketplace Features
+## Additional docs
 
-This platform is specifically designed for the Liberian market with:
+- Featured listings: `docs/FEATURED_LISTINGS_API.md`, `docs/FEATURED_LISTINGS_IMPLEMENTATION.md`
+- Revenue/Monetization: `docs/REVENUE_API.md`, `docs/SUBSCRIPTION_API.md`, `docs/MONETIZATION_INTEGRATION_README.md`
+- Verification workflow: `docs/VERIFICATION_WORKFLOW.md`
+- Cron setup: `docs/CRON_SETUP.md`
 
-- **Local Categories**: Categories relevant to Liberian commerce
-- **Popular Brands**: Includes brands commonly used in Liberia
-- **Real Estate**: Tailored for Liberian property market
-- **Agriculture**: Support for Liberian farming and livestock
-- **Services**: Local service categories
-- **Tourism**: Support for Liberia's growing tourism industry
-
-## 📝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create a feature branch: `git checkout -b feat/your-feature`
+3. Commit: `git commit -m "feat: add your feature"`
+4. Push: `git push origin feat/your-feature`
 5. Open a Pull Request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License.
+MIT
 
-## 🆘 Support
+## Support
 
-For support and questions:
+- Open an issue in this repository
+- Email: info@buysellliberia.com
 
-- Create an issue in the GitHub repository
-- Contact: info@buysellliberia.com
+—
 
----
-
-**BuySell Liberia** - Connecting buyers and sellers across Liberia 🇱🇷
-
----
-
-Additional docs:
-
-- Monetization flows (plans, payments, bumps, featured, verification): see docs/MONETIZATION_INTEGRATION_README.md
+BuySell Liberia — Connecting buyers and sellers across Liberia 🇱🇷
