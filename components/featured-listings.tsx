@@ -8,6 +8,7 @@ import { clearStoredTokens, getLocalAuthStatus } from "@/lib/jwt";
 import { ProductCard } from "@/components/product-card";
 import { ProductService } from "@/app/services/Product.Service";
 import {
+  type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
@@ -50,6 +51,67 @@ export function FeaturedListings() {
   const [platformCurrency, setPlatformCurrency] = useState<"USD" | "LRD">(
     "USD"
   );
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [slidesToScroll, setSlidesToScroll] = useState(1);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+
+  // Track dragging to prevent accidental clicks during swipe on mobile
+  useEffect(() => {
+    if (!carouselApi) return;
+    let dragging = false;
+    const onPointerDown = () => {
+      dragging = false;
+    };
+    const onScroll = () => {
+      dragging = true;
+    };
+    const onPointerUp = () => {
+      setIsDragging(dragging);
+      // Reset on next tick so regular taps still work
+      setTimeout(() => setIsDragging(false), 0);
+    };
+
+    carouselApi.on("pointerDown", onPointerDown);
+    carouselApi.on("scroll", onScroll);
+    carouselApi.on("pointerUp", onPointerUp);
+    return () => {
+      carouselApi.off("pointerDown", onPointerDown);
+      carouselApi.off("scroll", onScroll);
+      carouselApi.off("pointerUp", onPointerUp);
+    };
+  }, [carouselApi]);
+
+  // Responsive slidesToScroll based on viewport width
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      if (w < 640) setSlidesToScroll(1); // mobile
+      else if (w < 1024) setSlidesToScroll(2); // tablet
+      else if (w < 1280) setSlidesToScroll(3); // small laptop
+      else setSlidesToScroll(4); // large screens
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  // Track canScrollPrev/Next for edge fade indicators
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => {
+      setCanPrev(carouselApi.canScrollPrev());
+      setCanNext(carouselApi.canScrollNext());
+    };
+    onSelect();
+    carouselApi.on("select", onSelect);
+    carouselApi.on("reInit", onSelect);
+    return () => {
+      carouselApi.off("select", onSelect);
+      carouselApi.off("reInit", onSelect);
+    };
+  }, [carouselApi]);
 
   // auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -130,14 +192,15 @@ export function FeaturedListings() {
         </div>
 
         {loading ? (
-          <FeaturedCarouselSkeleton count={8} slidesToScroll={1} />
+          <FeaturedCarouselSkeleton count={8} slidesToScroll={slidesToScroll} />
         ) : products.length === 0 ? (
           <FeaturedListingsEmptyState onStartSelling={handleStartSelling} />
         ) : (
-          <div>
+          <div className="relative">
             <Carousel
               className="w-full overflow-visible"
-              opts={{ align: "start", loop: true, slidesToScroll: 4 }}
+              opts={{ align: "start", loop: true, slidesToScroll }}
+              setApi={setCarouselApi}
             >
               <CarouselContent className="-ml-2 md:-ml-4">
                 {products.map((product: any) => (
@@ -146,7 +209,11 @@ export function FeaturedListings() {
                     className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
                   >
                     <div
-                      onClick={() => router.push(`/products/${product._id}`)}
+                      onClick={() => {
+                        // Prevent accidental navigation when the user swipes on mobile
+                        if (isDragging) return;
+                        router.push(`/products/${product._id}`);
+                      }}
                       className="cursor-pointer h-full group transition-all duration-300"
                     >
                       <div className="relative overflow-hidden rounded-2xl bg-background/80 backdrop-blur-sm border border-border/50 transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-primary/10 group-hover:border-primary/30">
