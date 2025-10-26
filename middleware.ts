@@ -10,8 +10,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // CORS: Allow requests from admin panel origin
-  // const allowedOrigin = "https://admin.buysellliberia.com";
-  const allowedOrigin = "http://localhost:5173";
+  const allowedOrigin = "https://admin.buysellliberia.com";
+  // const allowedOrigin = "http://localhost:5173";
   const origin = request.headers.get("origin");
 
   // Handle CORS preflight ASAP
@@ -36,6 +36,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
+    pathname.startsWith("/api") || // allow all API routes during maintenance (admin ops, auth, etc.)
     pathname.startsWith("/api/settings/maintenance");
 
   if (!maintenanceBypass) {
