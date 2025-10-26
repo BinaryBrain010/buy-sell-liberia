@@ -168,6 +168,10 @@ export default async function MarketingPage() {
               Choose a plan that fits your campaign. Prices are shown in{" "}
               {currency}.
             </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Please provide banner images sized exactly 900 × 300 pixels (width
+              × height) for optimal display.
+            </p>
           </div>
 
           {!data ? (

@@ -84,7 +84,18 @@ export default function FavouriteListings({ userId }: FavouriteListingsProps) {
 
         // Load favourites
         const favorites = await ProductService.getUserFavorites();
-        setFavourites(favorites);
+        // Normalize images to string[] in case API returns objects like { url }
+        const normalized = (favorites || []).map((f: any) => ({
+          ...f,
+          images: Array.isArray(f?.images)
+            ? f.images
+                .map((img: any) =>
+                  typeof img === "string" ? img : img?.url || ""
+                )
+                .filter(Boolean)
+            : [],
+        }));
+        setFavourites(normalized);
       } catch (error: any) {
         console.error("Failed to load data:", error);
         setError(error.message || "Failed to load data");
@@ -452,10 +463,12 @@ function FavoriteListItem({
   isRemoving: boolean;
 }) {
   // Image URL resolution function
-  const resolveImageUrl = (raw?: string) => {
+  const resolveImageUrl = (raw?: any) => {
     if (!raw) return "/placeholder.jpg";
-    if (/^(https?:)?\/\//i.test(raw) || raw.startsWith("data:")) return raw;
-    const cleaned = raw.replace(/^\/+/, "");
+    const src = typeof raw === "string" ? raw : raw?.url;
+    if (!src || typeof src !== "string") return "/placeholder.jpg";
+    if (/^(https?:)?\/\//i.test(src) || src.startsWith("data:")) return src;
+    const cleaned = src.replace(/^\/+/, "");
     if (cleaned.startsWith("api/uploads/")) return `/${cleaned}`;
     if (cleaned.startsWith("uploads/")) return `/api/${cleaned}`;
     if (/\.[a-zA-Z0-9]{2,5}$/.test(cleaned)) return `/api/uploads/${cleaned}`;
