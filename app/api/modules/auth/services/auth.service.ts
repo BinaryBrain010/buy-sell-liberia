@@ -129,9 +129,20 @@ export class AuthService {
         (user._id as any).toString()
       );
 
-      // Update user with refresh token
-      user.refreshToken = refreshToken;
-      await user.save();
+      // Update user with refresh token without triggering full document validation
+      try {
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { refreshToken } },
+          { runValidators: false }
+        );
+      } catch (e) {
+        console.warn(
+          "[AUTH SERVICE] Failed to persist refresh token during login:",
+          (e as any)?.message || e
+        );
+        // Do not block login if this metadata update fails
+      }
 
       console.log("[AUTH SERVICE] Login successful for:", email);
 
@@ -371,8 +382,18 @@ export class AuthService {
         (user._id as any).toString()
       );
 
-      user.refreshToken = newRefreshToken;
-      await user.save();
+      try {
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { refreshToken: newRefreshToken } },
+          { runValidators: false }
+        );
+      } catch (e) {
+        console.warn(
+          "[AUTH SERVICE] Failed to persist new refresh token:",
+          (e as any)?.message || e
+        );
+      }
 
       return {
         accessToken: newAccessToken,
@@ -469,9 +490,19 @@ export class AuthService {
         (user._id as any).toString()
       );
 
-      // Update user with refresh token
-      user.refreshToken = refreshToken;
-      await user.save();
+      // Update user with refresh token without full validation
+      try {
+        await User.updateOne(
+          { _id: user._id },
+          { $set: { refreshToken } },
+          { runValidators: false }
+        );
+      } catch (e) {
+        console.warn(
+          "[AUTH SERVICE] Failed to persist refresh token during Google login:",
+          (e as any)?.message || e
+        );
+      }
 
       console.log("[AUTH SERVICE] Google login successful for:", email);
 

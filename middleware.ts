@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 🚫 Skip middleware for socket.io handshake & polling
@@ -9,12 +9,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // CORS: Allow requests from http://localhost:5173
+  // CORS: Allow requests from admin panel origin
   const allowedOrigin = "https://admin.buysellliberia.com";
   // const allowedOrigin = "http://localhost:5173";
   const origin = request.headers.get("origin");
 
-  // Handle CORS preflight
+  // Handle CORS preflight ASAP
   if (request.method === "OPTIONS") {
     const response = new NextResponse(null, { status: 204 });
     response.headers.set("Access-Control-Allow-Origin", allowedOrigin);
@@ -28,6 +28,35 @@ export function middleware(request: NextRequest) {
     );
     response.headers.set("Access-Control-Allow-Credentials", "true");
     return response;
+  }
+
+  // Maintenance mode: only allow essential assets and the maintenance page to load
+  const maintenanceBypass =
+    pathname.startsWith("/maintenance") ||
+    pathname.startsWith("/_next") ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname.startsWith("/api") || // allow all API routes during maintenance (admin ops, auth, etc.)
+    pathname.startsWith("/api/settings/maintenance");
+
+  if (!maintenanceBypass) {
+    try {
+      const url = new URL("/api/settings/maintenance", request.url);
+      const res = await fetch(url, { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as { maintenance?: boolean };
+        if (data?.maintenance) {
+          // Redirect everything to /maintenance when enabled
+          return NextResponse.redirect(new URL("/maintenance", request.url));
+        }
+      }
+    } catch (e) {
+      console.warn(
+        "[Middleware] Maintenance check failed:",
+        (e as any)?.message || e
+      );
+      // On error, continue normal flow
+    }
   }
 
   // Define protected routes

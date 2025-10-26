@@ -6,7 +6,7 @@ import crypto from "crypto";
 type ProductListing = {
   product_id: mongoose.Types.ObjectId;
   listed_at: Date;
-  status: "active" | "sold" | "draft" | "archived";
+  status: "active" | "sold" | "draft" | "archived" | "pending";
 };
 
 const productListingSchema = new Schema<ProductListing>(
@@ -22,7 +22,7 @@ const productListingSchema = new Schema<ProductListing>(
     },
     status: {
       type: String,
-      enum: ["active", "sold", "draft", "archived"],
+      enum: ["active", "sold", "draft", "archived", "pending"],
       default: "active",
     },
   },
