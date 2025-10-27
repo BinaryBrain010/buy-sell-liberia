@@ -108,14 +108,14 @@ export function HeroSection() {
           {/* Optional Banner Carousel (320x100). Hidden if none. */}
           {!loadingBanners && banners.length > 0 ? (
             <div className="mb-6 flex w-full justify-center">
-              <div className="relative w-[320px] h-[100px] md:w-full md:h-auto overflow-hidden rounded-xl border border-border bg-background/70 backdrop-blur">
+              <div className="relative w-[320px] h-[100px] md:w-full md:h-[300px] overflow-hidden rounded-xl border border-border bg-background/70 backdrop-blur">
                 <img
                   key={banners[idx]?.id || idx}
                   src={banners[idx]?.imageUrl}
                   alt="Banner ad"
-                  className="w-full h-full md:h-auto object-contain"
-                  width={320}
-                  height={100}
+                  className="w-full h-full object-cover block"
+                  width={900}
+                  height={300}
                   loading={idx === 0 ? "eager" : "lazy"}
                 />
                 {/* Dots */}
