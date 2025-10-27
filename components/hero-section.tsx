@@ -119,7 +119,10 @@ export function HeroSection() {
                   }}
                 >
                   {banners.map((b, i) => (
-                    <div key={b.id || i} className="flex-shrink-0 w-full h-full">
+                    <div
+                      key={b.id || i}
+                      className="flex-shrink-0 w-full h-full"
+                    >
                       <img
                         src={b.imageUrl}
                         alt={`Banner ${i + 1}`}
@@ -139,7 +142,9 @@ export function HeroSection() {
                       key={i}
                       onClick={() => setIdx(i)}
                       aria-label={`Go to banner ${i + 1}`}
-                      className={`h-1.5 w-1.5 rounded-full ${i === idx ? "bg-primary" : "bg-muted-foreground/40"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        i === idx ? "bg-primary" : "bg-muted-foreground/40"
+                      }`}
                     />
                   ))}
                 </div>
