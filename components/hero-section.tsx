@@ -109,23 +109,37 @@ export function HeroSection() {
           {!loadingBanners && banners.length > 0 ? (
             <div className="mb-6 flex w-full justify-center">
               <div className="relative w-[320px] h-[100px] md:w-full md:h-[300px] overflow-hidden rounded-xl border border-border bg-background/70 backdrop-blur">
-                <img
-                  key={banners[idx]?.id || idx}
-                  src={banners[idx]?.imageUrl}
-                  alt="Banner ad"
-                  className="w-full h-full object-cover block"
-                  width={900}
-                  height={300}
-                  loading={idx === 0 ? "eager" : "lazy"}
-                />
+                {/* Sliding track */}
+                <div
+                  className="flex h-full"
+                  style={{
+                    width: `${banners.length * 100}%`,
+                    transform: `translateX(-${idx * (100 / banners.length)}%)`,
+                    transition: `transform 600ms cubic-bezier(.22,.9,.31,1)`,
+                  }}
+                >
+                  {banners.map((b, i) => (
+                    <div key={b.id || i} className="flex-shrink-0 w-full h-full">
+                      <img
+                        src={b.imageUrl}
+                        alt={`Banner ${i + 1}`}
+                        className="w-full h-full object-cover block"
+                        width={900}
+                        height={300}
+                        loading={i === 0 ? "eager" : "lazy"}
+                      />
+                    </div>
+                  ))}
+                </div>
+
                 {/* Dots */}
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {banners.map((_, i) => (
-                    <span
+                    <button
                       key={i}
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        i === idx ? "bg-primary" : "bg-muted-foreground/40"
-                      }`}
+                      onClick={() => setIdx(i)}
+                      aria-label={`Go to banner ${i + 1}`}
+                      className={`h-1.5 w-1.5 rounded-full ${i === idx ? "bg-primary" : "bg-muted-foreground/40"}`}
                     />
                   ))}
                 </div>
