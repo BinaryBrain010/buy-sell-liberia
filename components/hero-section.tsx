@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AuthModal } from "./auth-modal";
-import { clearStoredTokens, getLocalAuthStatus } from "@/lib/jwt";
+import { useAuth } from "@/components/auth-provider";
 import {
   ShoppingCart,
   Tag,
@@ -18,24 +18,21 @@ import {
 export function HeroSection() {
   const router = useRouter();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loadingAuth, setLoadingAuth] = useState(true); // Still useful for disabling buttons
+  // Use the central AuthProvider for reliable auth state (keeps in sync across app)
+  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    // Prefer local JWT check to avoid API call
-    const { isLoggedIn } = getLocalAuthStatus();
-    setIsLoggedIn(isLoggedIn);
-    if (!isLoggedIn) {
-      clearStoredTokens();
-    }
-    setLoadingAuth(false);
-  }, []);
+  // derive local UI state from provider
+  const isLoggedIn = Boolean(user);
+  const loadingAuth = Boolean(authLoading);
 
   const handleStartShopping = () => {
     router.push("/products");
   };
 
   const handleStartSelling = () => {
+    // If user is already authenticated, go straight to sell page.
+    // Otherwise open auth modal. When login completes, onLoginSuccess will
+    // navigate to /sell.
     if (isLoggedIn) {
       router.push("/sell");
     } else {
@@ -44,7 +41,7 @@ export function HeroSection() {
   };
 
   const handleLoginSuccess = () => {
-    setIsLoggedIn(true);
+    // AuthProvider will update `user` state; just close modal and navigate.
     setShowAuthModal(false);
     router.push("/sell");
   };
